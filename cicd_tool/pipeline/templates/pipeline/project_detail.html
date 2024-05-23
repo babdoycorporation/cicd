@@ -1,0 +1,46 @@
+<!-- templates/pipeline/project_detail.html -->
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<h1>{{ project.name }}</h1>
+<p>Repository URL: {{ project.repository_url }}</p>
+<a href="{% url 'trigger_build' project.id %}" class="btn btn-success">Trigger Build</a>
+<a href="{% url 'configure_project' project.id %}" class="btn btn-primary">Configure Project</a>
+<a href="{% url 'local_credential_list' project_id=project.id %}" class="btn btn-danger">Local Credentials</a>
+<a href="{% url 'create_application' project_id=project.id %}" class="btn btn-info">Create Application</a>
+<div>
+    <h2>Build History</h2>
+    <a href="{% url 'build_history' project.id %}" class="btn btn-info">View Build History</a>
+</div>
+<div>
+    <h2>Pipelines</h2>
+<a href="{% url 'pipeline_list' project.id  %}" class="btn btn-primary">Manage Pipelines</a> <!-- Add this line -->
+</div>
+<h2 class="mt-4">Builds</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Log</th>
+            <th>Created At</th>
+            <th>Updated At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for build in builds %}
+        <tr>
+            <td>{{ build.id }}</td>
+            <td>{{ build.status }}</td>
+            <td>{{ build.log|linebreaks }}</td>
+            <td>{{ build.created_at }}</td>
+            <td>{{ build.updated_at }}</td>
+            <td>
+                <a href="{% url 'download_log' build.id %}" class="btn btn-primary">Download</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

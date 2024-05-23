@@ -1,0 +1,48 @@
+# urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.project_list, name='project_list'),
+    path('projects/<int:project_id>/', views.project_detail, name='project_detail'),
+    path('projects/new/', views.project_create, name='project_create'),
+    path('projects/<int:project_id>/edit/', views.project_edit, name='project_edit'),
+    path('projects/<int:project_id>/delete/', views.project_delete, name='project_delete'),
+    path('projects/<int:project_id>/trigger_build/', views.trigger_build, name='trigger_build'),
+    path('github_webhook/', views.github_webhook, name='github_webhook'),
+    path('pipeline/builds/<int:build_id>/download/', views.download_log, name='download_log'),
+    path('projects/<int:project_id>/configure/', views.configure_project, name='configure_project'),
+    path('projects/<int:project_id>/build_history/', views.build_history, name='build_history'),
+    path('projects/<int:project_id>/pipelines/', views.pipeline_list, name='pipeline_list'),
+    path('projects/<int:project_id>/pipelines/create/', views.pipeline_create, name='pipeline_create'),
+    path('projects/<int:project_id>/pipelines/<int:pipeline_id>/update/', views.pipeline_update, name='pipeline_update'),
+    path('projects/<int:project_id>/pipelines/<int:pipeline_id>/delete/', views.pipeline_delete, name='pipeline_delete'),
+    path('pipeline/<int:pipeline_id>/', views.pipeline_detail, name='pipeline_detail'),
+    path('pipelines/<int:pipeline_id>/steps/', views.pipeline_step_list, name='pipeline_step_list'),
+    path('pipelines/<int:pipeline_id>/steps/create/', views.pipeline_step_create, name='pipeline_step_create'),
+    path('pipelines/<int:pipeline_id>/steps/<int:step_id>/update/', views.pipeline_step_update, name='pipeline_step_update'),
+    path('pipelines/<int:pipeline_id>/steps/<int:step_id>/delete/', views.pipeline_step_delete, name='pipeline_step_delete'),
+    path('pipeline/<int:pipeline_id>/run/', views.run_pipeline, name='pipeline_run'),
+    path('agents/', views.agent_list, name='agent_list'),
+    path('agents/add/', views.add_agent, name='add_agent'),
+    path('agents/send-command/', views.send_command, name='send_command'),
+    path('agents/register/', views.register_agent, name='register_agent'),
+    path('agents/receive-heartbeat/', views.receive_heartbeat, name='receive_heartbeat'),
+    path('agents/receive-command/', views.receive_command, name='receive_command'),
+    path('agents/instructions/', views.agent_instructions, name='agent_instructions'),
+    path('global_credentials/', views.global_credential_list, name='global_credential_list'),
+    path('global_credentials/create/', views.global_credential_create, name='global_credential_create'),
+    path('global_credentials/<int:pk>/', views.global_credential_detail, name='global_credential_detail'),
+    path('global_credentials/<int:pk>/update/', views.global_credential_update, name='global_credential_update'),
+    path('global_credentials/<int:pk>/delete/', views.global_credential_delete, name='global_credential_delete'),
+    
+    # Local credentials URLs
+    path('projects/<int:project_id>/local_credentials/', views.local_credential_list, name='local_credential_list'),
+    path('projects/<int:project_id>/local_credentials/create/', views.local_credential_create, name='local_credential_create'),
+    path('local_credentials/<int:pk>/', views.local_credential_detail, name='local_credential_detail'),
+    path('local_credentials/<int:pk>/update/', views.local_credential_update, name='local_credential_update'),
+    path('local_credentials/<int:pk>/delete/', views.local_credential_delete, name='local_credential_delete'),
+    path('project/<int:project_id>/create_application/', views.create_application, name='create_application'),
+    path('applications/', views.application_list, name='application_list'),
+    path('applications/<int:application_id>/', views.application_detail, name='application_detail'),
+]

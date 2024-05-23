@@ -1,0 +1,20 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Delete Step</title>
+</head>
+<body>
+    <h1>Delete Step: {{ step.name }}</h1>
+    <p>Are you sure you want to delete this step?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Delete</button>
+    </form>
+    <a href="{% url 'pipeline_step_list' pipeline.id %}">Back to Steps</a>
+</body>
+</html>
+{% endblock %}

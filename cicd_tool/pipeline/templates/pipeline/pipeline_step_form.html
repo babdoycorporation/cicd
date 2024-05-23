@@ -1,0 +1,27 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% if step %}Update{% else %}Create{% endif %} Step for Pipeline {{ pipeline.name }}</title>
+</head>
+<body>
+    <h1>{% if step %}Update{% else %}Create{% endif %} Step</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{% if step %}{{ step.name }}{% endif %}" required><br>
+        <label for="description">Description:</label>
+        <textarea id="description" name="description">{% if step %}{{ step.description }}{% endif %}</textarea><br>
+        <label for="condition">Condition:</label>
+        <textarea id="condition" name="condition">{% if step %}{{ step.condition }}{% endif %}</textarea><br>
+        <label for="command">Command:</label>
+        <textarea id="command" name="command" required>{% if step %}{{ step.command }}{% endif %}</textarea><br>
+        <button type="submit">Save</button>
+    </form>
+    <a href="{% url 'pipeline_step_list' pipeline.id %}">Back to Steps</a>
+</body>
+</html>
+{% endblock %}

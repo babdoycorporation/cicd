@@ -1,0 +1,18 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Application</title>
+</head>
+<body>
+    <h1>Create Application for {{ project.name }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save</button>
+    </form>
+</body>
+</html>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Detail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        p {
+            color: #666;
+        }
+
+        .back-link {
+            margin-top: 20px;
+            display: inline-block;
+            text-decoration: none;
+            color: #007bff;
+            border: 1px solid #007bff;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+
+        .back-link:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ application.name }}</h1>
+        <p>project {{ application.project}}</p>
+        <p>agents {{ application.agents }}</p>
+        <!-- Add more details as needed -->
+
+        <a href="{% url 'application_list' %}" class="back-link">Back to Applications</a>
+    </div>
+    <h1>{{ application.name }}</h1>
+<h2>Pipelines:</h2>
+<ul class="pipeline-list">
+    {% for pipeline in pipelines %}
+        <li><a href="{% url 'pipeline_detail' pipeline.id %}">{{ pipeline.name }}</a></li>
+    {% endfor %}
+</ul>
+
+    
+</body>
+</html>
+{% endblock %}

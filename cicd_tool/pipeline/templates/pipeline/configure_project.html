@@ -1,0 +1,48 @@
+<!-- templates/pipeline/configure_project.html -->
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<h1>Configure Project: {{ project.name }}</h1>
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="id_environment_variables">Environment Variables (JSON format):</label>
+        {{ form.environment_variables }}
+        <small class="form-text text-muted">Enter environment variables in JSON format.</small>
+    </div>
+    <div class="form-group">
+        <label for="id_build_triggers">Build Triggers (JSON format):</label>
+        {{ form.build_triggers }}
+        <small class="form-text text-muted">Enter build triggers in JSON format.</small>
+    </div>
+    <div class="form-group">
+        <label for="id_notifications_enabled">Enable Notifications:</label>
+        {{ form.notifications_enabled }}
+    </div>
+    <div class="form-group">
+        <label for="id_notification_emails">Notification Emails (comma separated):</label>
+        {{ form.notification_emails }}
+    </div>
+    <div class="form-group">
+        <label for="id_slack_webhook_url">Slack Webhook URL:</label>
+        {{ form.slack_webhook_url }}
+    </div>
+    <div class="form-group">
+        <label for="id_build_scripts">Build Scripts:</label>
+        {{ form.build_scripts }}
+        <small class="form-text text-muted">Enter the commands to build your project, one per line.</small>
+    </div>
+    <div class="form-group">
+        <label for="id_test_scripts">Test Scripts:</label>
+        {{ form.test_scripts }}
+        <small class="form-text text-muted">Enter the commands to run tests, one per line.</small>
+    </div>
+    <div class="form-group">
+        <label for="id_deployment_scripts">Deployment Scripts:</label>
+        {{ form.deployment_scripts }}
+        <small class="form-text text-muted">Enter the commands to deploy your project, one per line.</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{% url 'project_detail' project.id %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

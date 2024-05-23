@@ -1,0 +1,17 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<h1>Projects</h1>
+<a href="{% url 'project_create' %}" class="btn btn-primary">Add New Project</a>
+<ul class="list-group mt-3">
+    {% for project in projects %}
+    <li class="list-group-item">
+        <a href="{% url 'project_detail' project.id %}">{{ project.name }}</a>
+        <div class="btn-group float-right" role="group">
+            <a href="{% url 'project_edit' project.id %}" class="btn btn-sm btn-secondary">Edit</a>
+            <a href="{% url 'project_delete' project.id %}" class="btn btn-sm btn-danger">Delete</a>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

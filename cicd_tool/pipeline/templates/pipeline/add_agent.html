@@ -1,0 +1,12 @@
+{% extends "pipeline/base.html" %}
+
+{% block content %}
+<h2>Add Agent</h2>
+<p>To add a new agent, run the following command on the target machine:</p>
+
+<h3>Windows</h3>
+<pre>{{ command_windows }}</pre>
+
+<h3>Linux</h3>
+<pre>{{ command_linux }}</pre>
+{% endblock %}

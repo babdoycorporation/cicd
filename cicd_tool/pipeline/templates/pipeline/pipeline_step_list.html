@@ -1,0 +1,90 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pipeline Steps</title>
+    <style>
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background: #e9ecef;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        li:nth-child(odd) {
+            background: #f8f9fa;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .actions a, .actions button {
+            background: #007bff;
+            color: #fff;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .actions button {
+            background: #dc3545;
+        }
+        .actions a:hover, .actions button:hover {
+            opacity: 0.8;
+        }
+        .add-step, .back-to-pipelines {
+            width: fit-content;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background: #28a745;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .back-to-pipelines {
+            background: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Steps for Pipeline: {{ pipeline.name }}</h1>
+        <a class="back-to-pipelines" href="{% url 'pipeline_list' pipeline.project.id %}">Back to Pipelines</a>
+        <a class="add-step" href="{% url 'pipeline_step_create' pipeline.id %}">Add Step</a>
+        <ul>
+            {% for step in steps %}
+                <li>
+                    <div>
+                        <strong>{{ step.name }}</strong> - {{ step.description }}
+                    </div>
+                    <div class="actions">
+                        <a href="{% url 'pipeline_step_update' pipeline.id step.id %}">Edit</a>
+                        <form action="{% url 'pipeline_step_delete' pipeline.id step.id %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit">Delete</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+        
+        
+    </div>
+</body>
+</html>
+{% endblock %}

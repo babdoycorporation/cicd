@@ -1,0 +1,61 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="sidebar">
+        <h2>Pipelines</h2>
+        <ul class="pipeline-list">
+            {% for pipeline in pipelines %}
+                <li><a href="{% url 'pipeline_detail' pipeline.id %}">{{ pipeline.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="content">
+        <div class="actions">
+            <a href="{% url 'pipeline_run' pipeline.id %}" class="btn btn-primary">Run Pipeline</a>
+            <a href="{% url 'pipeline_step_create' pipeline.id %}"class="btn btn-primary">Add Step</a>
+            <a href="{% url 'pipeline_step_list' pipeline.id %}" class="btn btn-primary">View Steps</a>
+        </div>
+        <h1>Pipeline: {{ pipeline.name }}</h1>
+        <p>Description: {{ pipeline.description }}</p>
+
+
+        <h2>Pipeline Run History</h2>
+        <ul>
+            {% for run in pipeline.runs.all %}
+                <li>
+                    <div>
+                        <strong class="pipeline-id" data-toggle="log-{{ run.id }}">{{ run.run_id }}</strong> - Status: {{ run.status }}
+                        <div class="log-card" id="log-{{ run.id }}" style="display: none;">
+                            <strong>Run at {{ run.started_at }}</strong> - Status: {{ run.status }}
+                            {% if run.finished_at %}
+                                (Finished at {{ run.finished_at }})
+                            {% endif %}
+                            <div class="step-log" >
+                                <pre>{{ run.log }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <a class="back-to-pipelines" href="{% url 'pipeline_list' pipeline.project.id %}">Back to Pipelines</a>
+    </div>
+</div>
+</div>
+
+<script>
+    document.querySelectorAll('.pipeline-id').forEach(pipelineId => {
+        pipelineId.addEventListener('click', () => {
+            const logId = pipelineId.getAttribute('data-toggle');
+            const logCard = document.getElementById(logId);
+            logCard.style.display = logCard.style.display === 'none' ? 'block' : 'none';
+        });
+    });
+</script>
+
+<style>
+    /* Your existing CSS styles */
+</style>
+{% endblock %}

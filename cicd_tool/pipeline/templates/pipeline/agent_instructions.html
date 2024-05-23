@@ -1,0 +1,35 @@
+<!-- agent_instructions.html -->
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+    <h1>Agent Installation Instructions</h1>
+    <div class="card">
+        <div class="card-header">
+            Windows
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Installation Command</h5>
+            <p class="card-text">
+                <code>
+                    powershell -Command "Invoke-WebRequest -Uri 'http://yourserver.com/path/to/windows_agent.ps1' -OutFile 'agent_install.ps1'; .\agent_install.ps1"
+                </code>
+            </p>
+            <a href="http://yourserver.com/path/to/windows_agent.ps1" class="btn btn-primary" download>Download Script</a>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            Linux
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Installation Command</h5>
+            <p class="card-text">
+                <code>
+                    curl -O http://yourserver.com/path/to/linux_agent.sh && chmod +x linux_agent.sh && ./linux_agent.sh
+                </code>
+            </p>
+            <a href="http://yourserver.com/path/to/linux_agent.sh" class="btn btn-primary" download>Download Script</a>
+        </div>
+    </div>
+{% endblock %}

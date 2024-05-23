@@ -1,0 +1,29 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<style>
+    .application-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.application-list li {
+    margin-bottom: 10px;
+}
+
+.application-list li a {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+}
+
+.application-list li a:hover {
+    color: #007bff;
+}
+
+</style>
+<ul class="application-list">
+    {% for application in applications %}
+        <li><a href="{% url 'application_detail' application.id %}">{{ application.name }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}
