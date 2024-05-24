@@ -46,4 +46,5 @@ urlpatterns = [
     path('project/<int:project_id>/create_application/', views.create_application, name='create_application'),
     path('applications/', views.application_list, name='application_list'),
     path('applications/<int:application_id>/', views.application_detail, name='application_detail'),
+    path('pipeline/create_yaml_pipeline/', views.create_yaml_pipeline, name='create_yaml_pipeline'),
 ]
