@@ -625,71 +625,15 @@ def application_detail(request, application_id):
 
 import yaml
 from django.http import JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Project, GlobalCredential, LocalCredential, Agent, Pipeline, PipelineStep
-
-def create_yaml_pipeline(request):
-    if request.method == 'POST':
-        project_name = request.POST.get('project_name')
-        yaml_data = request.POST.get('yaml_data')
-
-        try:
-            yaml_parsed = yaml.safe_load(yaml_data)
-        except yaml.YAMLError as e:
-            return JsonResponse({'error': 'Invalid YAML format'}, status=400)
-
-        # Validate project name
-        project = get_object_or_404(Project, name=project_name)
-
-        # Validate global credential names
-        global_cred_names = yaml_parsed.get('global_cred', [])
-        global_credentials = GlobalCredential.objects.filter(service_name__in=global_cred_names)
-
-        # Validate local credential names
-        local_cred_names = yaml_parsed.get('local_cred', [])
-        local_credentials = LocalCredential.objects.filter(project=project, service_name__in=local_cred_names)
-
-        # Validate agent name
-        agent_name = yaml_parsed.get('agent')
-        agent = get_object_or_404(Agent, hostname=agent_name)
-
-        # Create or update the pipeline
-        pipeline_name = yaml_parsed.get('pipeline_name')
-        pipeline_description = yaml_parsed.get('description', '')
-
-        # Check if a pipeline with the same name already exists for the project
-        pipeline, created = Pipeline.objects.get_or_create(project=project, name=pipeline_name, defaults={'description': pipeline_description})
-
-        # Update pipeline description if it's not created
-        if not created:
-            pipeline.description = pipeline_description
-            pipeline.save()
-
-        # Create or update pipeline steps
-        steps_data = yaml_parsed.get('steps', [])
-        for step_data in steps_data:
-            name = step_data.get('name')
-            condition = step_data.get('condition', '')
-            command = step_data.get('command')
-            PipelineStep.objects.update_or_create(pipeline=pipeline, name=name, defaults={'condition': condition, 'command': command})
-
-        return JsonResponse({'success': 'Pipeline created/updated successfully'}, status=201)
-
-    else:
-        projects = Project.objects.all()
-        global_credentials = GlobalCredential.objects.all()
-        agents = Agent.objects.all()
-        return render(request, 'pipeline/create_yaml_pipeline.html', {'projects': projects, 'global_credentials': global_credentials, 'agents': agents})
-
-
-import yaml
-from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from .models import Project, GlobalCredential, LocalCredential, Agent, Pipeline, PipelineStep
 
 def create_yaml_pipeline(request):
     if request.method == 'POST':
         yaml_data = request.POST.get('yaml_data')
+
+        if not yaml_data:
+            return JsonResponse({'error': 'YAML data is empty'}, status=400)
 
         try:
             yaml_parsed = yaml.safe_load(yaml_data)
@@ -698,22 +642,15 @@ def create_yaml_pipeline(request):
 
         # Validate project name
         project_name = yaml_parsed.get('project_name')
-        if not project_name:
-            return JsonResponse({'error': 'Project name is required'}, status=400)
-
-        project = get_object_or_404(Project, name=project_name)
-
-        # Validate global credential names
-        global_cred_names = yaml_parsed.get('global_cred', [])
-        global_credentials = GlobalCredential.objects.filter(service_name__in=global_cred_names)
-
-        # Validate local credential names
-        local_cred_names = yaml_parsed.get('local_cred', [])
-        local_credentials = LocalCredential.objects.filter(project=project, service_name__in=local_cred_names)
+        project = Project.objects.filter(name=project_name).first()
+        if not project:
+            return JsonResponse({'error': 'Project not found'}, status=404)
 
         # Validate agent name
         agent_name = yaml_parsed.get('agent')
-        agent = get_object_or_404(Agent, hostname=agent_name)
+        agent = Agent.objects.filter(hostname=agent_name).first()
+        if not agent:
+            return JsonResponse({'error': 'Agent not found'}, status=404)
 
         # Create or update the pipeline
         pipeline_name = yaml_parsed.get('pipeline_name')
@@ -739,31 +676,4 @@ def create_yaml_pipeline(request):
 
     else:
         projects = Project.objects.all()
-        global_credentials = GlobalCredential.objects.all()
-        agents = Agent.objects.all()
-        return render(request, 'pipeline/create_yaml_pipeline.html', {
-            'projects': projects,
-            'global_credentials': global_credentials,
-            'agents': agents
-        })
-
-from django.shortcuts import render
-from .models import YamlFileVersion
-import difflib
-
-def view_yaml_changes(request, pipeline_id):
-    pipeline_versions = YamlFileVersion.objects.filter(pipeline_id=pipeline_id).order_by('-version_number')[:2]
-    if len(pipeline_versions) < 2:
-        return JsonResponse({'error': 'Not enough versions to compare'}, status=400)
-
-    old_version, new_version = pipeline_versions[1], pipeline_versions[0]
-    old_yaml = old_version.yaml_content.splitlines()
-    new_yaml = new_version.yaml_content.splitlines()
-
-    diff = difflib.unified_diff(old_yaml, new_yaml, fromfile='old_version.yaml', tofile='new_version.yaml', lineterm='')
-
-    return render(request, 'pipeline/view_yaml_changes.html', {
-        'diff': '\n'.join(diff),
-        'old_version': old_version,
-        'new_version': new_version,
-    })
+        return render(request, 'pipeline/create_yaml_pipeline.html', {'projects': projects})
