@@ -1,34 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CI/CD Tool</title>
+    <title>ReleaseRocket</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            padding-top: 56px; /* Adjust based on your navbar height */
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .navbar-nav .nav-link {
+            font-size: 1.1rem;
+        }
+        .content {
+            margin-top: 20px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 0;
+            text-align: center;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">ReleaseRocket</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'agent_list' %}">Agents</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'global_credential_list' %}">Global Credentials</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'application_list' %}">Applications</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
     <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="{% url 'project_list' %}">CI/CD Tool</a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'agent_list' %}">Agents</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'global_credential_list' %}">Global Credentials</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'application_list' %}">Applications</a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
         <div class="content">
             {% block content %}
             {% endblock %}
         </div>
     </div>
+    <footer class="footer">
+        <div class="container">
+            <span class="text-muted">© 2024 ReleaseRocket. All rights reserved.</span>
+        </div>
+    </footer>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>

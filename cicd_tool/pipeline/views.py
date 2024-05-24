@@ -9,6 +9,35 @@ from .forms import ProjectForm, ProjectConfigurationForm
 
 BASE_REPO_DIR = 'D:/cicd/'  # Set this to your repository base directory
 
+# views.py
+
+from django.shortcuts import render
+from django.views import View
+from .models import Project, Application, Pipeline, PipelineRun, Agent
+
+class DashboardView(View):
+    def get(self, request):
+        total_projects = Project.objects.count()
+        total_applications = Application.objects.count()
+        total_pipelines = Pipeline.objects.count()
+        total_pipeline_runs = PipelineRun.objects.count()
+        total_agents = Agent.objects.count()
+        successful_runs = PipelineRun.objects.filter(status='success').count()
+        failed_runs = PipelineRun.objects.filter(status='failed').count()
+
+        context = {
+            'total_projects': total_projects,
+            'total_applications': total_applications,
+            'total_pipelines': total_pipelines,
+            'total_pipeline_runs': total_pipeline_runs,
+            'total_agents': total_agents,
+            'successful_runs': successful_runs,
+            'failed_runs': failed_runs,
+        }
+
+        return render(request, 'pipeline/dashboard.html', context)
+
+
 def project_list(request):
     projects = Project.objects.all()
     return render(request, 'pipeline/project_list.html', {'projects': projects})

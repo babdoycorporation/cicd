@@ -1,18 +1,27 @@
 {% extends 'pipeline/base.html' %}
+
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Create Application</title>
-</head>
-<body>
+<div class="container mt-4">
     <h1>Create Application for {{ project.name }}</h1>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Save</button>
+        <div class="form-group">
+            <label for="id_name">Name:</label>
+            {{ form.name }}
+        </div>
+        <div class="form-group">
+            <label for="id_global_credentials">Global Credentials:</label>
+            {{ form.global_credentials }}
+        </div>
+        <div class="form-group">
+            <label for="id_local_credentials">Local Credentials:</label>
+            {{ form.local_credentials }}
+        </div>
+        <div class="form-group">
+            <label for="id_agents">Agents:</label>
+            {{ form.agents }}
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
     </form>
-</body>
-</html>
+</div>
 {% endblock %}

@@ -1,29 +1,44 @@
 {% extends 'pipeline/base.html' %}
+
 {% block content %}
-<style>
-    .application-list {
-    list-style-type: none;
-    padding: 0;
-}
+<div class="container mt-4">
+    <style>
+        .application-list-container {
+            width: 150px; /* Fixed width */
+            height: 150px; /* Fixed height */
+            overflow-y: auto; /* Add scrollbar if content exceeds height */
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
 
-.application-list li {
-    margin-bottom: 10px;
-}
+        .application-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
 
-.application-list li a {
-    text-decoration: none;
-    color: #333;
-    font-weight: bold;
-}
+        .application-list li {
+            margin-bottom: 10px;
+        }
 
-.application-list li a:hover {
-    color: #007bff;
-}
+        .application-list li a {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
 
-</style>
-<ul class="application-list">
-    {% for application in applications %}
-        <li><a href="{% url 'application_detail' application.id %}">{{ application.name }}</a></li>
-    {% endfor %}
-</ul>
+        .application-list li a:hover {
+            color: #007bff;
+        }
+    </style>
+    <div class="application-list-container">
+        <ul class="application-list">
+            {% for application in applications %}
+                <li><a href="{% url 'application_detail' application.id %}">{{ application.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
 {% endblock %}
