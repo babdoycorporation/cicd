@@ -197,6 +197,20 @@ class Application(models.Model):
 
 
 
+from django.db import models
+from django.utils import timezone
+
+class YamlFileVersion(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE)
+    version_number = models.IntegerField()
+    yaml_content = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Version {self.version_number} for {self.pipeline.name}"
+
+
 class Stage(models.Model):
     name = models.CharField(max_length=100)
     pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name='stages')

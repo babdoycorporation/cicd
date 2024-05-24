@@ -1,0 +1,117 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create YAML Pipeline</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/yaml/yaml.min.js"></script>
+    <style>
+        /* Add some basic styling for better presentation */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            background-color: #252526;
+            padding: 20px;
+        }
+        form {
+            max-width: 800px;
+            margin: auto;
+        }
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #3c3c3c;
+            color: #d4d4d4;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        select:focus, button:focus {
+            outline: none;
+            border-color: #007acc;
+        }
+        #yaml_editor {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create YAML Pipeline</h1>
+        <form method="post">
+            {% csrf_token %}
+            <label for="yaml_data">YAML Data:</label><br>
+            <div id="yaml_editor"></div><br>
+
+            <button type="submit">Create Pipeline</button>
+            <button type="button" id="saveDraft">Save Draft</button>
+        </form>
+    </div>
+
+    <script>
+        // Initialize CodeMirror editor
+        var editor = CodeMirror(document.getElementById('yaml_editor'), {
+            value: `
+pipeline_name: test_pipeline
+description: Test pipeline description
+global_cred:
+  - my_service_name
+local_cred:
+  - same_as_above
+agent: laptop123
+steps:
+  - name: step1
+    condition: null
+    command: python runserver --cred=my_service_name; ls; ls -la
+  - name: step2
+    condition: null
+    command: echo "Second step"
+            `,
+            mode: 'yaml',
+            lineNumbers: true,
+            theme: 'default',
+            indentUnit: 2,
+            matchBrackets: true,
+            autoCloseBrackets: true
+        });
+
+        // Form validation and error handling
+        document.querySelector('form').addEventListener('submit', function(event) {
+            let yamlData = editor.getValue();
+
+            if (!yamlData) {
+                alert('YAML data cannot be empty.');
+                event.preventDefault();
+            } else {
+                document.getElementById('yaml_data').value = yamlData;
+            }
+        });
+
+        // Save Draft functionality
+        document.getElementById('saveDraft').addEventListener('click', function() {
+            let yamlData = editor.getValue();
+            localStorage.setItem('yamlDraft', yamlData);
+            alert('Draft saved!');
+        });
+
+        window.addEventListener('load', function() {
+            let savedDraft = localStorage.getItem('yamlDraft');
+            if (savedDraft) {
+                editor.setValue(savedDraft);
+            }
+        });
+    </script>
+</body>
+</html>
+{% endblock %}
