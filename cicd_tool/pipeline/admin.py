@@ -4,3 +4,4 @@ from .models import *
 admin.site.register(PipelineRun)
 admin.site.register(Agent)
 admin.site.register(YamlFileVersion)
+admin.site.register(Application)

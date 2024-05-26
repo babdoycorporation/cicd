@@ -210,14 +210,43 @@ def pipeline_list(request, project_id):
     pipelines = Pipeline.objects.filter(project=project)
     return render(request, 'pipeline/pipeline_list.html', {'project': project, 'pipelines': pipelines})
 
-def pipeline_create(request, project_id):
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Project, Pipeline, Application
+
+def pipeline_create(request, project_id, pipeline_id=None):
     project = get_object_or_404(Project, id=project_id)
+    applications = project.applications.all()
+    pipeline = None
+    pipeline_application_ids = []
+
+    if pipeline_id:
+        pipeline = get_object_or_404(Pipeline, id=pipeline_id, project=project)
+        pipeline_application_ids = list(pipeline.applications.values_list('id', flat=True))
+    
     if request.method == 'POST':
         name = request.POST.get('name')
         description = request.POST.get('description', '')
-        pipeline = Pipeline.objects.create(project=project, name=name, description=description)
+        application_id = request.POST.get('application')
+        application = get_object_or_404(Application, id=application_id)
+        
+        if pipeline:
+            pipeline.name = name
+            pipeline.description = description
+            pipeline.save()
+        else:
+            pipeline = Pipeline.objects.create(project=project, name=name, description=description)
+        
+        application.pipelines.add(pipeline)
+        application.save()
+
         return redirect('pipeline_list', project_id=project.id)
-    return render(request, 'pipeline/pipeline_form.html', {'project': project})
+    
+    return render(request, 'pipeline/pipeline_form.html', {
+        'project': project,
+        'applications': applications,
+        'pipeline': pipeline,
+        'pipeline_application_ids': pipeline_application_ids
+    })
 
 def pipeline_update(request, project_id, pipeline_id):
     project = get_object_or_404(Project, id=project_id)

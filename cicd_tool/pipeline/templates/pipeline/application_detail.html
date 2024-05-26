@@ -7,20 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Application Detail</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-
-        }
 
         h1 {
             color: #333;
@@ -55,11 +42,10 @@
 
         <a href="{% url 'application_list' %}" class="back-link">Back to Applications</a>
     </div>
-    <h1>{{ application.name }}</h1>
 <h2>Pipelines:</h2>
 <ul class="pipeline-list">
     {% for pipeline in pipelines %}
-        <li><a href="{% url 'pipeline_detail' pipeline.id %}">{{ pipeline.name }}</a></li>
+        <li style="text-decoration: none;"><a href="{% url 'pipeline_detail' pipeline.id %}">{{ pipeline.name }}</a></li>
     {% endfor %}
 </ul>
 
