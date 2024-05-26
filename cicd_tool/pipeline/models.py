@@ -115,6 +115,10 @@ from django.db import models
 from django.utils import timezone
 import uuid
 
+from django.db import models
+from django.utils import timezone
+import uuid
+
 class PipelineRun(models.Model):
     pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name='runs')
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('running', 'Running'), ('success', 'Success'), ('failed', 'Failed')])
@@ -126,12 +130,11 @@ class PipelineRun(models.Model):
 
     def __str__(self):
         return f"Run of {self.pipeline.name} at {self.started_at}"
+    
     def save(self, *args, **kwargs):
-        # Check if the run_id already exists
-        if not self.pk:  # Only execute this when the instance is being created
+        if not self.pk:
             while PipelineRun.objects.filter(run_id=self.run_id).exists():
-                self.run_id = uuid.uuid4()  # Generate a new unique run_id
-
+                self.run_id = uuid.uuid4()
         super().save(*args, **kwargs)
 
 # models.py

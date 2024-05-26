@@ -148,6 +148,14 @@ from .models import Build
 from django.shortcuts import get_object_or_404
 from .models import Project, Build
 
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+from datetime import timedelta
+import json
+from .models import Project, PipelineRun
+
 def build_history(request, project_id):
     # Retrieve the project associated with the project_id
     project = get_object_or_404(Project, pk=project_id)
@@ -156,12 +164,12 @@ def build_history(request, project_id):
     end_date = timezone.now()
     start_date = end_date - timedelta(days=7)
     
-    # Query the database to count successful and failed builds per day for the specific project
-    build_history_data = Build.objects.filter(project=project, created_at__gte=start_date, created_at__lte=end_date) \
-                                       .annotate(date=TruncDate('created_at')) \
-                                       .values('date', 'status') \
-                                       .annotate(count=Count('id')) \
-                                       .order_by('date', 'status')
+    # Query the database to count successful and failed PipelineRuns per day for the specific project
+    build_history_data = PipelineRun.objects.filter(pipeline__project=project, started_at__gte=start_date, started_at__lte=end_date) \
+                                            .annotate(date=TruncDate('started_at')) \
+                                            .values('date', 'status') \
+                                            .annotate(count=Count('id')) \
+                                            .order_by('date', 'status')
 
     # Organize the data into a format suitable for rendering in the template
     dates = []
