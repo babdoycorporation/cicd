@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Add File to {{ repository.name }}</h2>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="file" required><br>
+    <button type="submit">Upload</button>
+</form>
+<a href="{% url 'repository_detail' repository.id %}">Back to Repository</a>
+{% endblock %}

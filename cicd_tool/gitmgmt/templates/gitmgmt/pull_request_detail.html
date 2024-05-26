@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ pull_request.title }}</h2>
+<p>{{ pull_request.description }}</p>
+<p>Source Branch: {{ pull_request.source_branch.name }}</p>
+<p>Target Branch: {{ pull_request.target_branch.name }}</p>
+{% if pull_request.is_merged %}
+    <p>Status: Merged</p>
+{% else %}
+    <p>Status: Open</p>
+    <!-- Add a button or form to merge the pull request if user has permissions -->
+{% endif %}
+{% endblock %}

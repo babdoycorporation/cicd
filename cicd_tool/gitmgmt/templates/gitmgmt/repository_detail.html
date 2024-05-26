@@ -1,0 +1,167 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<div class="repository-container">
+    <style>
+        .repository-container {
+            display: flex;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f8f8f8;
+        }
+        .sidebar {
+            width: 25%;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-right: 20px;
+        }
+        .content {
+            width: 70%;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h2, h3 {
+            color: #333;
+        }
+        .branch-select {
+            margin-bottom: 20px;
+        }
+        .branch-select label {
+            font-weight: bold;
+        }
+        .branch-select select {
+            width: 100%;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .file-list, .folder-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .file-list li, .folder-list li {
+            margin-bottom: 10px;
+        }
+        .file-list li a, .folder-list li a {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        .file-list li a:hover, .folder-list li a:hover {
+            color: #007bff;
+        }
+        .upload-form {
+            margin-top: 20px;
+        }
+        .upload-form h3 {
+            margin-bottom: 10px;
+        }
+        .upload-form form {
+            display: flex;
+            flex-direction: column;
+        }
+        .upload-form form input, .upload-form form button {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .upload-form form button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .upload-form form button:hover {
+            background-color: #0056b3;
+        }
+        .commit-history {
+            margin-top: 30px;
+        }
+        .commit {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f1f1f1;
+        }
+        .commit-message {
+            font-weight: bold;
+        }
+        .commit-details {
+            color: #666;
+        }
+    </style>
+
+    <div class="sidebar">
+        <h3>Branches</h3>
+        <div class="branch-select">
+            <label for="branchSelect">Select Branch:</label>
+            <select id="branchSelect" onchange="branchChanged()">
+                {% for branch in branches %}
+                    <option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <h3>Files</h3>
+        <ul class="folder-list">
+            {% for file in files %}
+                <li>
+                    {% if '.' in file %}
+                        <a href="#">{{ file }}</a>
+                    {% else %}
+                        <span class="folder-toggle" onclick="toggleFiles('{{ file }}')">{{ file }}</span>
+                        <ul class="file-list" id="{{ file }}" style="display:none;">
+                            <!-- Add nested files here if any -->
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="content">
+        <h2>{{ repository.name }}</h2>
+        <p>{{ repository.description }}</p>
+
+        <div class="upload-form">
+            <h3>Upload New File</h3>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+
+        <div class="commit-history">
+            <h3>Commit History</h3>
+            {% for commit in commits %}
+                <div class="commit">
+                    <div class="commit-message">{{ commit.message }}</div>
+                    <div class="commit-details">by {{ commit.author }} on {{ commit.date }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <a href="{% url 'repository_list' %}" class="back-link">Back to Repositories</a>
+    </div>
+</div>
+
+<script>
+    function branchChanged() {
+        const selectedBranch = document.getElementById('branchSelect').value;
+        // Add functionality to switch branch if required
+    }
+
+    function toggleFiles(folderId) {
+        const fileList = document.getElementById(folderId);
+        if (fileList.style.display === "none") {
+            fileList.style.display = "block";
+        } else {
+            fileList.style.display = "none";
+        }
+    }
+</script>
+{% endblock %}
