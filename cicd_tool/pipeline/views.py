@@ -25,6 +25,9 @@ class DashboardView(View):
         successful_runs = PipelineRun.objects.filter(status='success').count()
         failed_runs = PipelineRun.objects.filter(status='failed').count()
 
+        # Fetch latest pipeline runs
+        latest_pipeline_runs = PipelineRun.objects.all().order_by('-started_at')[:5]
+
         context = {
             'total_projects': total_projects,
             'total_applications': total_applications,
@@ -33,9 +36,11 @@ class DashboardView(View):
             'total_agents': total_agents,
             'successful_runs': successful_runs,
             'failed_runs': failed_runs,
+            'latest_pipeline_runs': latest_pipeline_runs,
         }
 
         return render(request, 'pipeline/dashboard.html', context)
+
 
 
 def project_list(request):
