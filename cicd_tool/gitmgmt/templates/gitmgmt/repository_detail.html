@@ -5,38 +5,58 @@
         .repository-container {
             display: flex;
             padding: 20px;
-            font-family: Arial, sans-serif;
-            background-color: #f8f8f8;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f6f8fa;
+            min-height: 100vh;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
         }
         .sidebar {
             width: 25%;
             padding: 20px;
-            background-color: #ffffff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            margin-right: 20px;
+            background-color: #fff;
+            border-left: 1px solid #e1e4e8;
+            margin-left: 20px;
         }
-        .content {
-            width: 70%;
-            padding: 20px;
-            background-color: #ffffff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        h2, h3 {
-            color: #333;
-        }
-        .branch-select {
+        h2 {
+            font-size: 24px;
+            font-weight: 400;
+            color: #24292e;
             margin-bottom: 20px;
         }
-        .branch-select label {
-            font-weight: bold;
+        h3 {
+            font-size: 20px;
+            font-weight: 500;
+            color: #24292e;
+            margin-bottom: 15px;
         }
-        .branch-select select {
+        .section {
+            margin-bottom: 30px;
+        }
+        .section label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .section select, .section input, .section button {
             width: 100%;
-            padding: 5px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #e1e4e8;
+            margin-bottom: 10px;
+        }
+        .section button {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            border: none;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        .section button:hover {
+            background-color: #218838;
         }
         .file-list, .folder-list {
             list-style: none;
@@ -44,89 +64,62 @@
             margin: 0;
         }
         .file-list li, .folder-list li {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .file-list li a, .folder-list li a {
             text-decoration: none;
-            color: #333;
-            font-weight: bold;
+            color: #0366d6;
+            font-weight: 600;
         }
         .file-list li a:hover, .folder-list li a:hover {
-            color: #007bff;
-        }
-        .upload-form {
-            margin-top: 20px;
-        }
-        .upload-form h3 {
-            margin-bottom: 10px;
-        }
-        .upload-form form {
-            display: flex;
-            flex-direction: column;
-        }
-        .upload-form form input, .upload-form form button {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .upload-form form button {
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-        .upload-form form button:hover {
-            background-color: #0056b3;
-        }
-        .commit-history {
-            margin-top: 30px;
+            text-decoration: underline;
         }
         .commit {
-            margin-bottom: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 6px;
+            background-color: #fafbfc;
+            border: 1px solid #e1e4e8;
+            margin-bottom: 15px;
         }
         .commit-message {
-            font-weight: bold;
+            font-weight: 600;
+            margin-bottom: 5px;
         }
         .commit-details {
-            color: #666;
+            color: #586069;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #0366d6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .toggle-button {
+            background-color: #0366d6;
+            color: white;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .toggle-button:hover {
+            background-color: #005cc5;
+        }
+        .hidden-form {
+            display: none;
         }
     </style>
-
-    <div class="sidebar">
-        <h3>Branches</h3>
-        <div class="branch-select">
-            <label for="branchSelect">Select Branch:</label>
-            <select id="branchSelect" onchange="branchChanged()">
-                {% for branch in branches %}
-                    <option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <h3>Files</h3>
-        <ul class="folder-list">
-            {% for file in files %}
-                <li>
-                    {% if '.' in file %}
-                        <a href="#">{{ file }}</a>
-                    {% else %}
-                        <span class="folder-toggle" onclick="toggleFiles('{{ file }}')">{{ file }}</span>
-                        <ul class="file-list" id="{{ file }}" style="display:none;">
-                            <!-- Add nested files here if any -->
-                        </ul>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    </div>
-
     <div class="content">
         <h2>{{ repository.name }}</h2>
-        <p>{{ repository.description }}</p>
 
-        <div class="upload-form">
+        <div class="section">
             <h3>Upload New File</h3>
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
@@ -135,7 +128,16 @@
             </form>
         </div>
 
-        <div class="commit-history">
+        <div class="section">
+            <h3>Files</h3>
+            <ul class="file-list">
+                {% for file in files %}
+                    <li><a href="#">{{ file }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="section">
             <h3>Commit History</h3>
             {% for commit in commits %}
                 <div class="commit">
@@ -147,21 +149,56 @@
 
         <a href="{% url 'repository_list' %}" class="back-link">Back to Repositories</a>
     </div>
+
+    <div class="sidebar">
+        <div class="section">
+            <h3>Branches</h3>
+            <label for="branchSelect">Select Branch:</label>
+            <select id="branchSelect" onchange="branchChanged()">
+                {% for branch in branches %}
+                    <option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>
+                {% endfor %}
+            </select>
+            <button class="toggle-button" onclick="toggleBranchForm()">Create Branch</button>
+            <form id="branchForm" method="post" action="{% url 'create_branch' repository.id %}" class="hidden-form">
+                {% csrf_token %}
+                <input type="text" name="branch_name" placeholder="New branch name">
+                <button type="submit">Create</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h3>Merge Branches</h3>
+            <label for="mergeTarget">Merge into {{ current_branch }}:</label>
+            <form method="post">
+                {% csrf_token %}
+                <select name="merge_target" id="mergeTarget">
+                    {% for branch in branches %}
+                        {% if branch != current_branch %}
+                            <option value="{{ branch }}">{{ branch }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <button type="submit">Merge</button>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
     function branchChanged() {
         const selectedBranch = document.getElementById('branchSelect').value;
-        // Add functionality to switch branch if required
+        window.location.href = `?branch=${selectedBranch}`;
+    }
+
+    function toggleBranchForm() {
+        const branchForm = document.getElementById('branchForm');
+        branchForm.classList.toggle('hidden-form');
     }
 
     function toggleFiles(folderId) {
         const fileList = document.getElementById(folderId);
-        if (fileList.style.display === "none") {
-            fileList.style.display = "block";
-        } else {
-            fileList.style.display = "none";
-        }
+        fileList.style.display = fileList.style.display === "none" ? "block" : "none";
     }
 </script>
 {% endblock %}

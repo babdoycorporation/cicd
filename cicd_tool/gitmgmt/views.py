@@ -7,8 +7,12 @@ from git import Repo
 REPO_BASE_PATH = 'D:/repos'
 
 def repository_list(request):
-    repositories = Repository.objects.all()
-    return render(request, 'gitmgmt/repository_list.html', {'repositories': repositories})
+    query = request.GET.get('q')
+    if query:
+        repositories = Repository.objects.filter(name__icontains=query)
+    else:
+        repositories = Repository.objects.all()
+    return render(request, 'gitmgmt/repository_list.html', {'repositories': repositories, 'query': query})
 
 def initialize_repository(name):
     repo_path = os.path.join(REPO_BASE_PATH, name)
@@ -37,23 +41,23 @@ def create_repository(request):
     return render(request, 'gitmgmt/repository_form.html', {'form': form})
 
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Repository
-from .forms import RepositoryForm, UploadFileForm
+from .models import Repository, PullRequest
+from .forms import RepositoryForm, PullRequestForm, UploadFileForm
 import os
 from git import Repo
-
 
 IGNORE_FILES = ['.git']
 
 def repository_detail(request, repository_id):
     repository = get_object_or_404(Repository, id=repository_id)
     repo_path = os.path.join(REPO_BASE_PATH, repository.name)
-    
-    # Fetch repository details
+
     try:
         repo = Repo(repo_path)
         branches = [branch.name for branch in repo.branches]
-        current_branch = repo.active_branch.name
+        current_branch = request.GET.get('branch', repo.active_branch.name)
+        repo.git.checkout(current_branch)
+
         files = []
         for root, _, filenames in os.walk(repo_path):
             if any(ignore in root for ignore in IGNORE_FILES):
@@ -63,12 +67,22 @@ def repository_detail(request, repository_id):
                     continue
                 relative_path = os.path.relpath(os.path.join(root, filename), repo_path)
                 files.append(relative_path)
+
+        commits = []
+        for commit in repo.iter_commits(current_branch):
+            commits.append({
+                'message': commit.message,
+                'author': commit.author.name,
+                'date': commit.committed_date,
+            })
+
     except Exception as e:
         branches = []
         files = []
         current_branch = None
+        commits = []
         print(f"Error accessing repository: {e}")
-    
+
     if request.method == 'POST':
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
@@ -89,6 +103,7 @@ def repository_detail(request, repository_id):
         'branches': branches,
         'current_branch': current_branch,
         'files': files,
+        'commits': commits,
         'form': form,
     })
 
@@ -129,3 +144,24 @@ def add_file(request, repository_id):
         return redirect('repository_detail', repository_id=repository.id)
     
     return render(request, 'gitmgmt/add_file.html', {'repository': repository})
+
+from django.http import HttpResponseBadRequest
+
+def create_branch(request, repository_id):
+    if request.method == 'POST':
+        branch_name = request.POST.get('branch_name')
+        if branch_name:
+            repository = get_object_or_404(Repository, id=repository_id)
+            repo_path = os.path.join(REPO_BASE_PATH, repository.name)
+            repo = Repo(repo_path)
+            
+            try:
+                # Create new branch
+                repo.git.checkout(b=branch_name)
+                return redirect('repository_detail', repository_id=repository.id)
+            except Exception as e:
+                return HttpResponseBadRequest(f"Failed to create branch: {e}")
+        else:
+            return HttpResponseBadRequest("Branch name is required.")
+    else:
+        return HttpResponseBadRequest("Invalid request method.")

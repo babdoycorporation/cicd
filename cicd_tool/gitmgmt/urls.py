@@ -9,4 +9,5 @@ urlpatterns = [
     path('pull_requests/<int:pull_request_id>/', views.pull_request_detail, name='pull_request_detail'),
     path('repositories/<int:repository_id>/add_file/', views.add_file, name='add_file'),
     # Add more paths for branch and commit management as needed
+    path('repository/<int:repository_id>/create-branch/', views.create_branch, name='create_branch'),
 ]
