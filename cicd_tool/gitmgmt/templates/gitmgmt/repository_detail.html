@@ -1,53 +1,54 @@
 {% extends 'pipeline/base.html' %}
 {% block content %}
-<div class="repository-container">
+<div class="repository-page">
     <style>
-        .repository-container {
+        .repository-page .repository-container {
             display: flex;
             padding: 20px;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f6f8fa;
             min-height: 100vh;
+            margin-left: 100px;
         }
-        .content {
+        .repository-page .content {
             flex: 1;
             padding: 20px;
         }
-        .sidebar {
-            width: 25%;
+        .repository-page .sidebar {
+            width: 15%;
             padding: 20px;
             background-color: #fff;
             border-left: 1px solid #e1e4e8;
-            margin-left: 20px;
+            margin-left: 200px;
         }
-        h2 {
+        .repository-page h2 {
             font-size: 24px;
             font-weight: 400;
             color: #24292e;
             margin-bottom: 20px;
         }
-        h3 {
+        .repository-page h3 {
             font-size: 20px;
             font-weight: 500;
             color: #24292e;
             margin-bottom: 15px;
         }
-        .section {
+        .repository-page .section {
             margin-bottom: 30px;
         }
-        .section label {
+        .repository-page .section label {
             font-weight: 600;
             display: block;
             margin-bottom: 8px;
         }
-        .section select, .section input, .section button {
+        .repository-page .section select, .repository-page .section input, .repository-page .section button {
             width: 100%;
             padding: 8px;
             border-radius: 6px;
             border: 1px solid #e1e4e8;
             margin-bottom: 10px;
         }
-        .section button {
+        .repository-page .section button {
             background-color: #28a745;
             color: white;
             cursor: pointer;
@@ -55,50 +56,50 @@
             padding: 8px 16px;
             font-size: 14px;
         }
-        .section button:hover {
+        .repository-page .section button:hover {
             background-color: #218838;
         }
-        .file-list, .folder-list {
+        .repository-page .file-list, .repository-page .folder-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-        .file-list li, .folder-list li {
+        .repository-page .file-list li, .repository-page .folder-list li {
             margin-bottom: 8px;
         }
-        .file-list li a, .folder-list li a {
+        .repository-page .file-list li a, .repository-page .folder-list li a {
             text-decoration: none;
             color: #0366d6;
             font-weight: 600;
         }
-        .file-list li a:hover, .folder-list li a:hover {
+        .repository-page .file-list li a:hover, .repository-page .folder-list li a:hover {
             text-decoration: underline;
         }
-        .commit {
+        .repository-page .commit {
             padding: 15px;
             border-radius: 6px;
             background-color: #fafbfc;
             border: 1px solid #e1e4e8;
             margin-bottom: 15px;
         }
-        .commit-message {
+        .repository-page .commit-message {
             font-weight: 600;
             margin-bottom: 5px;
         }
-        .commit-details {
+        .repository-page .commit-details {
             color: #586069;
         }
-        .back-link {
+        .repository-page .back-link {
             display: inline-block;
             margin-top: 20px;
             color: #0366d6;
             text-decoration: none;
             font-weight: 600;
         }
-        .back-link:hover {
+        .repository-page .back-link:hover {
             text-decoration: underline;
         }
-        .toggle-button {
+        .repository-page .toggle-button {
             background-color: #0366d6;
             color: white;
             cursor: pointer;
@@ -109,96 +110,99 @@
             margin-bottom: 10px;
             font-size: 14px;
         }
-        .toggle-button:hover {
+        .repository-page .toggle-button:hover {
             background-color: #005cc5;
         }
-        .hidden-form {
+        .repository-page .hidden-form {
             display: none;
         }
     </style>
-    <div class="content">
-        <h2>{{ repository.name }}</h2>
+    <div class="repository-container">
+        <div class="content">
+            <h2>{{ repository.name }}</h2>
+            <a href="{% url 'repository_list' %}" class="back-link">Back to Repositories</a>
+            <a href="{% url 'upload_file' repository_id=repository.id %}">add file</a>
+            <div class="section">
+                <h3>Last Commit</h3>
+                {% if last_commit_hash %}
+                    <a href="{% url 'view_logs' repository_id=repository.id %}">{{ last_commit_hash }}</a>
+                {% else %}
+                    No commits yet.
+                {% endif %}
+            </div>
 
-        <div class="section">
-            <h3>Upload New File</h3>
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit">Upload</button>
-            </form>
-        </div>
+            <div class="section">
+                <h3>Files</h3>
+<!-- Updated HTML content -->
+<ul class="file-list">
+    {% for file in files %}
+        <li><a href="{% url 'edit_and_save_file' repository_id=repository.id file_path=file %}">{{ file }}</a></li>
+    {% endfor %}
+</ul>
 
-        <div class="section">
-            <h3>Files</h3>
-            <ul class="file-list">
-                {% for file in files %}
-                    <li><a href="#">{{ file }}</a></li>
+            </div>
+
+            <div class="section">
+                <h3>Commit History</h3>
+                {% for commit in commits %}
+                    <div class="commit">
+                        <div class="commit-message">{{ commit.message }}</div>
+                        <div class="commit-details">by {{ commit.author }} on {{ commit.date }}</div>
+                    </div>
                 {% endfor %}
-            </ul>
+            </div>
         </div>
 
-        <div class="section">
-            <h3>Commit History</h3>
-            {% for commit in commits %}
-                <div class="commit">
-                    <div class="commit-message">{{ commit.message }}</div>
-                    <div class="commit-details">by {{ commit.author }} on {{ commit.date }}</div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <a href="{% url 'repository_list' %}" class="back-link">Back to Repositories</a>
-    </div>
-
-    <div class="sidebar">
-        <div class="section">
-            <h3>Branches</h3>
-            <label for="branchSelect">Select Branch:</label>
-            <select id="branchSelect" onchange="branchChanged()">
-                {% for branch in branches %}
-                    <option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>
-                {% endfor %}
-            </select>
-            <button class="toggle-button" onclick="toggleBranchForm()">Create Branch</button>
-            <form id="branchForm" method="post" action="{% url 'create_branch' repository.id %}" class="hidden-form">
-                {% csrf_token %}
-                <input type="text" name="branch_name" placeholder="New branch name">
-                <button type="submit">Create</button>
-            </form>
-        </div>
-
-        <div class="section">
-            <h3>Merge Branches</h3>
-            <label for="mergeTarget">Merge into {{ current_branch }}:</label>
-            <form method="post">
-                {% csrf_token %}
-                <select name="merge_target" id="mergeTarget">
+        <div class="sidebar">
+            <div class="section">
+                <h3>Branches</h3>
+                <label for="branchSelect">Select Branch:</label>
+                <select id="branchSelect" onchange="branchChanged()">
                     {% for branch in branches %}
-                        {% if branch != current_branch %}
-                            <option value="{{ branch }}">{{ branch }}</option>
-                        {% endif %}
+                        <option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>
                     {% endfor %}
                 </select>
-                <button type="submit">Merge</button>
-            </form>
+                <button class="toggle-button" onclick="toggleBranchForm()">Create Branch</button>
+                <form id="branchForm" method="post" action="{% url 'create_branch' repository.id %}" class="hidden-form">
+                    {% csrf_token %}
+                    <input type="text" name="branch_name" placeholder="New branch name">
+                    <button type="submit">Create</button>
+                </form>
+            </div>
+
+            <div class="section">
+                <h3>Merge Branches</h3>
+                <label for="mergeTarget">Merge into {{ current_branch }}:</label>
+                <form method="post">
+                    {% csrf_token %}
+                    <select name="merge_target" id="mergeTarget">
+                        {% for branch in branches %}
+                            {% if branch != current_branch %}
+                                <option value="{{ branch }}">{{ branch }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <button type="submit">Merge</button>
+                </form>
+            </div>
         </div>
     </div>
+
+    <script>
+        function branchChanged() {
+            const selectedBranch = document.getElementById('branchSelect').value;
+            window.location.href = `?branch=${selectedBranch}`;
+        }
+
+        function toggleBranchForm() {
+            const branchForm = document.getElementById('branchForm');
+            branchForm.classList.toggle('hidden-form');
+        }
+
+        function toggleFiles(folderId) {
+            const fileList = document.getElementById(folderId);
+            fileList.style.display = fileList.style.display === "none" ? "block" : "none";
+        }
+    </script>
 </div>
-
-<script>
-    function branchChanged() {
-        const selectedBranch = document.getElementById('branchSelect').value;
-        window.location.href = `?branch=${selectedBranch}`;
-    }
-
-    function toggleBranchForm() {
-        const branchForm = document.getElementById('branchForm');
-        branchForm.classList.toggle('hidden-form');
-    }
-
-    function toggleFiles(folderId) {
-        const fileList = document.getElementById(folderId);
-        fileList.style.display = fileList.style.display === "none" ? "block" : "none";
-    }
-</script>
 {% endblock %}

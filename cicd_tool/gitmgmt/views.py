@@ -6,13 +6,29 @@ from git import Repo
 
 REPO_BASE_PATH = 'D:/repos'
 
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Repository
+
 def repository_list(request):
     query = request.GET.get('q')
     if query:
         repositories = Repository.objects.filter(name__icontains=query)
     else:
         repositories = Repository.objects.all()
-    return render(request, 'gitmgmt/repository_list.html', {'repositories': repositories, 'query': query})
+    
+    favorites = repositories.filter(is_favorite=True)
+    
+    return render(request, 'gitmgmt/repository_list.html', {
+        'repositories': repositories,
+        'favorites': favorites
+    })
+
+def toggle_favorite(request, repository_id):
+    repository = get_object_or_404(Repository, id=repository_id)
+    if request.method == 'POST':
+        repository.is_favorite = not repository.is_favorite
+        repository.save()
+    return redirect('repository_list')
 
 def initialize_repository(name):
     repo_path = os.path.join(REPO_BASE_PATH, name)
@@ -48,10 +64,12 @@ from git import Repo
 
 IGNORE_FILES = ['.git']
 
+# views.py
+
 def repository_detail(request, repository_id):
     repository = get_object_or_404(Repository, id=repository_id)
     repo_path = os.path.join(REPO_BASE_PATH, repository.name)
-
+    
     try:
         repo = Repo(repo_path)
         branches = [branch.name for branch in repo.branches]
@@ -68,43 +86,22 @@ def repository_detail(request, repository_id):
                 relative_path = os.path.relpath(os.path.join(root, filename), repo_path)
                 files.append(relative_path)
 
-        commits = []
-        for commit in repo.iter_commits(current_branch):
-            commits.append({
-                'message': commit.message,
-                'author': commit.author.name,
-                'date': commit.committed_date,
-            })
+        last_commit = next(repo.iter_commits(), None)
+        last_commit_hash = last_commit.hexsha if last_commit else None
 
     except Exception as e:
         branches = []
         files = []
         current_branch = None
-        commits = []
+        last_commit_hash = None
         print(f"Error accessing repository: {e}")
-
-    if request.method == 'POST':
-        form = UploadFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            file = request.FILES['file']
-            file_path = os.path.join(repo_path, file.name)
-            with open(file_path, 'wb+') as destination:
-                for chunk in file.chunks():
-                    destination.write(chunk)
-            relative_file_path = os.path.relpath(file_path, repo_path)
-            repo.index.add([relative_file_path])
-            repo.index.commit(f"Added {file.name}")
-            return redirect('repository_detail', repository_id=repository.id)
-    else:
-        form = UploadFileForm()
 
     return render(request, 'gitmgmt/repository_detail.html', {
         'repository': repository,
         'branches': branches,
         'current_branch': current_branch,
         'files': files,
-        'commits': commits,
-        'form': form,
+        'last_commit_hash': last_commit_hash,
     })
 
 
@@ -125,25 +122,39 @@ def pull_request_detail(request, pull_request_id):
     pull_request = get_object_or_404(PullRequest, id=pull_request_id)
     return render(request, 'gitmgmt/pull_request_detail.html', {'pull_request': pull_request})
 
-def add_file(request, repository_id):
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Repository
+import os
+from git import Repo
+
+def upload_file(request, repository_id):
     repository = get_object_or_404(Repository, id=repository_id)
     repo_path = os.path.join(REPO_BASE_PATH, repository.name)
     repo = Repo(repo_path)
-    
-    if request.method == 'POST':
+
+    if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
         file_path = os.path.join(repo_path, file.name)
-        
+        commit_message = request.POST.get('commit_message', f"Added {file.name}")
+
+        # Write the uploaded file to the repository directory
         with open(file_path, 'wb+') as destination:
             for chunk in file.chunks():
                 destination.write(chunk)
-        
-        repo.index.add([file_path])
-        repo.index.commit(f"Added {file.name}")
-        
+
+        # Add the file to the Git index and commit
+        try:
+            relative_file_path = os.path.relpath(file_path, repo_path)
+            repo.index.add([relative_file_path])
+            repo.index.commit(commit_message)
+        except Exception as e:
+            # Handle any errors that occur during adding and committing the file
+            print(f"Error adding and committing file: {e}")
+            # Optionally, you can return an error response here
+
         return redirect('repository_detail', repository_id=repository.id)
-    
-    return render(request, 'gitmgmt/add_file.html', {'repository': repository})
+
+    return render(request, 'gitmgmt/upload_file.html', {'repository': repository})
 
 from django.http import HttpResponseBadRequest
 
@@ -165,3 +176,82 @@ def create_branch(request, repository_id):
             return HttpResponseBadRequest("Branch name is required.")
     else:
         return HttpResponseBadRequest("Invalid request method.")
+
+
+def view_logs(request, repository_id):
+    repository = get_object_or_404(Repository, id=repository_id)
+    repo_path = os.path.join(REPO_BASE_PATH, repository.name)
+    
+    try:
+        repo = Repo(repo_path)
+        logs = []
+        for log in repo.iter_commits():
+            logs.append({
+                'hash': log.hexsha,
+                'message': log.message,
+                'author': log.author.name,
+                'date': log.committed_datetime.strftime('%Y-%m-%d %H:%M:%S'),  # Better date formatting
+            })
+    except Exception as e:
+        logs = []
+        print(f"Error accessing logs: {e}")
+
+    return render(request, 'gitmgmt/view_logs.html', {
+        'repository': repository,
+        'logs': logs,
+    })
+
+# views.py
+
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Repository
+from git import Repo
+import os
+
+REPO_BASE_PATH = 'D:/repos'
+
+def edit_and_save_file(request, repository_id, file_path):
+    repository = get_object_or_404(Repository, id=repository_id)
+    repo_path = os.path.join(REPO_BASE_PATH, repository.name)
+    full_file_path = os.path.join(repo_path, file_path)
+
+    if request.method == 'GET':
+        # Read the content of the file
+        try:
+            with open(full_file_path, 'r') as file:
+                file_content = file.read()
+        except FileNotFoundError:
+            # Handle the case where the file does not exist
+            file_content = ""
+        
+        return render(request, 'gitmgmt/edit_and_save_file.html', {
+            'repository': repository,
+            'file_path': file_path,
+            'file_content': file_content,
+        })
+    
+    elif request.method == 'POST':
+        # Get the updated file content and commit message from the form
+        file_content = request.POST.get('code', '')
+        commit_message = request.POST.get('commit_message', '')
+
+        # Save the updated content to the file
+        try:
+            with open(full_file_path, 'w') as file:
+                file.write(file_content)
+        except FileNotFoundError:
+            # Handle the case where the file does not exist
+            pass
+
+        # Add the changes to the Git index and commit with the provided message
+        repo = Repo(repo_path)
+        try:
+            relative_file_path = os.path.relpath(full_file_path, repo_path)
+            repo.index.add([relative_file_path])
+            repo.index.commit(commit_message)
+        except Exception as e:
+            # Handle any errors that occur during adding and committing the file
+            print(f"Error adding and committing file: {e}")
+            # Optionally, you can return an error response here
+
+        return redirect('repository_detail', repository_id=repository.id)

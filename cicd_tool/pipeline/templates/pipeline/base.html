@@ -3,60 +3,130 @@
 <head>
     <title>ReleaseRocket</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
-            padding-top: 56px; /* Adjust based on your navbar height */
+            padding-left: 250px; /* Adjust based on your sidebar width */
+            transition: padding-left 0.3s;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: bold;
+        .sidebar {
+            height: 100%;
+            width: 210px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: #343a40;
+            padding-top: 20px;
+            overflow-x: hidden;
+            color: white;
+            transition: width 0.3s;
         }
-        .navbar-nav .nav-link {
+        .sidebar.collapsed {
+            width: 80px;
+        }
+        .sidebar a {
+            padding: 15px;
+            text-decoration: none;
             font-size: 1.1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            transition: color 0.3s, padding 0.3s;
+        }
+        .sidebar a .icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        .sidebar.collapsed a {
+            justify-content: center;
+            padding: 15px 0;
+        }
+        .sidebar.collapsed a .text {
+            display: none;
+        }
+        .sidebar a:hover {
+            background-color: #575d63;
+        }
+        .sidebar-toggler {
+            position: absolute;
+            top: 20px;
+            left: 250px;
+            border: none;
+            background: none;
+            color: white;
+            font-size: 1.5rem;
+            transition: left 0.3s;
+            cursor: pointer;
+        }
+        .sidebar-toggler.collapsed {
+            left: 80px;
         }
         .content {
             margin-top: 20px;
+            transition: margin-left 0.3s;
         }
         .footer {
             background-color: #f8f9fa;
             padding: 20px 0;
             text-align: center;
             position: fixed;
-            width: 100%;
+            width: calc(100% - 250px);
+            left: 250px;
             bottom: 0;
-            height: 20px;
+            transition: width 0.3s, left 0.3s;
+        }
+        .footer.collapsed {
+            width: calc(100% - 80px);
+            left: 80px;
+        }
+        .dark-mode {
+            background-color: black;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
-        <a class="navbar-brand" href="{% url 'dashboard' %}">ReleaseRocket</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
+    <div class="sidebar">
+        <button class="sidebar-toggler" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'agent_list' %}">Agents</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'global_credential_list' %}">Global Credentials</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'application_list' %}">Applications</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'create_yaml_pipeline' %}">Create YAML Pipeline</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'repository_list' %}">Repos</a>
-                </li>
-            </ul>
-        </div>
-    </nav>
+        <a href="{% url 'dashboard' %}">
+            <span class="text">ReleaseRocket</span>
+        </a>
+        <a href="{% url 'dashboard' %}">
+            <i class="fas fa-tachometer-alt icon"></i>
+            <span class="text">Dashboard</span>
+        </a>
+        <a href="{% url 'project_list' %}">
+            <i class="fas fa-project-diagram icon"></i>
+            <span class="text">Projects</span>
+        </a>
+        <a href="{% url 'agent_list' %}">
+            <i class="fas fa-users icon"></i>
+            <span class="text">Agents</span>
+        </a>
+        <a href="{% url 'global_credential_list' %}">
+            <i class="fas fa-key icon"></i>
+            <span class="text">Global Credentials</span>
+        </a>
+        <a href="{% url 'application_list' %}">
+            <i class="fas fa-cube icon"></i>
+            <span class="text">Applications</span>
+        </a>
+        <a href="{% url 'create_yaml_pipeline' %}">
+            <i class="fas fa-file-code icon"></i>
+            <span class="text">Create YAML Pipeline</span>
+        </a>
+        <a href="{% url 'repository_list' %}">
+            <i class="fas fa-code-branch icon"></i>
+            <span class="text">Repos</span>
+        </a>
+        <a href="#" onclick="toggleDarkMode()">
+            <i class="fas fa-adjust icon"></i>
+            <span class="text">Toggle Dark Mode</span>
+        </a>
+    </div>
     <div class="container">
         <div class="content">
             {% block content %}
@@ -71,5 +141,26 @@
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const content = document.querySelector('.content');
+            const footer = document.querySelector('.footer');
+            const sidebarToggler = document.querySelector('.sidebar-toggler');
+            
+            sidebar.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+            footer.classList.toggle('collapsed');
+            sidebarToggler.classList.toggle('collapsed');
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('dark-mode');
+            const footer = document.querySelector('.footer');
+            footer.classList.toggle('dark-mode');
+        }
+    </script>
 </body>
 </html>

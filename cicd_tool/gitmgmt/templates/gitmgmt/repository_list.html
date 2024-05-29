@@ -17,11 +17,18 @@
             margin-bottom: 20px;
         }
         .search-form input {
-            width: 100%;
+            width: 30%;
             padding: 8px;
             border-radius: 6px;
             border: 1px solid #e1e4e8;
             font-size: 16px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .column {
+            width: 48%;
         }
         ul {
             list-style: none;
@@ -38,29 +45,73 @@
         ul li a:hover {
             text-decoration: underline;
         }
+        .favorite-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #f0ad4e;
+            font-size: 16px;
+            padding: 0;
+            margin-left: 10px;
+        }
+        .favorite-button:hover {
+            color: #ec971f;
+        }
         .create-link {
             display: inline-block;
-            margin-top: 20px;
             padding: 8px 16px;
             background-color: #28a745;
             color: white;
             border-radius: 6px;
             text-decoration: none;
             font-weight: 600;
+            margin-bottom: 10px;
         }
         .create-link:hover {
             background-color: #218838;
         }
     </style>
     <h2>Repositories</h2>
-    <a href="{% url 'create_repository' %}" class="create-link">Create New Repository</a>
-    <form method="get" action="" class="search-form">
-        <input type="text" name="q" placeholder="Search repositories..." value="{{ request.GET.q }}">
-    </form>
-    <ul>
-        {% for repository in repositories %}
-            <li><a href="{% url 'repository_detail' repository.id %}">{{ repository.name }}</a></li>
-        {% endfor %}
-    </ul>
+    <div class="row">
+        <div class="column">
+            <a href="{% url 'create_repository' %}" class="create-link">Create New Repository</a>
+            <form method="get" action="" class="search-form">
+                <input type="text" name="q" placeholder="Search repositories..." value="{{ request.GET.q }}">
+            </form>
+            <ul>
+                {% for repository in repositories %}
+                    <li>
+                        <a href="{% url 'repository_detail' repository.id %}">{{ repository.name }}</a>
+                        <form method="post" action="{% url 'toggle_favorite' repository.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="favorite-button">
+                                {% if repository.is_favorite %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="column">
+            <h3>Favorites</h3>
+            <ul>
+                {% for repository in favorites %}
+                    <li class="favorite-repo">
+                        <a href="{% url 'repository_detail' repository.id %}">{{ repository.name }}</a>
+                        <form method="post" action="{% url 'toggle_favorite' repository.id %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="favorite-button">
+                                <i class="fas fa-star"></i>
+                            </button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
 </div>
 {% endblock %}
