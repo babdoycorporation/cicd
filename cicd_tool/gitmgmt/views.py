@@ -3,6 +3,7 @@ from .models import Repository, PullRequest
 from .forms import RepositoryForm, PullRequestForm
 import os
 from git import Repo
+from django.http import HttpResponse
 
 REPO_BASE_PATH = 'D:/repos'
 
@@ -32,8 +33,6 @@ def toggle_favorite(request, repository_id):
 
 import os
 from git import Repo
-from django.shortcuts import render, redirect, HttpResponse
-from .forms import RepositoryForm
 
 REPO_BASE_PATH = 'D:/repos'  # Update this to your repositories' base path
 
@@ -44,10 +43,22 @@ def initialize_repository(name):
     if not os.path.exists(repo_path):
         os.makedirs(repo_path)
     
-    # Initialize the repository as bare
-    repo = Repo.init(repo_path, bare=True)
+    # Initialize the repository as non-bare
+    repo = Repo.init(repo_path, bare=False)
+    
+    # Create an initial commit and a default branch
+    readme_path = os.path.join(repo_path, 'README.md')
+    with open(readme_path, 'w') as f:
+        f.write(f"# {name}\n")
+    
+    repo.index.add(['README.md'])
+    repo.index.commit('Initial commit')
+    
+    # Create the main branch
+    repo.git.branch('-M', 'main')
     
     return repo
+
 
 def create_repository(request):
     if request.method == 'POST':
@@ -125,14 +136,22 @@ IGNORE_FILES = ['.git']
 
 # views.py
 
+from django.shortcuts import render, get_object_or_404
+from .models import Repository
+from git import Repo
+import os
+
+IGNORE_FILES = ['.git']
+
 def repository_detail(request, repository_id):
     repository = get_object_or_404(Repository, id=repository_id)
-    repo_path = os.path.join(REPO_BASE_PATH, repository.name)
+    repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
     
     try:
         repo = Repo(repo_path)
         branches = [branch.name for branch in repo.branches]
-        current_branch = request.GET.get('branch', repo.active_branch.name)
+        current_branch = request.GET.get('branch', 'main')
+        
         repo.git.checkout(current_branch)
 
         files = []
@@ -149,11 +168,11 @@ def repository_detail(request, repository_id):
         last_commit_hash = last_commit.hexsha if last_commit else None
 
     except Exception as e:
+        print(f"Error accessing repository: {e}")
         branches = []
         files = []
         current_branch = None
         last_commit_hash = None
-        print(f"Error accessing repository: {e}")
 
     return render(request, 'gitmgmt/repository_detail.html', {
         'repository': repository,
@@ -162,7 +181,6 @@ def repository_detail(request, repository_id):
         'files': files,
         'last_commit_hash': last_commit_hash,
     })
-
 
 def create_pull_request(request, repository_id):
     repository = get_object_or_404(Repository, id=repository_id)
@@ -315,52 +333,60 @@ def edit_and_save_file(request, repository_id, file_path):
 
         return redirect('repository_detail', repository_id=repository.id)
 
+from django.views import View
+from django.http import StreamingHttpResponse, HttpResponseNotFound, HttpResponseServerError
 import os
 import subprocess
-from django.http import StreamingHttpResponse, Http404
-from django.views import View
 import logging
 
-REPO_BASE_PATH = 'D:/repos'  # Update this to your repositories' base path
+REPO_BASE_PATH = 'D:/repos'
 
 logger = logging.getLogger(__name__)
 
 class GitService(View):
-    def get(self, request, repo_name):
+
+    def get(self, request, repo_name, path=None):
         repo_path = os.path.join(REPO_BASE_PATH, f"{repo_name}.git")
-        logger.debug(f"Requested repository path: {repo_path}")
-        
-        if not os.path.isdir(repo_path):
+        if not os.path.exists(repo_path):
             logger.error(f"Repository not found: {repo_name}")
-            raise Http404("Repository not found")
-
+            return HttpResponseNotFound(f"Repository '{repo_name}' not found.")
+        
         service = request.GET.get('service')
-        logger.debug(f"Requested service: {service}")
-        
-        if not service:
-            logger.error("Service not specified")
-            raise Http404("Service not specified")
+        if service not in ['git-upload-pack', 'git-receive-pack']:
+            logger.error(f"Service not specified or not supported: {service}")
+            return HttpResponseNotFound("Service not specified or not supported.")
 
-        if service == 'git-upload-pack':
-            return self.handle_git_service(repo_path, 'git-upload-pack')
-        elif service == 'git-receive-pack':
-            return self.handle_git_service(repo_path, 'git-receive-pack')
-        else:
-            logger.error(f"Unsupported service: {service}")
-            raise Http404("Service not supported")
+        git_http_backend = 'git-http-backend'
+        # Ensure to provide the full path if it's not in the default PATH
+        # git_http_backend = 'C:/Program Files/Git/libexec/git-core/git-http-backend'  # Example path on Windows
 
-    def handle_git_service(self, repo_path, service_name):
-        git_cmd = [service_name, '--stateless-rpc', repo_path]
-        logger.debug(f"Executing git command: {' '.join(git_cmd)}")
-        
-        process = subprocess.Popen(git_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        git_cmd = [git_http_backend]
+        env = os.environ.copy()
+        env['GIT_PROJECT_ROOT'] = REPO_BASE_PATH
+        env['GIT_HTTP_EXPORT_ALL'] = '1'
+        env['REMOTE_USER'] = request.user.username if request.user.is_authenticated else 'anonymous'
+        env['PATH_INFO'] = f"/{repo_name}.git/{path or ''}"
+        env['QUERY_STRING'] = request.META.get('QUERY_STRING', '')
+        env['CONTENT_TYPE'] = request.META.get('CONTENT_TYPE', '')
 
-        def generate():
-            while True:
-                output = process.stdout.read(8192)
-                if not output:
-                    break
-                yield output
+        try:
+            process = subprocess.Popen(git_cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        content_type = f'application/x-{service_name}-advertisement' if service_name == 'git-upload-pack' else f'application/x-{service_name}-result'
-        return StreamingHttpResponse(generate(), content_type=content_type)
+            def generate():
+                while True:
+                    output = process.stdout.read(8192)
+                    if not output:
+                        break
+                    yield output
+
+            content_type = 'application/x-git-upload-pack-advertisement' if service == 'git-upload-pack' else 'application/x-git-receive-pack-result'
+            return StreamingHttpResponse(generate(), content_type=content_type)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error executing Git command: {e}")
+            return HttpResponseServerError(f"Error executing Git command: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            return HttpResponseServerError(f"Unexpected error: {e}")
+
+    def post(self, request, repo_name, path=None):
+        return self.get(request, repo_name, path)
