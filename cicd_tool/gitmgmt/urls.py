@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import GitService
 
 urlpatterns = [
     path('repositories/', views.repository_list, name='repository_list'),
@@ -12,4 +13,5 @@ urlpatterns = [
     path('<int:repository_id>/toggle_favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('repositories/<int:repository_id>/logs/', views.view_logs, name='view_logs'),
     path('edit_and_save_file/<int:repository_id>/<path:file_path>/', views.edit_and_save_file, name='edit_and_save_file'),
+    path('repos/<str:repo_name>.git/', GitService.as_view(), name='git_service'),
 ]

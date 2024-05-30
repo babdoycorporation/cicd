@@ -141,16 +141,6 @@
 </ul>
 
             </div>
-
-            <div class="section">
-                <h3>Commit History</h3>
-                {% for commit in commits %}
-                    <div class="commit">
-                        <div class="commit-message">{{ commit.message }}</div>
-                        <div class="commit-details">by {{ commit.author }} on {{ commit.date }}</div>
-                    </div>
-                {% endfor %}
-            </div>
         </div>
 
         <div class="sidebar">
