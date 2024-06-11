@@ -32,32 +32,33 @@ def toggle_favorite(request, repository_id):
     return redirect('repository_list')
 
 import os
-from git import Repo
+from git import Repo, GitCommandError
+from django.http import HttpResponse
+from .forms import RepositoryForm
+from django.shortcuts import render, redirect
+import os
+from git import Repo, GitCommandError
 
-REPO_BASE_PATH = 'D:/repos'  # Update this to your repositories' base path
+REPO_BASE_PATH = 'D:/Repos'  # Update this to your repositories' base path
 
 def initialize_repository(name):
     repo_path = os.path.join(REPO_BASE_PATH, f"{name}.git")
     
-    # Create the repository directory if it doesn't exist
-    if not os.path.exists(repo_path):
-        os.makedirs(repo_path)
+    try:
+        # Create the repository directory if it doesn't exist
+        if not os.path.exists(repo_path):
+            os.makedirs(repo_path)
+        
+        # Initialize the repository as bare
+        repo = Repo.init(repo_path, bare=True)
+        
+        # No need to create an initial commit or default branch for a bare repository
+        
+        return repo
     
-    # Initialize the repository as non-bare
-    repo = Repo.init(repo_path, bare=False)
-    
-    # Create an initial commit and a default branch
-    readme_path = os.path.join(repo_path, 'README.md')
-    with open(readme_path, 'w') as f:
-        f.write(f"# {name}\n")
-    
-    repo.index.add(['README.md'])
-    repo.index.commit('Initial commit')
-    
-    # Create the main branch
-    repo.git.branch('-M', 'main')
-    
-    return repo
+    except GitCommandError as e:
+        print(f"Error occurred: {e}")
+        return None
 
 
 def create_repository(request):
@@ -71,7 +72,7 @@ def create_repository(request):
             initialize_repository(repository.name)
             
             # Construct the clone URL
-            clone_url = request.build_absolute_uri(f'/repos/{repository.name}.git')
+            clone_url = request.build_absolute_uri(f'{repository.name}.git')
             
             return HttpResponse(f"Repository created. Clone it using: git clone {clone_url}")
     else:
@@ -132,9 +133,6 @@ from .forms import RepositoryForm, PullRequestForm, UploadFileForm
 import os
 from git import Repo
 
-IGNORE_FILES = ['.git']
-
-# views.py
 
 from django.shortcuts import render, get_object_or_404
 from .models import Repository
@@ -145,7 +143,7 @@ IGNORE_FILES = ['.git']
 
 def repository_detail(request, repository_id):
     repository = get_object_or_404(Repository, id=repository_id)
-    repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
+    repo_path = os.path.join(REPO_BASE_PATH, repository.name)
     
     try:
         repo = Repo(repo_path)
@@ -164,8 +162,10 @@ def repository_detail(request, repository_id):
                 relative_path = os.path.relpath(os.path.join(root, filename), repo_path)
                 files.append(relative_path)
 
-        last_commit = next(repo.iter_commits(), None)
-        last_commit_hash = last_commit.hexsha if last_commit else None
+        # Get the last commit
+        last_commit = repo.head.commit
+        last_commit_hash = last_commit.hexsha
+        last_commit_message = last_commit.message
 
     except Exception as e:
         print(f"Error accessing repository: {e}")
@@ -173,6 +173,7 @@ def repository_detail(request, repository_id):
         files = []
         current_branch = None
         last_commit_hash = None
+        last_commit_message = None
 
     return render(request, 'gitmgmt/repository_detail.html', {
         'repository': repository,
@@ -180,7 +181,9 @@ def repository_detail(request, repository_id):
         'current_branch': current_branch,
         'files': files,
         'last_commit_hash': last_commit_hash,
+        'last_commit_message': last_commit_message,
     })
+
 
 def create_pull_request(request, repository_id):
     repository = get_object_or_404(Repository, id=repository_id)
@@ -225,28 +228,41 @@ def upload_file(request, repository_id):
             repo.index.add([relative_file_path])
             repo.index.commit(commit_message)
         except Exception as e:
-            # Handle any errors that occur during adding and committing the file
             print(f"Error adding and committing file: {e}")
-            # Optionally, you can return an error response here
 
         return redirect('repository_detail', repository_id=repository.id)
 
     return render(request, 'gitmgmt/upload_file.html', {'repository': repository})
 
+
 from django.http import HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, redirect
+from git import Repo, NoSuchPathError
+import os
 
 def create_branch(request, repository_id):
     if request.method == 'POST':
         branch_name = request.POST.get('branch_name')
         if branch_name:
             repository = get_object_or_404(Repository, id=repository_id)
-            repo_path = os.path.join(REPO_BASE_PATH, repository.name)
-            repo = Repo(repo_path)
+            repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}")
+            
+            # Debugging output
+            print("Repository path:", repo_path)
             
             try:
+                # Check if the repository exists
+                if not os.path.exists(repo_path):
+                    return HttpResponseBadRequest("Repository does not exist.")
+
+                # Initialize the repository
+                repo = Repo(repo_path)
+                
                 # Create new branch
                 repo.git.checkout(b=branch_name)
                 return redirect('repository_detail', repository_id=repository.id)
+            except NoSuchPathError:
+                return HttpResponseBadRequest("Invalid repository path.")
             except Exception as e:
                 return HttpResponseBadRequest(f"Failed to create branch: {e}")
         else:
@@ -339,12 +355,9 @@ import os
 import subprocess
 import logging
 
-REPO_BASE_PATH = 'D:/repos'
-
 logger = logging.getLogger(__name__)
 
 class GitService(View):
-
     def get(self, request, repo_name, path=None):
         repo_path = os.path.join(REPO_BASE_PATH, f"{repo_name}.git")
         if not os.path.exists(repo_path):
@@ -356,11 +369,10 @@ class GitService(View):
             logger.error(f"Service not specified or not supported: {service}")
             return HttpResponseNotFound("Service not specified or not supported.")
 
-        git_http_backend = 'git-http-backend'
-        # Ensure to provide the full path if it's not in the default PATH
-        # git_http_backend = 'C:/Program Files/Git/libexec/git-core/git-http-backend'  # Example path on Windows
+        git_receive_pack = 'C:/Program Files/Git/mingw64/libexec/git-core/git-receive-pack.exe'
+        git_upload_pack = 'C:/Program Files/Git/mingw64/libexec/git-core/git-upload-pack.exe'
 
-        git_cmd = [git_http_backend]
+        git_cmd = [git_receive_pack if service == 'git-receive-pack' else git_upload_pack]
         env = os.environ.copy()
         env['GIT_PROJECT_ROOT'] = REPO_BASE_PATH
         env['GIT_HTTP_EXPORT_ALL'] = '1'
@@ -390,3 +402,4 @@ class GitService(View):
 
     def post(self, request, repo_name, path=None):
         return self.get(request, repo_name, path)
+
