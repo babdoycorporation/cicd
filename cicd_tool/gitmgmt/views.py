@@ -4,6 +4,9 @@ from .forms import RepositoryForm, PullRequestForm
 import os
 from git import Repo
 from django.http import HttpResponse
+import logging
+
+logger = logging.getLogger(__name__)
 
 REPO_BASE_PATH = 'D:/repos'
 
@@ -300,6 +303,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Repository
 from git import Repo
 import os
+import subprocess
+
 
 REPO_BASE_PATH = 'D:/repos'
 
@@ -351,55 +356,79 @@ def edit_and_save_file(request, repository_id, file_path):
 
 from django.views import View
 from django.http import StreamingHttpResponse, HttpResponseNotFound, HttpResponseServerError
-import os
-import subprocess
+from git import Repo, GitError
 import logging
 
-logger = logging.getLogger(__name__)
+# Ensure this is set to the base path where your Git repositories are stored
+REPO_BASE_PATH = 'D:/repos'
 
 class GitService(View):
     def get(self, request, repo_name, path=None):
         repo_path = os.path.join(REPO_BASE_PATH, f"{repo_name}.git")
         if not os.path.exists(repo_path):
-            logger.error(f"Repository not found: {repo_name}")
             return HttpResponseNotFound(f"Repository '{repo_name}' not found.")
-        
+
         service = request.GET.get('service')
         if service not in ['git-upload-pack', 'git-receive-pack']:
-            logger.error(f"Service not specified or not supported: {service}")
             return HttpResponseNotFound("Service not specified or not supported.")
 
-        git_receive_pack = 'C:/Program Files/Git/mingw64/libexec/git-core/git-receive-pack.exe'
-        git_upload_pack = 'C:/Program Files/Git/mingw64/libexec/git-core/git-upload-pack.exe'
-
-        git_cmd = [git_receive_pack if service == 'git-receive-pack' else git_upload_pack]
-        env = os.environ.copy()
-        env['GIT_PROJECT_ROOT'] = REPO_BASE_PATH
-        env['GIT_HTTP_EXPORT_ALL'] = '1'
-        env['REMOTE_USER'] = request.user.username if request.user.is_authenticated else 'anonymous'
-        env['PATH_INFO'] = f"/{repo_name}.git/{path or ''}"
-        env['QUERY_STRING'] = request.META.get('QUERY_STRING', '')
-        env['CONTENT_TYPE'] = request.META.get('CONTENT_TYPE', '')
-
         try:
-            process = subprocess.Popen(git_cmd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            repo = Repo(repo_path)
+
+            if service == 'git-upload-pack':
+                proc = repo.git.fetch_pack()
+            elif service == 'git-receive-pack':
+                proc = repo.git.receive_pack()
+            else:
+                raise ValueError("Unsupported service")
 
             def generate():
                 while True:
-                    output = process.stdout.read(8192)
+                    output = proc.stdout.read(8192)
                     if not output:
                         break
                     yield output
 
             content_type = 'application/x-git-upload-pack-advertisement' if service == 'git-upload-pack' else 'application/x-git-receive-pack-result'
             return StreamingHttpResponse(generate(), content_type=content_type)
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Error executing Git command: {e}")
-            return HttpResponseServerError(f"Error executing Git command: {e}")
+        except (GitError, PermissionError) as e:
+            logger.error(f"Error performing Git operation: {e}")
+            return HttpResponseServerError(f"Error performing Git operation: {e}")
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return HttpResponseServerError(f"Unexpected error: {e}")
 
     def post(self, request, repo_name, path=None):
-        return self.get(request, repo_name, path)
+        repo_path = os.path.join(REPO_BASE_PATH, f"{repo_name}.git")
+        if not os.path.exists(repo_path):
+            return HttpResponseNotFound(f"Repository '{repo_name}' not found.")
 
+        service = request.GET.get('service')
+        if service != 'git-receive-pack':
+            return HttpResponseNotFound("Service not specified or not supported.")
+
+        try:
+            repo = Repo(repo_path)
+
+            # Process Git push operation
+            if service == 'git-receive-pack':
+                # Receive data from the request
+                data = request.body
+
+                # Use GitPython's Repo.git.receive_pack to process the data
+                proc = repo.git.receive_pack(stdin=subprocess.PIPE)
+                result = proc.communicate()
+
+                # Check the result for errors
+                if proc.returncode != 0:
+                    logger.error(f"Error receiving Git data: {result[1].decode()}")
+                    return HttpResponseServerError(f"Error receiving Git data: {result[1].decode()}")
+
+                # Success response (replace with more specific logic if needed)
+                return HttpResponse('Push received successfully')
+        except (GitError, PermissionError) as e:
+            logger.error(f"Error performing Git operation: {e}")
+            return HttpResponseServerError(f"Error performing Git operation: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            return HttpResponseServerError(f"Unexpected error: {e}")

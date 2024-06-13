@@ -41,6 +41,11 @@ INSTALLED_APPS = [
     'gitmgmt',
 ]
 
+
+CSRF_EXEMPT_URLS = [
+    r'/gitmgmt/repos/testproject2.git/*',
+]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
