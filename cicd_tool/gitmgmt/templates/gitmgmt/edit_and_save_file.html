@@ -79,23 +79,22 @@
 </head>
 <body>
 
-<div class="container">
-    <h1>Edit and Save File</h1>
-    <!-- Commit message input -->
-    <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="repository_id" value="{{ repository.id }}">
-        <input type="hidden" name="file_path" value="{{ file_path }}">
-
-        <!-- CodeMirror text area for editing code -->
-        <textarea id="code" name="code">{{ file_content }}</textarea>
-
-        <label for="commit_message">Commit Message:</label>
-        <input type="text" id="commit_message" name="commit_message" value="">
-        <button type="submit">Save Changes</button>
-    </form>
-</div>
-
+    <div class="container">
+        <h1>Edit and Save File</h1>
+        <!-- Commit message input -->
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="repository_id" value="{{ repository.id }}">
+            <input type="hidden" name="file_path" value="{{ file_path }}">
+    
+            <!-- CodeMirror text area for editing code -->
+            <textarea id="code" name="code">{{ file_content|escapejs }}</textarea>
+    
+            <label for="commit_message">Commit Message:</label>
+            <input type="text" id="commit_message" name="commit_message" value="">
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
 <!-- Include CodeMirror JavaScript -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/codemirror.min.js"></script>
 <!-- Include required CodeMirror mode (e.g., for Python) -->

@@ -1,18 +1,29 @@
-from django.urls import path
+from django.urls import path, re_path
 from . import views
 from .views import GitService
 
 urlpatterns = [
+    # Repository management
     path('repositories/', views.repository_list, name='repository_list'),
     path('repositories/create/', views.create_repository, name='create_repository'),
     path('repositories/<int:repository_id>/', views.repository_detail, name='repository_detail'),
+    path('repositories/<int:repository_id>/toggle_favorite/', views.toggle_favorite, name='toggle_favorite'),
+    path('repositories/<int:repository_id>/logs/', views.view_logs, name='view_logs'),
+
+    # File management
+    path('repositories/<int:repository_id>/upload/', views.upload_file, name='upload_file'),
+    path('repositories/<int:repository_id>/edit/<path:file_path>/', views.edit_and_save_file, name='edit_and_save_file'),
+
+    # Branch management
+    path('repositories/<int:repository_id>/create-branch/', views.create_branch, name='create_branch'),
+
+    # Pull request management
     path('repositories/<int:repository_id>/pull_request/create/', views.create_pull_request, name='create_pull_request'),
     path('pull_requests/<int:pull_request_id>/', views.pull_request_detail, name='pull_request_detail'),
-    path('repositories/<int:repository_id>/upload/', views.upload_file, name='upload_file'),
-    path('repositories/<int:repository_id>/create-branch/', views.create_branch, name='create_branch'),
-    path('<int:repository_id>/toggle_favorite/', views.toggle_favorite, name='toggle_favorite'),
-    path('repositories/<int:repository_id>/logs/', views.view_logs, name='view_logs'),
-    path('edit_and_save_file/<int:repository_id>/<path:file_path>/', views.edit_and_save_file, name='edit_and_save_file'),
-    path('repos/<str:repo_name>.git/<path:path>', GitService.as_view(), name='git_service_with_path'),
-    path('repos/<str:repo_name>.git/', GitService.as_view(), name='git_service'),
+
+    # Git-specific URLs
+    re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/info/refs$', GitService.as_view(), name='git_info_refs'),
+    re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/(?P<path>git-upload-pack)$', GitService.as_view(), name='git_upload_pack'),
+    re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/(?P<path>git-receive-pack)$', GitService.as_view(), name='git_receive_pack'),
+    re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/(?P<path>.+)$', GitService.as_view(), name='git_static_files'),
 ]
