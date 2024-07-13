@@ -14,6 +14,7 @@ BASE_REPO_DIR = 'D:/cicd/'  # Set this to your repository base directory
 from django.shortcuts import render
 from django.views import View
 from .models import Project, Application, Pipeline, PipelineRun, Agent
+from gitmgmt.models import Repository
 
 class DashboardView(View):
     def get(self, request):
@@ -24,6 +25,7 @@ class DashboardView(View):
         total_agents = Agent.objects.count()
         successful_runs = PipelineRun.objects.filter(status='success').count()
         failed_runs = PipelineRun.objects.filter(status='failed').count()
+        total_repos = Repository.objects.count()
 
         # Fetch latest pipeline runs
         latest_pipeline_runs = PipelineRun.objects.all().order_by('-started_at')[:5]
@@ -37,6 +39,7 @@ class DashboardView(View):
             'successful_runs': successful_runs,
             'failed_runs': failed_runs,
             'latest_pipeline_runs': latest_pipeline_runs,
+            'total_repos': total_repos
         }
 
         return render(request, 'pipeline/dashboard.html', context)

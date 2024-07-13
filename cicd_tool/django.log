@@ -11782,3 +11782,61 @@ Successfully retrieved 6 logs for repository testproject3
 Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject3.git, stdin=<valid stream>, shell=False, universal_newlines=False)
 Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject3.git, stdin=<valid stream>, shell=False, universal_newlines=False)
 Agent LAPTOP-7CPI1OEH marked as offline.
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
