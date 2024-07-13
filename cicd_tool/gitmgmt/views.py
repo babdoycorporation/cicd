@@ -285,52 +285,114 @@ def view_logs(request, repository_id):
     return render(request, 'gitmgmt/view_logs.html', context)
 # views.py
 
+import json
+import os
+import tempfile
+import subprocess
+from django.shortcuts import get_object_or_404, render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Repository
+import logging
+
+logger = logging.getLogger(__name__)
+
+REPO_BASE_PATH = 'D:/repos'  # Update this to your repository base path
+
+@csrf_exempt
 def edit_and_save_file(request, repository_id, file_path):
     repository = get_object_or_404(Repository, id=repository_id)
     repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
-    full_file_path = os.path.join(repo_path, file_path)
+
+    def get_file_content(repo_path, file_path):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_repo_path = os.path.join(temp_dir, repository.name)
+            clone_command = ['git', 'clone', repo_path, temp_repo_path]
+            subprocess.run(clone_command, check=True, capture_output=True, text=True)
+
+            branch_command = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
+            branch_result = subprocess.run(branch_command, cwd=temp_repo_path, capture_output=True, text=True, check=True)
+            current_branch = branch_result.stdout.strip()
+
+            temp_file_path = os.path.join(temp_repo_path, file_path.replace('\\', '/'))
+            with open(temp_file_path, 'r', encoding='utf-8') as file:
+                return file.read(), current_branch
 
     if request.method == 'GET':
-        # Read the content of the file
         try:
-            with open(full_file_path, 'r') as file:
-                file_content = file.read()
-        except FileNotFoundError:
-            # Handle the case where the file does not exist
-            file_content = ""
-        
-        # Replace backslashes with forward slashes in the file path
-        file_path = file_path.replace('\\', '/')
+            file_content, current_branch = get_file_content(repo_path, file_path)
+        except Exception as e:
+            logger.error(f"Error reading file: {str(e)}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
 
         return render(request, 'gitmgmt/edit_and_save_file.html', {
             'repository': repository,
             'file_path': file_path,
             'file_content': file_content,
+            'current_branch': current_branch,
         })
-    
+
     elif request.method == 'POST':
-        # Get the updated file content and commit message from the form
-        file_content = request.POST.get('code', '')
-        commit_message = request.POST.get('commit_message', '')
+        try:
+            data = json.loads(request.body)
+            file_content = data.get('code', '')
+            commit_message = data.get('commit_message', '')
+            current_branch = data.get('branch', '')
 
-        # Clone the repository to a temporary directory
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_repo_path = os.path.join(temp_dir, repository.name)
-            Repo.clone_from(repo_path, temp_repo_path)
-            
-            # Update the file content in the temporary repository
-            temp_file_path = os.path.join(temp_repo_path, file_path)
-            with open(temp_file_path, 'w') as file:
-                file.write(file_content)
-            
-            # Stage the changes, commit, and push to the remote repository
-            repo = Repo(temp_repo_path)
-            repo.index.add([file_path])
-            repo.index.commit(commit_message)
-            origin = repo.remote(name='origin')
-            origin.push()
+            if not commit_message:
+                return JsonResponse({'status': 'error', 'error': 'Commit message is required'}, status=400)
 
-        return redirect('repository_detail', repository_id=repository.id)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_repo_path = os.path.join(temp_dir, repository.name)
+                
+                # Clone the repository
+                clone_command = ['git', 'clone', repo_path, temp_repo_path]
+                subprocess.run(clone_command, check=True, capture_output=True, text=True)
+
+                # Checkout the current branch
+                checkout_command = ['git', 'checkout', current_branch]
+                subprocess.run(checkout_command, cwd=temp_repo_path, check=True, capture_output=True, text=True)
+
+                # Write the new content to the file
+                temp_file_path = os.path.join(temp_repo_path, file_path.replace('\\', '/'))
+                os.makedirs(os.path.dirname(temp_file_path), exist_ok=True)
+                with open(temp_file_path, 'w', encoding='utf-8') as file:
+                    file.write(file_content)
+
+                # Configure Git
+                subprocess.run(['git', 'config', 'user.email', "user@example.com"], cwd=temp_repo_path, check=True)
+                subprocess.run(['git', 'config', 'user.name', "User"], cwd=temp_repo_path, check=True)
+
+                # Stage the changes
+                add_command = ['git', 'add', file_path.replace('\\', '/')]
+                subprocess.run(add_command, cwd=temp_repo_path, check=True, capture_output=True, text=True)
+
+                # Commit the changes
+                commit_command = ['git', 'commit', '-m', commit_message]
+                commit_result = subprocess.run(commit_command, cwd=temp_repo_path, capture_output=True, text=True)
+                
+                if commit_result.returncode != 0:
+                    logger.error(f"Commit failed: {commit_result.stderr}")
+                    return JsonResponse({'status': 'error', 'error': f"Commit failed: {commit_result.stderr}"}, status=500)
+
+                # Push the changes
+                push_command = ['git', 'push', 'origin', f'{current_branch}:{current_branch}']
+                push_result = subprocess.run(push_command, cwd=temp_repo_path, capture_output=True, text=True)
+                
+                if push_result.returncode != 0:
+                    logger.error(f"Push failed: {push_result.stderr}")
+                    return JsonResponse({'status': 'error', 'error': f"Push failed: {push_result.stderr}"}, status=500)
+
+                # Get the updated file content
+                updated_file_content, _ = get_file_content(repo_path, file_path)
+
+            return JsonResponse({'status': 'success', 'updated_content': updated_file_content})
+
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'error': 'Invalid request method'}, status=405)
     
 import logging
 import os

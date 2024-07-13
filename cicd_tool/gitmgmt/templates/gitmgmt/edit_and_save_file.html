@@ -1,122 +1,191 @@
 {% extends 'pipeline/base.html' %}
 {% block content %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Edit and Save File</title>
-    <!-- Include CodeMirror stylesheet -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/codemirror.min.css">
-    <!-- Include CodeMirror themes if needed -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/theme/monokai.min.css">
-    <!-- Include custom CSS for layout and styling -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit File - {{ file_path }}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
 
         .container {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            margin: 0 auto;
             padding: 20px;
-            max-width: 800px;
-            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
         h1 {
-            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .branch-info {
+            font-size: 14px;
+            color: #586069;
+        }
+
+        .editor-container {
+            background-color: #fff;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            overflow: hidden;
             margin-bottom: 20px;
         }
 
-        form {
-            display: flex;
-            flex-direction: column;
+        #editor {
+            height: 500px;
         }
 
-        textarea {
-            width: 100%;
-            height: 400px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        .commit-section {
+            background-color: #fff;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 20px;
         }
 
         label {
-            margin-bottom: 10px;
-            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
         }
 
         input[type="text"] {
             width: 100%;
             padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 16px;
         }
 
         button {
-            padding: 10px 20px;
+            padding: 10px 16px;
             border: none;
-            border-radius: 4px;
-            background-color: #28a745;
+            border-radius: 6px;
+            background-color: #2ea44f;
             color: white;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            align-self: center;
+            transition: background-color 0.2s;
         }
 
         button:hover {
-            background-color: #218838;
+            background-color: #2c974b;
+        }
+
+        .alert {
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background-color: #dcffe4;
+            border: 1px solid #bef5cb;
+            color: #165c26;
+        }
+
+        .alert-error {
+            background-color: #ffeef0;
+            border: 1px solid #ffdce0;
+            color: #86181d;
         }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h1>Edit and Save File</h1>
-        <!-- Commit message input -->
-        <form method="post">
-            {% csrf_token %}
-            <input type="hidden" name="repository_id" value="{{ repository.id }}">
-            <input type="hidden" name="file_path" value="{{ file_path }}">
-    
-            <!-- CodeMirror text area for editing code -->
-            <textarea id="code" name="code">{{ file_content|escapejs }}</textarea>
-    
+        <div class="header">
+            <h1>Editing: {{ file_path }}</h1>
+            <div class="branch-info">
+                Current Branch: <span id="current-branch">{{ current_branch }}</span>
+            </div>
+        </div>
+
+        <div id="alert" style="display: none;"></div>
+
+        <div class="editor-container">
+            <div id="editor"></div>
+        </div>
+
+        <div class="commit-section">
+            <input type="hidden" id="repository-id" value="{{ repository.id }}">
+            <input type="hidden" id="file-path" value="{{ file_path }}">
+
             <label for="commit_message">Commit Message:</label>
-            <input type="text" id="commit_message" name="commit_message" value="">
-            <button type="submit">Save Changes</button>
-        </form>
+            <input type="text" id="commit_message" name="commit_message" placeholder="Enter a commit message">
+
+            <button type="button" id="save-btn">Commit changes</button>
+        </div>
     </div>
-<!-- Include CodeMirror JavaScript -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/codemirror.min.js"></script>
-<!-- Include required CodeMirror mode (e.g., for Python) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/mode/python/python.min.js"></script>
 
-<!-- Include CodeMirror add-ons -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/addon/edit/matchbrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/addon/edit/closebrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.1/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            var editor = monaco.editor.create(document.getElementById('editor'), {
+                value: `{{ file_content|safe }}`,
+                language: 'python', // Change this based on the file type
+                theme: 'vs-dark',
+                automaticLayout: true
+            });
 
-<script>
-    // Initialize CodeMirror instance
-    var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-        lineNumbers: true,
-        mode: "python", // Change this to the appropriate language mode
-        theme: "monokai",
-        matchBrackets: true,
-        autoCloseBrackets: true,
-        styleActiveLine: true
-    });
-</script>
+            document.getElementById('save-btn').addEventListener('click', function() {
+                var repositoryId = document.getElementById('repository-id').value;
+                var filePath = document.getElementById('file-path').value;
+                var fileContent = editor.getValue();
+                var commitMessage = document.getElementById('commit_message').value;
+                var currentBranch = document.getElementById('current-branch').textContent;
 
+                fetch(`/gitmgmt/repositories/${repositoryId}/edit/${filePath}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        code: fileContent,
+                        commit_message: commitMessage,
+                        branch: currentBranch
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showAlert('File saved successfully', 'success');
+                        // Update the editor content with the latest version from the server
+                        editor.setValue(data.updated_content);
+                    } else {
+                        showAlert('Failed to save file: ' + data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('An error occurred while saving the file', 'error');
+                });
+            });
+
+            function showAlert(message, type) {
+                var alertElement = document.getElementById('alert');
+                alertElement.textContent = message;
+                alertElement.className = 'alert alert-' + type;
+                alertElement.style.display = 'block';
+
+                setTimeout(function() {
+                    alertElement.style.display = 'none';
+                }, 5000);
+            }
+        });
+    </script>
 </body>
 </html>
 {% endblock %}
