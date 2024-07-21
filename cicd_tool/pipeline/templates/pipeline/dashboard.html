@@ -72,7 +72,15 @@
                     <h3>Latest Pipeline Runs</h3>
                     <ul>
                         {% for pipeline_run in latest_pipeline_runs %}
-                            <li><a href="{% url 'pipeline_detail' pipeline_run.id %}">{{ pipeline_run }}</a></li>
+                            <li>
+                                <a href="{% url 'pipeline_run_detail' pipeline_run.run_id %}">
+                                    {{ pipeline_run.pipeline.name }} - Run ID: {{ pipeline_run.run_id|truncatechars:8 }}
+                                </a>
+                                <span class="status {{ pipeline_run.status }}">{{ pipeline_run.status }}</span>
+                                <span class="timestamp">{{ pipeline_run.started_at|date:"Y-m-d H:i:s" }}</span>
+                            </li>
+                        {% empty %}
+                            <li>No pipeline runs available.</li>
                         {% endfor %}
                     </ul>
                 </div>

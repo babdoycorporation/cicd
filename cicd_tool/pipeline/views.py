@@ -1,3 +1,4 @@
+from audioop import reverse
 import os
 import subprocess
 import git
@@ -27,8 +28,8 @@ class DashboardView(View):
         failed_runs = PipelineRun.objects.filter(status='failed').count()
         total_repos = Repository.objects.count()
 
-        # Fetch latest pipeline runs
-        latest_pipeline_runs = PipelineRun.objects.all().order_by('-started_at')[:5]
+        # Fetch latest pipeline runs with related pipeline information
+        latest_pipeline_runs = PipelineRun.objects.select_related('pipeline').order_by('-started_at')[:5]
 
         context = {
             'total_projects': total_projects,
@@ -345,75 +346,112 @@ def pipeline_detail(request, pipeline_id):
     return render(request, 'pipeline/pipeline_detail.html', context)
 
 
-from django.http import StreamingHttpResponse, HttpResponse
+import logging
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
+from django.http import StreamingHttpResponse
+from django.urls import reverse
+from .models import Pipeline, PipelineRun, Agent
+from .utils import execute_step, get_available_agent, prepare_credentials
 import json
+from django.utils import timezone
 
-from .models import Pipeline, PipelineStep, PipelineRun
-from .utils import execute_step, get_available_agent  # Assuming execute_step is in utils
-
-import subprocess
+logger = logging.getLogger(__name__)
 
 def run_pipeline(request, pipeline_id):
     pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+    project = pipeline.project
+
+    logger.info(f"Starting pipeline run for pipeline {pipeline_id}")
 
     try:
         agent = get_available_agent()
     except ValueError as e:
-        return HttpResponse(str(e), status=503)
+        logger.error(f"No available agent: {str(e)}")
+        return StreamingHttpResponse(f"data: {json.dumps({'error': str(e)})}\n\n", content_type='text/event-stream')
 
     agent.live = False  # Mark agent as busy
     agent.save()
 
-    steps = PipelineStep.objects.filter(pipeline=pipeline).order_by('id')
-    logs = {}
+    steps = pipeline.pipelinestep_set.all().order_by('id')
+    logger.info(f"Retrieved {steps.count()} steps for pipeline {pipeline_id}")
+
     overall_status = 'success'  # Assume success initially
 
-    if not steps:
-        return HttpResponse("No steps defined for this pipeline.", status=400)
-
     pipeline_run = PipelineRun.objects.create(pipeline=pipeline, agent=agent, status='running')
+    logger.info(f"Created pipeline run with ID {pipeline_run.id}")
 
-    def stream_logs():
-        nonlocal overall_status  # Use nonlocal to modify outer variable
-        try:
-            for step in steps:
-                yield f"data: Executing step: {step.name}\n\n"
-                try:
-                    result = execute_step(step, pipeline_run.run_id)  # Pass run_id to execute_step
-                    exit_code = result.returncode
-                    output = result.stdout
-                    logs[step.name] = output
-                    for line in output.splitlines():
-                        yield f"data: {line}\n\n"
-                    yield f"data: Step {step.name} completed with exit code: {exit_code}\n\n"
-                    if exit_code != 0:
-                        overall_status = 'failed'
-                except subprocess.CalledProcessError as e:
+    credentials = prepare_credentials(project)
+
+    def event_stream():
+        nonlocal overall_status
+        logger.debug("Starting event stream")
+        yield f"data: {json.dumps({'event': 'start', 'pipeline_id': pipeline.id, 'run_id': str(pipeline_run.run_id)})}\n\n"
+        
+        for step in steps:
+            logger.debug(f"Starting step: {step.name}")
+            yield f"data: {json.dumps({'event': 'step_start', 'step': step.name})}\n\n"
+            try:
+                result = execute_step(step, pipeline_run.run_id, credentials)
+                logger.debug(f"Step {step.name} completed with exit code: {result.returncode}")
+                for line in result.stdout.splitlines():
+                    logger.debug(f"Step {step.name} output: {line}")
+                    yield f"data: {json.dumps({'event': 'log', 'step': step.name, 'message': line})}\n\n"
+                
+                status = 'success' if result.returncode == 0 else 'failed'
+                yield f"data: {json.dumps({'event': 'step_end', 'step': step.name, 'status': status})}\n\n"
+                
+                if result.returncode != 0:
                     overall_status = 'failed'
-                    logs[step.name] = str(e)
-                    yield f"data: Step {step.name} failed with error: {e}\n\n"
-        except Exception as e:
-            overall_status = 'failed'
-            logs['pipeline_run_error'] = f"Pipeline run failed: {e}"
-            yield f"data: Pipeline run failed: {e}\n\n"
-        finally:
-            pipeline_run.status = overall_status  # Set overall status
-            pipeline_run.finished_at = timezone.now()
-            pipeline_run.log = json.dumps(logs)
-            pipeline_run.save()
-            agent.live = True  # Mark agent as idle
-            agent.last_heartbeat = timezone.now()
-            agent.save()
-            yield f"data: Pipeline run finished\n\n"
+                    break
+            except Exception as e:
+                logger.error(f"Error in step {step.name}: {str(e)}")
+                overall_status = 'failed'
+                yield f"data: {json.dumps({'event': 'error', 'step': step.name, 'message': str(e)})}\n\n"
+                break
 
-    response = StreamingHttpResponse(stream_logs(), content_type='text/event-stream')
-    response['Cache-Control'] = 'no-cache'
-    return response
+        logger.debug(f"Pipeline run completed with status: {overall_status}")
+        pipeline_run.status = overall_status
+        pipeline_run.finished_at = timezone.now()
+        pipeline_run.save()
+        agent.live = True  # Mark agent as idle
+        agent.last_heartbeat = timezone.now()
+        agent.save()
+
+        redirect_url = reverse('pipeline_run_detail', args=[str(pipeline_run.run_id)])
+        yield f"data: {json.dumps({'event': 'end', 'overall_status': overall_status, 'redirect_url': redirect_url})}\n\n"
+
+    return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
 
+import json
+from django.shortcuts import render, get_object_or_404
+from .models import PipelineRun
 
+def pipeline_run_detail(request, run_id):
+    pipeline_run = get_object_or_404(PipelineRun, run_id=run_id)
+    
+    # Process the log data
+    try:
+        log_data = json.loads(pipeline_run.log) if pipeline_run.log else {}
+    except json.JSONDecodeError:
+        log_data = {"Error": "Unable to parse log data"}
+
+    # If log_data is a string, wrap it in a dict
+    if isinstance(log_data, str):
+        log_data = {"Log": log_data}
+
+    # Ensure log_data is a dict
+    if not isinstance(log_data, dict):
+        log_data = {"Error": "Log data is in an unexpected format"}
+
+    context = {
+        'pipeline_run': pipeline_run,
+    }
+
+    # Add the processed log data to the pipeline_run object
+    pipeline_run.log = log_data
+
+    return render(request, 'pipeline/pipeline_run_detail.html', context)
 # views.py
 from django.shortcuts import render
 from django.http import JsonResponse

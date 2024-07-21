@@ -17,44 +17,88 @@ def get_repository_files(project):
 import os
 import subprocess
 import git
+from git import Repo
+import logging
+from .models import GlobalCredential, LocalCredential, Agent
 
-import os
-import uuid
+logger = logging.getLogger(__name__)
 
-def execute_step(step, run_id):
-    command = step.command.strip()  # Remove leading/trailing whitespace
+def execute_step(step, run_id, credentials):
+    logger.debug(f"Executing step: {step.name}, command: {step.command}")
+    command = step.command.strip()
+    run_dir = os.path.join('D:/cicd/runs/', str(run_id))
+    os.makedirs(run_dir, exist_ok=True)
+    os.chdir(run_dir)
 
-    try:
-        run_dir = os.path.join('D:/cicd/runs/', str(run_id))  # Path for the pipeline run directory
-        os.makedirs(run_dir, exist_ok=True)  # Create the directory if it doesn't exist
+    env = os.environ.copy()
+    if credentials:
+        env.update(credentials)
 
-        os.chdir(run_dir)  # Change directory to the pipeline run directory
+    if command.startswith('git clone'):
+        repo_url = command.split()[-1]
+        repo_name = repo_url.split('/')[-1].replace('.git', '')
+        repo_dir = os.path.join(run_dir, repo_name)
 
-        if command.startswith('git clone'):
-            repo_url = command.split()[-1]
-            repo_name = repo_url.split('/')[-1].replace('.git', '')
-            repo_dir = os.path.join(run_dir, repo_name)
-
-            if os.path.exists(repo_dir) and os.path.isdir(repo_dir):
-                # Repository already exists, pull the latest changes
-                try:
-                    repo = git.Repo(repo_dir)
-                    origin = repo.remotes.origin
-                    result = origin.pull()
-                    return result
-                except Exception as e:
-                    raise subprocess.CalledProcessError(returncode=1, cmd=command, output=str(e))
-            else:
-                # Clone the repository
-                result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                return result
+        output = []
+        if os.path.exists(repo_dir) and os.path.isdir(repo_dir):
+            logger.info(f"Repository {repo_name} already exists. Pulling latest changes...")
+            output.append(f"Repository {repo_name} already exists. Pulling latest changes...")
+            repo = git.Repo(repo_dir)
+            origin = repo.remotes.origin
+            for info in origin.pull(progress=git.RemoteProgress()):
+                logger.info(f"Updated {info.name} to {info.commit}")
+                output.append(f"Updated {info.name} to {info.commit}")
         else:
-            # Execute other commands
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-            return result
-    except Exception as e:
-        raise subprocess.CalledProcessError(returncode=1, cmd=command, output=str(e))
+            logger.info(f"Cloning repository {repo_name}...")
+            output.append(f"Cloning repository {repo_name}...")
+            git.Repo.clone_from(repo_url, repo_dir, progress=git.RemoteProgress())
+            logger.info(f"Repository {repo_name} cloned successfully.")
+            output.append(f"Repository {repo_name} cloned successfully.")
+        
+        return subprocess.CompletedProcess(args=command, returncode=0, stdout="\n".join(output))
 
+    else:
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1
+        )
+
+        output = []
+        for line in process.stdout:
+            logger.debug(f"Command output: {line.strip()}")
+            output.append(line.strip())
+
+        process.wait()
+        logger.debug(f"Command completed with return code: {process.returncode}")
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=process.returncode,
+            stdout='\n'.join(output)
+        )
+
+def prepare_credentials(project):
+    logger.debug(f"Preparing credentials for project: {project.name}")
+    global_credentials = GlobalCredential.objects.all()
+    local_credentials = LocalCredential.objects.filter(project=project)
+
+    credentials = {}
+    for cred in global_credentials:
+        credentials[f"GLOBAL_{cred.service_name.upper()}_USERNAME"] = cred.username
+        credentials[f"GLOBAL_{cred.service_name.upper()}_PASSWORD"] = cred.password
+        credentials[f"GLOBAL_{cred.service_name.upper()}_TOKEN"] = cred.token
+
+    for cred in local_credentials:
+        credentials[f"LOCAL_{cred.service_name.upper()}_USERNAME"] = cred.username
+        credentials[f"LOCAL_{cred.service_name.upper()}_PASSWORD"] = cred.password
+        credentials[f"LOCAL_{cred.service_name.upper()}_TOKEN"] = cred.token
+
+    logger.debug(f"Prepared {len(credentials)} credential entries")
+    return credentials
 
 
 from django.db.models import Min
@@ -71,3 +115,4 @@ def get_available_agent():
         return agent
     except Agent.DoesNotExist:
         raise ValueError("No available agents")
+

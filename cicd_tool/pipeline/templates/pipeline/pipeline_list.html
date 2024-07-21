@@ -11,7 +11,7 @@
                 <div class="actions">
                     <a href="{% url 'pipeline_update' project.id pipeline.id %}" class="btn btn-sm btn-primary mr-2">Edit</a>
                     <a href="{% url 'pipeline_delete' project.id pipeline.id %}" class="btn btn-sm btn-danger delete-btn">Delete</a>
-                    <a href="{% url 'pipeline_run' pipeline.id %}" class="btn btn-sm btn-success ml-2">Run</a>
+                    <a href="{% url 'run_pipeline' pipeline.id %}" class="btn btn-sm btn-success ml-2">Run</a>
                 </div>
             </li>
         {% endfor %}

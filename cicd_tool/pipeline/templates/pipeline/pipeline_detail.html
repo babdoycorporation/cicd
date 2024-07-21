@@ -12,30 +12,26 @@
     </div>
     <div class="content">
         <div class="actions">
-            <a href="{% url 'pipeline_run' pipeline.id %}" class="btn btn-primary">Run Pipeline</a>
-            <a href="{% url 'pipeline_step_create' pipeline.id %}"class="btn btn-primary">Add Step</a>
+            <button id="run-pipeline-btn" class="btn btn-primary">Run Pipeline</button>
+            <a href="{% url 'pipeline_step_create' pipeline.id %}" class="btn btn-primary">Add Step</a>
             <a href="{% url 'pipeline_step_list' pipeline.id %}" class="btn btn-primary">View Steps</a>
         </div>
         <h1>Pipeline: {{ pipeline.name }}</h1>
         <p>Description: {{ pipeline.description }}</p>
 
+        <div id="live-run-container" style="display: none;">
+            <h2>Live Pipeline Run</h2>
+            <div id="live-run-content"></div>
+        </div>
 
         <h2>Pipeline Run History</h2>
         <ul>
             {% for run in pipeline.runs.all %}
                 <li>
-                    <div>
-                        <strong class="pipeline-id" data-toggle="log-{{ run.id }}">{{ run.run_id }}</strong> - Status: {{ run.status }}
-                        <div class="log-card" id="log-{{ run.id }}" style="display: none;">
-                            <strong>Run at {{ run.started_at }}</strong> - Status: {{ run.status }}
-                            {% if run.finished_at %}
-                                (Finished at {{ run.finished_at }})
-                            {% endif %}
-                            <div class="step-log" >
-                                <pre>{{ run.log }}</pre>
-                            </div>
-                        </div>
-                    </div>
+                    <a href="{% url 'pipeline_run_detail' run.run_id %}">
+                        {{ run.run_id }} - Status: {{ run.status }}
+                    </a>
+                    (Started: {{ run.started_at }})
                 </li>
             {% endfor %}
         </ul>
@@ -43,19 +39,66 @@
         <a class="back-to-pipelines" href="{% url 'pipeline_list' pipeline.project.id %}">Back to Pipelines</a>
     </div>
 </div>
-</div>
 
 <script>
-    document.querySelectorAll('.pipeline-id').forEach(pipelineId => {
-        pipelineId.addEventListener('click', () => {
-            const logId = pipelineId.getAttribute('data-toggle');
-            const logCard = document.getElementById(logId);
-            logCard.style.display = logCard.style.display === 'none' ? 'block' : 'none';
-        });
+    document.getElementById('run-pipeline-btn').addEventListener('click', function() {
+        const pipelineId = {{ pipeline.id }};
+        const liveRunContainer = document.getElementById('live-run-container');
+        const liveRunContent = document.getElementById('live-run-content');
+        liveRunContainer.style.display = 'block';
+        liveRunContent.innerHTML = '<p>Starting pipeline run...</p>';
+    
+        const eventSource = new EventSource(`/pipeline/pipeline/${pipelineId}/run/`);
+    
+        eventSource.onmessage = function(event) {
+            console.log("Received SSE event:", event.data);
+            const data = JSON.parse(event.data);
+            handleEvent(data);
+        };
+    
+        eventSource.onerror = function(error) {
+            console.error('EventSource failed:', error);
+            eventSource.close();
+            liveRunContent.innerHTML += '<p>Pipeline run ended or encountered an error.</p>';
+        };
+    
+        function handleEvent(data) {
+            console.log("Handling event:", data);
+            switch(data.event) {
+                case 'start':
+                    console.log("Pipeline run started");
+                    liveRunContent.innerHTML = `<p>Pipeline run started. Run ID: ${data.run_id}</p>`;
+                    break;
+                case 'step_start':
+                    console.log("Step started:", data.step);
+                    liveRunContent.innerHTML += `<h3>Step: ${data.step}</h3><pre id="step-${data.step}"></pre>`;
+                    break;
+                case 'log':
+                    console.log("Log message:", data.message);
+                    const stepPre = document.getElementById(`step-${data.step}`);
+                    if (stepPre) {
+                        stepPre.textContent += data.message + '\n';
+                    }
+                    break;
+                case 'step_end':
+                    console.log("Step ended:", data.step, "Status:", data.status);
+                    liveRunContent.innerHTML += `<p>Step ${data.step} ended with status: ${data.status}</p>`;
+                    break;
+                case 'error':
+                    console.error("Error in step:", data.step, "Message:", data.message);
+                    liveRunContent.innerHTML += `<p style="color: red;">Error in step ${data.step}: ${data.message}</p>`;
+                    break;
+                case 'end':
+                    console.log("Pipeline run ended. Status:", data.overall_status);
+                    liveRunContent.innerHTML += `<p>Pipeline run ended. Overall status: ${data.overall_status}</p>`;
+                    eventSource.close();
+                    // Redirect to the pipeline run detail page after a short delay
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 3000);
+                    break;
+            }
+        }
     });
-</script>
-
-<style>
-    /* Your existing CSS styles */
-</style>
+    </script>
 {% endblock %}
