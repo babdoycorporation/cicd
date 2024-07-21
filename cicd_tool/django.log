@@ -1070,3 +1070,97 @@ D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Starting pipeline run for pipeline 13
+Retrieved 2 steps for pipeline 13
+Created pipeline run with ID 185
+Preparing credentials for project: testproject
+Prepared 6 credential entries
+Starting event stream
+Starting step: step1
+Executing step: step1, command: git clone https://github.com/karthikreddygillela/mainsite.git
+Cloning repository mainsite...
+Popen(['git', 'version'], cwd=D:\cicd\runs\c592682a-c67b-4571-bb77-5212d518ac9e, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'clone', '-v', '--progress', '--', 'https://github.com/karthikreddygillela/mainsite.git', 'D:/cicd/runs/c592682a-c67b-4571-bb77-5212d518ac9e\\mainsite'], cwd=D:\cicd\runs\c592682a-c67b-4571-bb77-5212d518ac9e, stdin=None, shell=False, universal_newlines=True)
+Repository mainsite cloned successfully.
+Step step1 completed with exit code: 0
+Step step1 output: Cloning repository mainsite...
+Step step1 output: Repository mainsite cloned successfully.
+Starting step: step2
+Executing step: step2, command: dir
+Command output: Volume in drive D has no label.
+Command output: Volume Serial Number is E0BA-5DD9
+Command output: 
+Command output: Directory of D:\cicd\runs\c592682a-c67b-4571-bb77-5212d518ac9e
+Command output: 
+Command output: 21-07-2024  14:03    <DIR>          .
+Command output: 21-07-2024  14:03    <DIR>          ..
+Command output: 21-07-2024  14:03    <DIR>          mainsite
+Command output: 0 File(s)              0 bytes
+Command output: 3 Dir(s)  95,792,009,216 bytes free
+Command completed with return code: 0
+Step step2 completed with exit code: 0
+Step step2 output: Volume in drive D has no label.
+Step step2 output: Volume Serial Number is E0BA-5DD9
+Step step2 output: 
+Step step2 output: Directory of D:\cicd\runs\c592682a-c67b-4571-bb77-5212d518ac9e
+Step step2 output: 
+Step step2 output: 21-07-2024  14:03    <DIR>          .
+Step step2 output: 21-07-2024  14:03    <DIR>          ..
+Step step2 output: 21-07-2024  14:03    <DIR>          mainsite
+Step step2 output: 0 File(s)              0 bytes
+Step step2 output: 3 Dir(s)  95,792,009,216 bytes free
+Pipeline run completed with status: success
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject3.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject3.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+GET request received for repo: testproject3, path: None
+Handling service advertisement: git-upload-pack for repo: D:/repos\testproject3.git
+Running command: git upload-pack --advertise-refs D:/repos\testproject3.git
+POST request received for repo: testproject3, path: git-upload-pack
+Handling service: git-upload-pack for repo: D:/repos\testproject3.git
+Running command: git upload-pack --stateless-rpc D:/repos\testproject3.git
+Starting pipeline run for pipeline 13
+Retrieved 2 steps for pipeline 13
+Created pipeline run with ID 186
+Preparing credentials for project: testproject
+Prepared 6 credential entries
+Starting event stream
+Starting step: step1
+Executing step: step1, command: git clone http://127.0.0.1:8000/gitmgmt/repos/testproject3.git
+Cloning repository testproject3...
+Popen(['git', 'version'], cwd=D:\cicd\runs\e7444f03-f2e7-4649-b8e4-af13cd63acb1, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'clone', '-v', '--progress', '--', 'http://127.0.0.1:8000/gitmgmt/repos/testproject3.git', 'D:/cicd/runs/e7444f03-f2e7-4649-b8e4-af13cd63acb1\\testproject3'], cwd=D:\cicd\runs\e7444f03-f2e7-4649-b8e4-af13cd63acb1, stdin=None, shell=False, universal_newlines=True)
+GET request received for repo: testproject3, path: None
+Handling service advertisement: git-upload-pack for repo: D:/repos\testproject3.git
+Running command: git upload-pack --advertise-refs D:/repos\testproject3.git
+POST request received for repo: testproject3, path: git-upload-pack
+Handling service: git-upload-pack for repo: D:/repos\testproject3.git
+Running command: git upload-pack --stateless-rpc D:/repos\testproject3.git
+Repository testproject3 cloned successfully.
+Step step1 completed with exit code: 0
+Step step1 output: Cloning repository testproject3...
+Step step1 output: Repository testproject3 cloned successfully.
+Starting step: step2
+Executing step: step2, command: dir
+Command output: Volume in drive D has no label.
+Command output: Volume Serial Number is E0BA-5DD9
+Command output: 
+Command output: Directory of D:\cicd\runs\e7444f03-f2e7-4649-b8e4-af13cd63acb1
+Command output: 
+Command output: 21-07-2024  14:13    <DIR>          .
+Command output: 21-07-2024  14:13    <DIR>          ..
+Command output: 21-07-2024  14:13    <DIR>          testproject3
+Command output: 0 File(s)              0 bytes
+Command output: 3 Dir(s)  95,791,951,872 bytes free
+Command completed with return code: 0
+Step step2 completed with exit code: 0
+Step step2 output: Volume in drive D has no label.
+Step step2 output: Volume Serial Number is E0BA-5DD9
+Step step2 output: 
+Step step2 output: Directory of D:\cicd\runs\e7444f03-f2e7-4649-b8e4-af13cd63acb1
+Step step2 output: 
+Step step2 output: 21-07-2024  14:13    <DIR>          .
+Step step2 output: 21-07-2024  14:13    <DIR>          ..
+Step step2 output: 21-07-2024  14:13    <DIR>          testproject3
+Step step2 output: 0 File(s)              0 bytes
+Step step2 output: 3 Dir(s)  95,791,951,872 bytes free
+Pipeline run completed with status: success
