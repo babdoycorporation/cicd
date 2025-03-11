@@ -1,160 +1,199 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>ReleaseRocket</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReleaseRocket - GitOps Platform</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
+        /* General Styles */
         body {
-            padding-left: 250px; /* Adjust based on your sidebar width */
-            transition: padding-left 0.3s;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 16px;
+            color: #333;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
         }
+
+        /* Sidebar Styles */
         .sidebar {
-            height: 100%;
-            width: 210px;
+            height: 100vh;
+            width: 250px;
             position: fixed;
             top: 0;
             left: 0;
-            background-color: #343a40;
+            background-color: #2c3e50;
             padding-top: 20px;
             overflow-x: hidden;
             color: white;
             transition: width 0.3s;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
         }
+
         .sidebar.collapsed {
             width: 80px;
         }
+
         .sidebar a {
             padding: 15px;
             text-decoration: none;
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: white;
             display: flex;
             align-items: center;
-            transition: color 0.3s, padding 0.3s;
+            transition: background-color 0.3s, padding 0.3s;
         }
+
         .sidebar a .icon {
             margin-right: 10px;
             font-size: 1.2rem;
+            min-width: 25px;
         }
+
         .sidebar.collapsed a {
             justify-content: center;
             padding: 15px 0;
         }
+
         .sidebar.collapsed a .text {
             display: none;
         }
+
         .sidebar a:hover {
-            background-color: #575d63;
+            background-color: #34495e;
         }
+
+        /* Sidebar Toggler */
         .sidebar-toggler {
-            position: absolute;
+            position: fixed;
             top: 20px;
             left: 250px;
             border: none;
             background: none;
-            color: white;
+            color: #333;
             font-size: 1.5rem;
             transition: left 0.3s;
             cursor: pointer;
+            z-index: 1000;
         }
+
         .sidebar-toggler.collapsed {
             left: 80px;
         }
+
+        /* Content Area */
         .content {
-            margin-top: 20px;
+            margin-left: 250px;
+            padding: 20px;
             transition: margin-left 0.3s;
         }
-        .footer {
-            background-color: #f8f9fa;
-            padding: 20px 0;
-            text-align: center;
-            position: fixed;
-            width: calc(100% - 250px);
-            left: 250px;
-            bottom: 0;
-            transition: width 0.3s, left 0.3s;
+
+        .content.collapsed {
+            margin-left: 80px;
         }
-        .footer.collapsed {
-            width: calc(100% - 80px);
-            left: 80px;
+
+        /* GitOps Theme Colors */
+        .gitops-primary {
+            color: #3498db;
         }
-        .dark-mode {
-            background-color: black;
-            color: white;
+
+        .gitops-secondary {
+            color: #2ecc71;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 80px;
+            }
+
+            .sidebar.collapsed {
+                width: 0;
+            }
+
+            .content {
+                margin-left: 80px;
+            }
+
+            .content.collapsed {
+                margin-left: 0;
+            }
+
+            .sidebar-toggler {
+                left: 80px;
+            }
+
+            .sidebar-toggler.collapsed {
+                left: 20px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Sidebar -->
     <div class="sidebar">
-        <button class="sidebar-toggler" onclick="toggleSidebar()">
-            <i class="fas fa-bars"></i>
-        </button>
         <a href="{% url 'dashboard' %}">
+            <i class="fas fa-rocket icon gitops-primary"></i>
             <span class="text">ReleaseRocket</span>
         </a>
         <a href="{% url 'dashboard' %}">
-            <i class="fas fa-tachometer-alt icon"></i>
+            <i class="fas fa-tachometer-alt icon gitops-secondary"></i>
             <span class="text">Dashboard</span>
         </a>
         <a href="{% url 'project_list' %}">
-            <i class="fas fa-project-diagram icon"></i>
+            <i class="fas fa-project-diagram icon gitops-secondary"></i>
             <span class="text">Projects</span>
         </a>
         <a href="{% url 'agent_list' %}">
-            <i class="fas fa-users icon"></i>
+            <i class="fas fa-users icon gitops-secondary"></i>
             <span class="text">Agents</span>
         </a>
         <a href="{% url 'global_credential_list' %}">
-            <i class="fas fa-key icon"></i>
-            <span class="text">Global Credentials</span>
+            <i class="fas fa-key icon gitops-secondary"></i>
+            <span class="text">Credentials</span>
         </a>
         <a href="{% url 'application_list' %}">
-            <i class="fas fa-cube icon"></i>
+            <i class="fas fa-cube icon gitops-secondary"></i>
             <span class="text">Applications</span>
         </a>
         <a href="{% url 'create_yaml_pipeline' %}">
-            <i class="fas fa-file-code icon"></i>
-            <span class="text">Create YAML Pipeline</span>
+            <i class="fas fa-file-code icon gitops-secondary"></i>
+            <span class="text">Pipelines</span>
         </a>
         <a href="{% url 'repository_list' %}">
-            <i class="fas fa-code-branch icon"></i>
-            <span class="text">Repos</span>
-        </a>
-        <a href="#" onclick="toggleDarkMode()">
-            <i class="fas fa-adjust icon"></i>
-            <span class="text">Toggle Dark Mode</span>
+            <i class="fas fa-code-branch icon gitops-secondary"></i>
+            <span class="text">Repositories</span>
         </a>
     </div>
-    <div class="container">
-        <div class="content">
-            {% block content %}
-            {% endblock %}
-        </div>
+
+    <!-- Sidebar Toggler -->
+    <button class="sidebar-toggler" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Content -->
+    <div class="content">
+        {% block content %}
+        {% endblock %}
     </div>
+
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
+        // Toggle Sidebar
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             const content = document.querySelector('.content');
-            const footer = document.querySelector('.footer');
             const sidebarToggler = document.querySelector('.sidebar-toggler');
-            
+
             sidebar.classList.toggle('collapsed');
             content.classList.toggle('collapsed');
-            footer.classList.toggle('collapsed');
             sidebarToggler.classList.toggle('collapsed');
-        }
-
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.classList.toggle('dark-mode');
-            const footer = document.querySelector('.footer');
-            footer.classList.toggle('dark-mode');
         }
     </script>
 </body>

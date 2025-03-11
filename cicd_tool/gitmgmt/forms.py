@@ -14,14 +14,54 @@ class RepositoryForm(forms.ModelForm):
         }
 
 from django import forms
-from .models import PullRequest
+
+class UploadFileForm(forms.Form):
+    file = forms.FileField()
+
+
+from django import forms
+from .models import PullRequest, Branch
 
 class PullRequestForm(forms.ModelForm):
     class Meta:
         model = PullRequest
         fields = ['title', 'description', 'source_branch', 'target_branch']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        repository = kwargs.pop('repository', None)
+        super().__init__(*args, **kwargs)
+        if repository:
+            self.fields['source_branch'].queryset = Branch.objects.filter(repository=repository)
+            self.fields['target_branch'].queryset = Branch.objects.filter(repository=repository)
+        
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+        
+    def clean(self):
+        cleaned_data = super().clean()
+        source_branch = cleaned_data.get('source_branch')
+        target_branch = cleaned_data.get('target_branch')
+        
+        if source_branch == target_branch:
+            raise forms.ValidationError("Source and target branches must be different.")
+        
+        return cleaned_data
 
 from django import forms
+from .models import PullRequestComment
 
-class UploadFileForm(forms.Form):
-    file = forms.FileField()
+class PullRequestCommentForm(forms.ModelForm):
+    class Meta:
+        model = PullRequestComment
+        fields = ['content']
+        widgets = {
+            'content': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Add your comment here...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['content'].label = ''  # Remove the label
+        self.fields['content'].widget.attrs.update({'class': 'form-control'})  # Add Bootstrap class

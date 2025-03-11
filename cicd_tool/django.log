@@ -1,1166 +1,188 @@
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'clone', '-v', '--', 'D:/repos/testproject4.git', 'C:\\Users\\karth\\AppData\\Local\\Temp\\tmpvpsl9qx3'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=True)
+Cmd(['git', 'clone', '-v', '--', 'D:/repos/testproject4.git', 'C:\\Users\\karth\\AppData\\Local\\Temp\\tmpvpsl9qx3'])'s unused stdout: 
+Popen(['git', 'checkout', '-b', 'dev'], cwd=C:\Users\karth\AppData\Local\Temp\tmpvpsl9qx3, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'add', '-A'], cwd=C:\Users\karth\AppData\Local\Temp\tmpvpsl9qx3, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'status'], cwd=C:\Users\karth\AppData\Local\Temp\tmpvpsl9qx3, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=C:\Users\karth\AppData\Local\Temp\tmpvpsl9qx3, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=C:\Users\karth\AppData\Local\Temp\tmpvpsl9qx3, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'push', '--set-upstream', 'origin', 'dev'], cwd=C:\Users\karth\AppData\Local\Temp\tmpvpsl9qx3, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Not Found: /portal/user_dashboard/
-Not Found: /
-Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject3.git, stdin=<valid stream>, shell=False, universal_newlines=False)
-Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject3.git, stdin=<valid stream>, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Received registration request for agent with hash key: 8bf2940c0d0046ed92503516c8a70a26
-Agent updated successfully.
-Agent LAPTOP-7CPI1OEH marked as online.
-Internal Server Error: /pipeline/pipeline/13/run/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 367, in run_pipeline
-    credentials = {cred.name: cred.value for cred in global_credentials}
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 367, in <dictcomp>
-    credentials = {cred.name: cred.value for cred in global_credentials}
-AttributeError: 'GlobalCredential' object has no attribute 'name'
-Internal Server Error: /pipeline/pipeline/13/run/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 367, in run_pipeline
-    credentials = {cred.name: cred.value for cred in global_credentials}
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 367, in <dictcomp>
-    credentials = {cred.name: cred.value for cred in global_credentials}
-AttributeError: 'GlobalCredential' object has no attribute 'name'
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Internal Server Error: /pipeline/pipeline/13/run/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 361, in run_pipeline
-    agent = get_available_agent()
-NameError: name 'get_available_agent' is not defined
-Internal Server Error: /pipeline/pipeline/13/run/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 361, in run_pipeline
-    agent = get_available_agent()
-NameError: name 'get_available_agent' is not defined
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Not Found: /pipeline/pipeline/169/
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Not Found: /pipeline/pipeline/173/
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Internal Server Error: /pipeline/pipeline/13/run/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 132, in render
-    compiled_parent = self.get_parent(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 129, in get_parent
-    return self.find_template(parent, context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 107, in find_template
-    template, origin = context.template.engine.find_template(
-  File "D:\cicd\cenv\lib\site-packages\django\template\engine.py", line 161, in find_template
-    raise TemplateDoesNotExist(name, tried=tried)
-django.template.exceptions.TemplateDoesNotExist: base.html
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 424, in run_pipeline
-    return render(request, 'pipeline/pipeline_run_result.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 63, in render
-    reraise(exc, self.backend)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 84, in reraise
-    raise new from exc
-django.template.exceptions.TemplateDoesNotExist: base.html
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\urls.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\urls.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Not Found: /pipeline/13/run/
-Not Found: /pipeline/13/run/
-Not Found: /pipeline/13/run/
-Agent LAPTOP-7CPI1OEH marked as online.
-Agent LAPTOP-7CPI1OEH marked as online.
-Not Found: /pipeline/13/run/
-Internal Server Error: /pipeline/pipeline/13/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 345, in pipeline_detail
-    return render(request, 'pipeline/pipeline_detail.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'run_pipeline' not found. 'run_pipeline' is not a valid view function or pattern name.
-Internal Server Error: /pipeline/pipeline/13/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 345, in pipeline_detail
-    return render(request, 'pipeline/pipeline_detail.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'run_pipeline' not found. 'run_pipeline' is not a valid view function or pattern name.
-Internal Server Error: /pipeline/pipeline/13/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 345, in pipeline_detail
-    return render(request, 'pipeline/pipeline_detail.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'run_pipeline' not found. 'run_pipeline' is not a valid view function or pattern name.
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Internal Server Error: /pipeline/pipeline/13/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 345, in pipeline_detail
-    return render(request, 'pipeline/pipeline_detail.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'run_pipeline' not found. 'run_pipeline' is not a valid view function or pattern name.
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\urls.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Internal Server Error: /pipeline/pipeline/13/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 345, in pipeline_detail
-    return render(request, 'pipeline/pipeline_detail.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'run_pipeline' not found. 'run_pipeline' is not a valid view function or pattern name.
-Internal Server Error: /pipeline/pipeline/13/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 345, in pipeline_detail
-    return render(request, 'pipeline/pipeline_detail.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'run_pipeline' not found. 'run_pipeline' is not a valid view function or pattern name.
-Not Found: /pipeline/13/run/stream/
-Not Found: /pipeline/13/run/stream/
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\urls.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Not Found: /pipeline/13/run/
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Not Found: /pipeline/pipeline/13/pipeline/pipeline/13/run/
-Not Found: /pipeline/pipeline/13/pipeline/pipeline/13/run/
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Internal Server Error: /pipeline/projects/1/pipelines/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 214, in pipeline_list
-    return render(request, 'pipeline/pipeline_list.html', {'project': project, 'pipelines': pipelines})
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 238, in render
-    nodelist.append(node.render_annotated(context))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'pipeline_run' not found. 'pipeline_run' is not a valid view function or pattern name.
-Internal Server Error: /pipeline/projects/1/pipelines/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 214, in pipeline_list
-    return render(request, 'pipeline/pipeline_list.html', {'project': project, 'pipelines': pipelines})
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 238, in render
-    nodelist.append(node.render_annotated(context))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'pipeline_run' not found. 'pipeline_run' is not a valid view function or pattern name.
-Not Found: /pipeline/pipeline/180/
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\urls.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Not Found: /pipeline/pipeline/180/
-Not Found: /pipeline/pipeline/180/
-Internal Server Error: /pipeline/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\views\generic\base.py", line 104, in view
-    return self.dispatch(request, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\views\generic\base.py", line 143, in dispatch
-    return handler(request, *args, **kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 45, in get
-    return render(request, 'pipeline/dashboard.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 238, in render
-    nodelist.append(node.render_annotated(context))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'pipeline_run_detail' with arguments '('',)' not found. 1 pattern(s) tried: ['pipeline/pipeline/run/(?P<run_id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/\\Z']
-Not Found: /pipeline/pipeline/180/
-Internal Server Error: /pipeline/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\views\generic\base.py", line 104, in view
-    return self.dispatch(request, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\views\generic\base.py", line 143, in dispatch
-    return handler(request, *args, **kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 45, in get
-    return render(request, 'pipeline/dashboard.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 238, in render
-    nodelist.append(node.render_annotated(context))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'pipeline_run_detail' with arguments '('',)' not found. 1 pattern(s) tried: ['pipeline/pipeline/run/(?P<run_id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/\\Z']
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Internal Server Error: /pipeline/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\views\generic\base.py", line 104, in view
-    return self.dispatch(request, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\views\generic\base.py", line 143, in dispatch
-    return handler(request, *args, **kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 45, in get
-    return render(request, 'pipeline/dashboard.html', context)
-  File "D:\cicd\cenv\lib\site-packages\django\shortcuts.py", line 24, in render
-    content = loader.render_to_string(template_name, context, request, using=using)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
-    return template.render(context, request)
-  File "D:\cicd\cenv\lib\site-packages\django\template\backends\django.py", line 61, in render
-    return self.template.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 175, in render
-    return self._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 157, in render
-    return compiled_parent._render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 167, in _render
-    return self.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\loader_tags.py", line 63, in render
-    result = block.nodelist.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in render
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
-    return SafeString("".join([node.render_annotated(context) for node in self]))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 238, in render
-    nodelist.append(node.render_annotated(context))
-  File "D:\cicd\cenv\lib\site-packages\django\template\base.py", line 966, in render_annotated
-    return self.render(context)
-  File "D:\cicd\cenv\lib\site-packages\django\template\defaulttags.py", line 471, in render
-    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\base.py", line 88, in reverse
-    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
-  File "D:\cicd\cenv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
-    raise NoReverseMatch(msg)
-django.urls.exceptions.NoReverseMatch: Reverse for 'pipeline_run_detail' with arguments '('',)' not found. 1 pattern(s) tried: ['pipeline/pipeline/run/(?P<run_id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/\\Z']
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Watching for file changes with StatReloader
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Internal Server Error: /pipeline/pipeline/13/run/
-Traceback (most recent call last):
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
-    response = get_response(request)
-  File "D:\cicd\cenv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
-    response = wrapped_callback(request, *callback_args, **callback_kwargs)
-  File "D:\cicd\cicd_tool\pipeline\views.py", line 375, in run_pipeline
-    credentials = prepare_credentials(project) if project.requires_credentials else None
-AttributeError: 'Project' object has no attribute 'requires_credentials'
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
-Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'clone', '-v', '--', 'D:/repos/testproject4.git', 'C:\\Users\\karth\\AppData\\Local\\Temp\\tmp9acd3bpf'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=True)
+Cmd(['git', 'clone', '-v', '--', 'D:/repos/testproject4.git', 'C:\\Users\\karth\\AppData\\Local\\Temp\\tmp9acd3bpf'])'s unused stdout: 
+Popen(['git', 'fetch', '--all'], cwd=C:\Users\karth\AppData\Local\Temp\tmp9acd3bpf, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'branch', '-r'], cwd=C:\Users\karth\AppData\Local\Temp\tmp9acd3bpf, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'checkout', '-B', 'dev', 'origin/dev'], cwd=C:\Users\karth\AppData\Local\Temp\tmp9acd3bpf, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'add', '-A'], cwd=C:\Users\karth\AppData\Local\Temp\tmp9acd3bpf, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'status'], cwd=C:\Users\karth\AppData\Local\Temp\tmp9acd3bpf, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=C:\Users\karth\AppData\Local\Temp\tmp9acd3bpf, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=C:\Users\karth\AppData\Local\Temp\tmp9acd3bpf, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'push', 'origin', 'dev'], cwd=C:\Users\karth\AppData\Local\Temp\tmp9acd3bpf, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'rev-list', '910bdbb425c9bddf202d3c4a2c522c6ca4faf373', '--'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Successfully retrieved 5 logs for repository testproject4
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'rev-list', '--max-count=50', 'main', '--'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Retrieved 5 logs for repository testproject4 on branch main
+Popen(['git', 'rev-list', '--max-count=50', 'main', '--'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Retrieved 5 logs for repository testproject4 on branch main
+Popen(['git', 'rev-list', '--max-count=50', 'main', '--'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Retrieved 5 logs for repository testproject4 on branch main
+GET request received for repo: testproject4, path: None
+Handling service advertisement: git-upload-pack for repo: D:/repos\testproject4.git
+Running command: git upload-pack --advertise-refs D:/repos\testproject4.git
+POST request received for repo: testproject4, path: git-upload-pack
+Handling service: git-upload-pack for repo: D:/repos\testproject4.git
+Running command: git upload-pack --stateless-rpc D:/repos\testproject4.git
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Starting pipeline run for pipeline 13
-Attempting to get an available agent
-No available agents found
-No available agent: No available agents
-Starting pipeline run for pipeline 13
-Attempting to get an available agent
-No available agents found
-No available agent: No available agents
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'fetch', '--all'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'rev-list', '--max-count=50', 'main', '--'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Fetched 5 logs for repository testproject4 on branch main
+Popen(['git', 'fetch', '--all'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'rev-list', '--max-count=50', 'main', '--'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Fetched 5 logs for repository testproject4 on branch main
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+Popen(['git', 'fetch', '--all'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-D:\cicd\cicd_tool\pipeline\utils.py changed, reloading.
+Popen(['git', 'fetch', '--all'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'fetch', '--all'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'fetch', '--all'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Starting pipeline run for pipeline 13
-No available agent: No available agents
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
 Agent LAPTOP-7CPI1OEH marked as offline.
-Received registration request for agent with hash key: 8bf2940c0d0046ed92503516c8a70a26
-Agent updated successfully.
-Agent LAPTOP-7CPI1OEH marked as online.
-Starting pipeline run for pipeline 13
-Retrieved 2 steps for pipeline 13
-Created pipeline run with ID 184
-Preparing credentials for project: testproject
-Prepared 6 credential entries
-Starting event stream
-Starting step: step1
-Executing step: step1, command: git clone https://github.com/karthikreddygillela/mainsite.git
-Cloning repository mainsite...
-Popen(['git', 'version'], cwd=D:\cicd\runs\e9d72c36-1e17-4fa3-acb7-807d7f482ee6, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'clone', '-v', '--progress', '--', 'https://github.com/karthikreddygillela/mainsite.git', 'D:/cicd/runs/e9d72c36-1e17-4fa3-acb7-807d7f482ee6\\mainsite'], cwd=D:\cicd\runs\e9d72c36-1e17-4fa3-acb7-807d7f482ee6, stdin=None, shell=False, universal_newlines=True)
-Repository mainsite cloned successfully.
-Step step1 completed with exit code: 0
-Step step1 output: Cloning repository mainsite...
-Step step1 output: Repository mainsite cloned successfully.
-Starting step: step2
-Executing step: step2, command: dir
-Command output: Volume in drive D has no label.
-Command output: Volume Serial Number is E0BA-5DD9
-Command output: 
-Command output: Directory of D:\cicd\runs\e9d72c36-1e17-4fa3-acb7-807d7f482ee6
-Command output: 
-Command output: 21-07-2024  13:59    <DIR>          .
-Command output: 21-07-2024  13:59    <DIR>          ..
-Command output: 21-07-2024  13:59    <DIR>          mainsite
-Command output: 0 File(s)              0 bytes
-Command output: 3 Dir(s)  95,801,909,248 bytes free
-Command completed with return code: 0
-Step step2 completed with exit code: 0
-Step step2 output: Volume in drive D has no label.
-Step step2 output: Volume Serial Number is E0BA-5DD9
-Step step2 output: 
-Step step2 output: Directory of D:\cicd\runs\e9d72c36-1e17-4fa3-acb7-807d7f482ee6
-Step step2 output: 
-Step step2 output: 21-07-2024  13:59    <DIR>          .
-Step step2 output: 21-07-2024  13:59    <DIR>          ..
-Step step2 output: 21-07-2024  13:59    <DIR>          mainsite
-Step step2 output: 0 File(s)              0 bytes
-Step step2 output: 3 Dir(s)  95,801,909,248 bytes free
-Pipeline run completed with status: success
-D:\cicd\cicd_tool\pipeline\views.py changed, reloading.
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'fetch', '--all'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'rev-list', '--max-count=50', 'main', '--'], cwd=D:\repos\testproject4.git, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Fetched 5 logs for repository testproject4 on branch main
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
 Watching for file changes with StatReloader
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
 Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
-Starting pipeline run for pipeline 13
-Retrieved 2 steps for pipeline 13
-Created pipeline run with ID 185
-Preparing credentials for project: testproject
-Prepared 6 credential entries
-Starting event stream
-Starting step: step1
-Executing step: step1, command: git clone https://github.com/karthikreddygillela/mainsite.git
-Cloning repository mainsite...
-Popen(['git', 'version'], cwd=D:\cicd\runs\c592682a-c67b-4571-bb77-5212d518ac9e, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'clone', '-v', '--progress', '--', 'https://github.com/karthikreddygillela/mainsite.git', 'D:/cicd/runs/c592682a-c67b-4571-bb77-5212d518ac9e\\mainsite'], cwd=D:\cicd\runs\c592682a-c67b-4571-bb77-5212d518ac9e, stdin=None, shell=False, universal_newlines=True)
-Repository mainsite cloned successfully.
-Step step1 completed with exit code: 0
-Step step1 output: Cloning repository mainsite...
-Step step1 output: Repository mainsite cloned successfully.
-Starting step: step2
-Executing step: step2, command: dir
-Command output: Volume in drive D has no label.
-Command output: Volume Serial Number is E0BA-5DD9
-Command output: 
-Command output: Directory of D:\cicd\runs\c592682a-c67b-4571-bb77-5212d518ac9e
-Command output: 
-Command output: 21-07-2024  14:03    <DIR>          .
-Command output: 21-07-2024  14:03    <DIR>          ..
-Command output: 21-07-2024  14:03    <DIR>          mainsite
-Command output: 0 File(s)              0 bytes
-Command output: 3 Dir(s)  95,792,009,216 bytes free
-Command completed with return code: 0
-Step step2 completed with exit code: 0
-Step step2 output: Volume in drive D has no label.
-Step step2 output: Volume Serial Number is E0BA-5DD9
-Step step2 output: 
-Step step2 output: Directory of D:\cicd\runs\c592682a-c67b-4571-bb77-5212d518ac9e
-Step step2 output: 
-Step step2 output: 21-07-2024  14:03    <DIR>          .
-Step step2 output: 21-07-2024  14:03    <DIR>          ..
-Step step2 output: 21-07-2024  14:03    <DIR>          mainsite
-Step step2 output: 0 File(s)              0 bytes
-Step step2 output: 3 Dir(s)  95,792,009,216 bytes free
-Pipeline run completed with status: success
-Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject3.git, stdin=<valid stream>, shell=False, universal_newlines=False)
-Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject3.git, stdin=<valid stream>, shell=False, universal_newlines=False)
-GET request received for repo: testproject3, path: None
-Handling service advertisement: git-upload-pack for repo: D:/repos\testproject3.git
-Running command: git upload-pack --advertise-refs D:/repos\testproject3.git
-POST request received for repo: testproject3, path: git-upload-pack
-Handling service: git-upload-pack for repo: D:/repos\testproject3.git
-Running command: git upload-pack --stateless-rpc D:/repos\testproject3.git
-Starting pipeline run for pipeline 13
-Retrieved 2 steps for pipeline 13
-Created pipeline run with ID 186
-Preparing credentials for project: testproject
-Prepared 6 credential entries
-Starting event stream
-Starting step: step1
-Executing step: step1, command: git clone http://127.0.0.1:8000/gitmgmt/repos/testproject3.git
-Cloning repository testproject3...
-Popen(['git', 'version'], cwd=D:\cicd\runs\e7444f03-f2e7-4649-b8e4-af13cd63acb1, stdin=None, shell=False, universal_newlines=False)
-Popen(['git', 'clone', '-v', '--progress', '--', 'http://127.0.0.1:8000/gitmgmt/repos/testproject3.git', 'D:/cicd/runs/e7444f03-f2e7-4649-b8e4-af13cd63acb1\\testproject3'], cwd=D:\cicd\runs\e7444f03-f2e7-4649-b8e4-af13cd63acb1, stdin=None, shell=False, universal_newlines=True)
-GET request received for repo: testproject3, path: None
-Handling service advertisement: git-upload-pack for repo: D:/repos\testproject3.git
-Running command: git upload-pack --advertise-refs D:/repos\testproject3.git
-POST request received for repo: testproject3, path: git-upload-pack
-Handling service: git-upload-pack for repo: D:/repos\testproject3.git
-Running command: git upload-pack --stateless-rpc D:/repos\testproject3.git
-Repository testproject3 cloned successfully.
-Step step1 completed with exit code: 0
-Step step1 output: Cloning repository testproject3...
-Step step1 output: Repository testproject3 cloned successfully.
-Starting step: step2
-Executing step: step2, command: dir
-Command output: Volume in drive D has no label.
-Command output: Volume Serial Number is E0BA-5DD9
-Command output: 
-Command output: Directory of D:\cicd\runs\e7444f03-f2e7-4649-b8e4-af13cd63acb1
-Command output: 
-Command output: 21-07-2024  14:13    <DIR>          .
-Command output: 21-07-2024  14:13    <DIR>          ..
-Command output: 21-07-2024  14:13    <DIR>          testproject3
-Command output: 0 File(s)              0 bytes
-Command output: 3 Dir(s)  95,791,951,872 bytes free
-Command completed with return code: 0
-Step step2 completed with exit code: 0
-Step step2 output: Volume in drive D has no label.
-Step step2 output: Volume Serial Number is E0BA-5DD9
-Step step2 output: 
-Step step2 output: Directory of D:\cicd\runs\e7444f03-f2e7-4649-b8e4-af13cd63acb1
-Step step2 output: 
-Step step2 output: 21-07-2024  14:13    <DIR>          .
-Step step2 output: 21-07-2024  14:13    <DIR>          ..
-Step step2 output: 21-07-2024  14:13    <DIR>          testproject3
-Step step2 output: 0 File(s)              0 bytes
-Step step2 output: 3 Dir(s)  95,791,951,872 bytes free
-Pipeline run completed with status: success
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch-check'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+Popen(['git', 'cat-file', '--batch'], cwd=D:\repos\testproject4.git, stdin=<valid stream>, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\urls.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\urls.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\urls.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+D:\cicd\cicd_tool\gitmgmt\views.py changed, reloading.
+Watching for file changes with StatReloader
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)
+Popen(['git', 'version'], cwd=D:\cicd\cicd_tool, stdin=None, shell=False, universal_newlines=False)

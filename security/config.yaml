@@ -1,0 +1,4 @@
+log_level: INFO
+nmap_args: -sV -sC
+output_directory: scan_reports
+scan_interval: 24

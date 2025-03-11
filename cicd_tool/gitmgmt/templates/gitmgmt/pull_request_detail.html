@@ -1,13 +1,40 @@
 {% extends 'base.html' %}
+
 {% block content %}
 <h2>{{ pull_request.title }}</h2>
-<p>{{ pull_request.description }}</p>
-<p>Source Branch: {{ pull_request.source_branch.name }}</p>
-<p>Target Branch: {{ pull_request.target_branch.name }}</p>
-{% if pull_request.is_merged %}
-    <p>Status: Merged</p>
-{% else %}
-    <p>Status: Open</p>
-    <!-- Add a button or form to merge the pull request if user has permissions -->
+<p>Status: {{ pull_request.get_status_display }}</p>
+<p>From: {{ pull_request.source_branch.name }} to {{ pull_request.target_branch.name }}</p>
+<p>Created by: {{ pull_request.created_by.username }} on {{ pull_request.created_at }}</p>
+
+{% if pull_request.status == 'open' %}
+    <form method="post" action="{% url 'merge_pull_request' pull_request.id %}">
+        {% csrf_token %}
+        <button type="submit">Merge Pull Request</button>
+    </form>
+    <form method="post" action="{% url 'close_pull_request' pull_request.id %}">
+        {% csrf_token %}
+        <button type="submit">Close Pull Request</button>
+    </form>
 {% endif %}
+
+<h3>Description</h3>
+<p>{{ pull_request.description }}</p>
+
+<h3>Diff</h3>
+<pre><code>{{ diff }}</code></pre>
+
+<h3>Comments</h3>
+{% for comment in comments %}
+    <div>
+        <p>{{ comment.user.username }} - {{ comment.created_at }}</p>
+        <p>{{ comment.content }}</p>
+    </div>
+{% endfor %}
+
+<h4>Add a comment</h4>
+<form method="post">
+    {% csrf_token %}
+    {{ comment_form.as_p }}
+    <button type="submit">Add Comment</button>
+</form>
 {% endblock %}

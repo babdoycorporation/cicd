@@ -1,75 +1,65 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create YAML Pipeline</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/yaml/yaml.min.js"></script>
-    <style>
-        /* Add some basic styling for better presentation */
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            padding: 20px;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-        }
-        .container {
-            background-color: #252526;
-            padding: 20px;
-        }
-        form {
-            max-width: 800px;
-            margin: auto;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            background-color: #3c3c3c;
-            color: #d4d4d4;
-            border: 1px solid #3c3c3c;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        button:focus {
-            outline: none;
-            border-color: #007acc;
-        }
-        #yaml_editor {
-            margin-bottom: 20px;
-        }
-        .btn-group {
-            display: flex;
-            justify-content: space-between;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Create YAML Pipeline</h1>
-        <form id="pipelineForm" method="post">
-            {% csrf_token %}
-            <label for="yaml_data">YAML Data:</label><br>
-            <div id="yaml_editor"></div><br>
-            <div class="btn-group">
-                <button type="submit">Create Pipeline</button>
-                <button type="button" id="saveDraft">Save Draft</button>
-                <button type="button" id="clearDraft">Clear Draft</button>
-            </div>
-            <textarea id="yaml_data" name="yaml_data" style="display: none;"></textarea>
-        </form>
-    </div>
+<div class="container-fluid">
+    <h1 class="mb-4">Create YAML Pipeline</h1>
+    <form id="pipelineForm" method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="yaml_editor">YAML Data:</label>
+            <div id="yaml_editor"></div>
+        </div>
+        <div class="btn-group d-flex justify-content-between mb-3">
+            <button type="submit" class="btn btn-primary">Create Pipeline</button>
+            <button type="button" id="saveDraft" class="btn btn-secondary">Save Draft</button>
+            <button type="button" id="clearDraft" class="btn btn-danger">Clear Draft</button>
+        </div>
+        <textarea id="yaml_data" name="yaml_data" style="display: none;"></textarea>
+    </form>
+</div>
 
-    <script>
-        // Initialize CodeMirror editor
-        var editor = CodeMirror(document.getElementById('yaml_editor'), {
-            value: `
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/yaml/yaml.min.js"></script>
+
+<style>
+    .CodeMirror {
+        border: 1px solid #ccc;
+        height: auto;
+        font-family: monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+    .dark-mode .CodeMirror {
+        border-color: #555;
+    }
+    .dark-mode .CodeMirror-gutters {
+        background-color: #1e1e1e;
+        border-right: 1px solid #555;
+    }
+    .dark-mode .CodeMirror-linenumber {
+        color: #888;
+    }
+    .dark-mode .CodeMirror-cursor {
+        border-left: 1px solid #fff;
+    }
+    .dark-mode .cm-s-default .cm-keyword {color: #569cd6;}
+    .dark-mode .cm-s-default .cm-atom {color: #b5cea8;}
+    .dark-mode .cm-s-default .cm-number {color: #b5cea8;}
+    .dark-mode .cm-s-default .cm-def {color: #9cdcfe;}
+    .dark-mode .cm-s-default .cm-variable {color: #9cdcfe;}
+    .dark-mode .cm-s-default .cm-punctuation,
+    .dark-mode .cm-s-default .cm-property,
+    .dark-mode .cm-s-default .cm-operator {color: #d4d4d4;}
+    .dark-mode .cm-s-default .cm-string {color: #ce9178;}
+    .dark-mode .cm-s-default .cm-comment {color: #6a9955;}
+</style>
+
+<script>
+    // Initialize CodeMirror editor
+    var editor = CodeMirror(document.getElementById('yaml_editor'), {
+        value: `
 project_name: ExampleProject
 pipeline_name: test_pipeline
 description: Test pipeline description
@@ -85,50 +75,64 @@ steps:
   - name: step2
     condition: null
     command: echo "Second step"
-            `,
-            mode: 'yaml',
-            lineNumbers: true,
-            theme: 'default',
-            indentUnit: 2,
-            matchBrackets: true,
-            autoCloseBrackets: true
-        });
+        `,
+        mode: 'yaml',
+        lineNumbers: true,
+        theme: 'default',
+        indentUnit: 2,
+        matchBrackets: true,
+        autoCloseBrackets: true
+    });
 
-        // Form validation and error handling
-        document.getElementById('pipelineForm').addEventListener('submit', function(event) {
-            let yamlData = editor.getValue();
+    // Form validation and error handling
+    document.getElementById('pipelineForm').addEventListener('submit', function(event) {
+        let yamlData = editor.getValue();
 
-            if (!yamlData) {
-                alert('YAML data cannot be empty.');
-                event.preventDefault();
-            } else {
-                document.getElementById('yaml_data').value = yamlData;
-            }
-        });
+        if (!yamlData.trim()) {
+            event.preventDefault();
+            alert('YAML data cannot be empty.');
+        } else {
+            document.getElementById('yaml_data').value = yamlData;
+        }
+    });
 
-        // Save Draft functionality
-        document.getElementById('saveDraft').addEventListener('click', function() {
-            let yamlData = editor.getValue();
-            localStorage.setItem('yamlDraft', yamlData);
-            alert('Draft saved!');
-        });
+    // Save Draft functionality
+    document.getElementById('saveDraft').addEventListener('click', function() {
+        let yamlData = editor.getValue();
+        localStorage.setItem('yamlDraft', yamlData);
+        alert('Draft saved!');
+    });
 
-        // Clear Draft functionality
-        document.getElementById('clearDraft').addEventListener('click', function() {
+    // Clear Draft functionality
+    document.getElementById('clearDraft').addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear the draft? This action cannot be undone.')) {
             localStorage.removeItem('yamlDraft');
             editor.setValue('');
             alert('Draft cleared!');
-        });
+        }
+    });
 
-        // Load saved draft on page load
-        window.addEventListener('load', function() {
-            let savedDraft = localStorage.getItem('yamlDraft');
-            if (savedDraft) {
-                editor.setValue(savedDraft);
-                alert('Draft loaded!');
-            }
-        });
-    </script>
-</body>
-</html>
+    // Load saved draft on page load
+    window.addEventListener('load', function() {
+        let savedDraft = localStorage.getItem('yamlDraft');
+        if (savedDraft) {
+            editor.setValue(savedDraft);
+            alert('Draft loaded!');
+        }
+    });
+
+    // Update CodeMirror theme when dark mode is toggled
+    function updateCodeMirrorTheme() {
+        if (document.body.classList.contains('dark-mode')) {
+            editor.setOption('theme', 'darcula');
+        } else {
+            editor.setOption('theme', 'default');
+        }
+    }
+
+    // Call this function when dark mode is toggled
+    document.addEventListener('DOMContentLoaded', (event) => {
+        updateCodeMirrorTheme();
+    });
+</script>
 {% endblock %}

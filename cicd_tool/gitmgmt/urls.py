@@ -16,10 +16,13 @@ urlpatterns = [
 
     # Branch management
     path('repositories/<int:repository_id>/create-branch/', views.create_branch, name='create_branch'),
+    path('repositories/<int:repository_id>/merge/', views.merge_branch, name='merge_branch'),  # ✅ **New route for merging branches**
 
     # Pull request management
-    path('repositories/<int:repository_id>/pull_request/create/', views.create_pull_request, name='create_pull_request'),
-    path('pull_requests/<int:pull_request_id>/', views.pull_request_detail, name='pull_request_detail'),
+    path('repositories/<int:repository_id>/pull-request/create/', views.create_pull_request, name='create_pull_request'),
+    path('pull-requests/<int:pull_request_id>/', views.pull_request_detail, name='pull_request_detail'),
+    path('pull-requests/<int:pull_request_id>/merge/', views.merge_pull_request, name='merge_pull_request'),
+    path('pull-requests/<int:pull_request_id>/close/', views.close_pull_request, name='close_pull_request'),
 
     # Git-specific URLs
     re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/info/refs$', GitService.as_view(), name='git_info_refs'),

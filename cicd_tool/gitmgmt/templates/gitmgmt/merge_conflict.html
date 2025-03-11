@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Merge Conflict</h2>
+<p>There was a merge conflict when trying to merge the pull request:</p>
+<pre><code>{{ error }}</code></pre>
+<p>Please resolve the conflicts manually and try again.</p>
+<a href="{% url 'pull_request_detail' pull_request.id %}">Back to Pull Request</a>
+{% endblock %}
