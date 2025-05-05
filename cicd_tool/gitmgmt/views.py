@@ -16,6 +16,9 @@ REPO_BASE_PATH = 'D:/repos'
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Repository
 
+from django.contrib.auth.decorators import login_required
+
+@login_required
 def repository_list(request):
     query = request.GET.get('q')
     if query:

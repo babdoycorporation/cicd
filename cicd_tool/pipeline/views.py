@@ -17,6 +17,7 @@ from django.views import View
 from .models import Project, Application, Pipeline, PipelineRun, Agent
 from gitmgmt.models import Repository
 
+
 class DashboardView(View):
     def get(self, request):
         total_projects = Project.objects.count()

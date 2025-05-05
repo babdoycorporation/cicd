@@ -3,45 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Git Repository Manager</title>
+    <title>Code+ Pro - Repository Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --dark-bg: #0d1117;
             --darker-bg: #010409;
             --card-bg: #161b22;
-            --highlight-bg: #1e293b;
+            --highlight-bg: #1f6feb;
             --border-color: #30363d;
             --text-primary: #e6edf3;
             --text-secondary: #7d8590;
             --accent-color: #2f81f7;
             --star-color: #f1e05a;
             --success-color: #3fb950;
+            --danger-color: #f85149;
+            --transition: all 0.25s cubic-bezier(0.645, 0.045, 0.355, 1);
         }
 
         body {
             background-color: var(--dark-bg);
             color: var(--text-primary);
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
             padding: 2rem;
         }
 
-        .repository-container {
-            max-width: 1200px;
-            margin: 0 auto;
+        /* Header Styles */
+        .user-bar {
+            display: flex;
+            justify-content: flex-end;
+            padding: 1rem 0;
+            font-size: 0.9rem;
         }
 
-        .header-section {
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+        }
+
+        .logout-link {
+            color: var(--danger-color);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .logout-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Main Header */
+        .main-header {
             margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
             padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        h2 {
-            font-size: 1.8rem;
+        .main-title {
+            font-size: 2rem;
             font-weight: 600;
-            margin-bottom: 1.5rem;
+            margin: 0 0 1rem 0;
+            background: linear-gradient(to right, var(--text-primary), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
         }
 
         .action-bar {
@@ -52,118 +93,210 @@
             flex-wrap: wrap;
         }
 
-        .create-link {
-            background-color: var(--success-color);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 500;
+        /* Buttons and Inputs */
+        .btn {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            transition: background-color 0.2s;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+            border: none;
+            font-size: 0.9rem;
         }
 
-        .create-link:hover {
+        .btn-primary {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
             background-color: #2ea043;
+            transform: translateY(-1px);
         }
 
-        .search-form {
+        .btn-icon {
+            padding: 0.5rem;
+            background: none;
+            color: var(--text-secondary);
+        }
+
+        .btn-icon:hover {
+            background-color: rgba(110, 118, 129, 0.1);
+            color: var(--accent-color);
+        }
+
+        .search-input {
             flex-grow: 1;
             max-width: 500px;
+            position: relative;
         }
 
-        .search-form input[type="text"] {
+        .search-input input {
             width: 100%;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
             background-color: var(--darker-bg);
             border: 1px solid var(--border-color);
             border-radius: 6px;
             color: var(--text-primary);
             font-size: 0.9rem;
-            transition: border-color 0.2s;
+            transition: var(--transition);
         }
 
-        .search-form input[type="text"]:focus {
+        .search-input input:focus {
             outline: none;
             border-color: var(--accent-color);
             box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.3);
         }
 
-        .row {
-            display: flex;
-            gap: 2rem;
-            margin-top: 1rem;
+        .search-input::before {
+            content: "\f002";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
         }
 
-        .column {
-            flex: 1;
+        /* Repository Grid */
+        .repo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
 
-        h3 {
-            font-size: 1.2rem;
-            font-weight: 500;
-            margin-bottom: 1rem;
-        }
-
-        .repository-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .repository-list li {
+        .repo-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 0.75rem 1rem;
+            padding: 1.5rem;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .repo-card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(1, 4, 9, 0.5);
+        }
+
+        .repo-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            transition: border-color 0.2s;
+            align-items: flex-start;
+            margin-bottom: 1rem;
         }
 
-        .repository-list li:hover {
-            border-color: var(--accent-color);
-        }
-
-        .repository-list a {
+        .repo-name {
             color: var(--accent-color);
             text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: var(--transition);
         }
 
-        .repository-list a:hover {
+        .repo-name:hover {
             text-decoration: underline;
             color: #58a6ff;
         }
 
-        .favorite-button {
+        .repo-icon {
+            color: var(--text-secondary);
+            margin-right: 0.5rem;
+        }
+
+        .repo-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .repo-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .repo-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .repo-meta-item i {
+            font-size: 0.9rem;
+        }
+
+        .repo-language {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--star-color);
+            margin-right: 0.25rem;
+        }
+
+        .favorite-btn {
             background: none;
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
-            font-size: 1rem;
+            transition: var(--transition);
             padding: 0.25rem;
-            transition: all 0.2s;
+            font-size: 1rem;
         }
 
-        .favorite-button:hover {
-            transform: scale(1.1);
+        .favorite-btn:hover {
+            transform: scale(1.2);
         }
 
-        .fa-star {
+        .favorite-btn .fas {
             color: var(--star-color);
         }
 
+        /* Section Titles */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title i {
+            color: var(--star-color);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+            border: 1px dashed var(--border-color);
+            border-radius: 6px;
+        }
+
+        .empty-state i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .row {
-                flex-direction: column;
+            .container {
+                padding: 1rem;
             }
             
             .action-bar {
@@ -171,70 +304,148 @@
                 align-items: stretch;
             }
             
-            .search-form {
+            .search-input {
                 max-width: 100%;
+            }
+            
+            .repo-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <div class="repository-container">
-        <div class="header-section">
-            <h2>Repositories</h2>
+    <div class="container">
+        {% if user.is_authenticated %}
+        <div class="user-bar">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <span>{{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="logout-link">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <header class="main-header">
+            <h1 class="main-title">Code+ Pro</h1>
             
             <div class="action-bar">
-                <a href="{% url 'create_repository' %}" class="create-link">
-                    <i class="fas fa-plus"></i> New
+                <a href="{% url 'create_repository' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Repository
                 </a>
                 
-                <form method="get" action="" class="search-form">
+                <div class="search-input">
                     <input type="text" name="q" placeholder="Find a repository..." value="{{ request.GET.q }}">
-                </form>
+                </div>
             </div>
-        </div>
+        </header>
         
-        <div class="row">
-            <div class="column">
-                <h3>All Repositories</h3>
-                <ul class="repository-list">
-                    {% for repository in repositories %}
-                        <li>
-                            <a href="{% url 'repository_detail' repository.id %}">
-                                <i class="fas fa-book"></i> {{ repository.name }}
-                            </a>
-                            <form method="post" action="{% url 'toggle_favorite' repository.id %}" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="favorite-button">
-                                    {% if repository.is_favorite %}
-                                        <i class="fas fa-star"></i>
-                                    {% else %}
-                                        <i class="far fa-star"></i>
-                                    {% endif %}
-                                </button>
-                            </form>
-                        </li>
-                    {% endfor %}
-                </ul>
+        <main>
+            {% if favorites %}
+            <h2 class="section-title">
+                <i class="fas fa-star"></i> Favorite Repositories
+            </h2>
+            <div class="repo-grid">
+                {% for repository in favorites %}
+                <div class="repo-card">
+                    <div class="repo-header">
+                        <a href="{% url 'repository_detail' repository.id %}" class="repo-name">
+                            <i class="fas fa-book repo-icon"></i>
+                            {{ repository.name }}
+                        </a>
+                        <form method="post" action="{% url 'toggle_favorite' repository.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="favorite-btn" title="Remove from favorites">
+                                <i class="fas fa-star"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <p class="repo-description">
+                        {% if repository.description %}
+                            {{ repository.description }}
+                        {% else %}
+                            No description provided
+                        {% endif %}
+                    </p>
+                    <div class="repo-meta">
+                        <span class="repo-meta-item">
+                            <span class="repo-language"></span>
+                            {{ repository.language|default:"Text" }}
+                        </span>
+                        <span class="repo-meta-item">
+                            <i class="fas fa-code-branch"></i>
+                            {{ repository.branch|default:"main" }}
+                        </span>
+                        <span class="repo-meta-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            {{ repository.updated_at|date:"Y-m-d" }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            <div class="column">
-                <h3><i class="fas fa-star"></i> Favorites</h3>
-                <ul class="repository-list">
-                    {% for repository in favorites %}
-                        <li>
-                            <a href="{% url 'repository_detail' repository.id %}">
-                                <i class="fas fa-book"></i> {{ repository.name }}
-                            </a>
-                            <form method="post" action="{% url 'toggle_favorite' repository.id %}" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="favorite-button">
+            {% endif %}
+            
+            <h2 class="section-title">All Repositories</h2>
+            {% if repositories %}
+            <div class="repo-grid">
+                {% for repository in repositories %}
+                <div class="repo-card">
+                    <div class="repo-header">
+                        <a href="{% url 'repository_detail' repository.id %}" class="repo-name">
+                            <i class="fas fa-book repo-icon"></i>
+                            {{ repository.name }}
+                        </a>
+                        <form method="post" action="{% url 'toggle_favorite' repository.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="favorite-btn" title="Add to favorites">
+                                {% if repository.is_favorite %}
                                     <i class="fas fa-star"></i>
-                                </button>
-                            </form>
-                        </li>
-                    {% endfor %}
-                </ul>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                    <p class="repo-description">
+                        {% if repository.description %}
+                            {{ repository.description }}
+                        {% else %}
+                            No description provided
+                        {% endif %}
+                    </p>
+                    <div class="repo-meta">
+                        <span class="repo-meta-item">
+                            <span class="repo-language"></span>
+                            {{ repository.language|default:"Text" }}
+                        </span>
+                        <span class="repo-meta-item">
+                            <i class="fas fa-code-branch"></i>
+                            {{ repository.branch|default:"main" }}
+                        </span>
+                        <span class="repo-meta-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            {{ repository.updated_at|date:"Y-m-d" }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-        </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-book-open"></i>
+                <h3>No repositories found</h3>
+                <p>Create your first repository to get started</p>
+                <a href="{% url 'create_repository' %}" class="btn btn-primary" style="margin-top: 1rem;">
+                    <i class="fas fa-plus"></i> Create Repository
+                </a>
+            </div>
+            {% endif %}
+        </main>
     </div>
 </body>
 </html>

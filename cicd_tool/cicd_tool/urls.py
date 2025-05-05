@@ -19,6 +19,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('pipeline.urls')),
-    path('gitmgmt/', include('gitmgmt.urls')),
+    #path('', include('pipeline.urls')),
+    path('', include('gitmgmt.urls')),
 ]

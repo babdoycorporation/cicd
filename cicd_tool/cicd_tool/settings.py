@@ -46,6 +46,11 @@ CSRF_EXEMPT_URLS = [
     r'/gitmgmt/repos/testproject2.git/*',
 ]
 
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'repository_list'
+LOGOUT_REDIRECT_URL = 'login'
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

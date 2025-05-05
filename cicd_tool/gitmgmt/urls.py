@@ -1,9 +1,14 @@
 from django.urls import path, re_path
 from . import views
 from .views import GitService
+from django.contrib.auth import views as auth_views
+
 
 urlpatterns = [
     # Repository management
+    path('', auth_views.LoginView.as_view(template_name='gitmgmt/login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+
     path('repositories/', views.repository_list, name='repository_list'),
     path('repositories/create/', views.create_repository, name='create_repository'),
     path('repositories/<int:repository_id>/', views.repository_detail, name='repository_detail'),
