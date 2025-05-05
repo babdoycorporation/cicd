@@ -25,8 +25,8 @@ urlpatterns = [
     path('pull-requests/<int:pull_request_id>/close/', views.close_pull_request, name='close_pull_request'),
 
     # Git-specific URLs
-    re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/info/refs$', GitService.as_view(), name='git_info_refs'),
-    re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/(?P<path>git-upload-pack)$', GitService.as_view(), name='git_upload_pack'),
-    re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/(?P<path>git-receive-pack)$', GitService.as_view(), name='git_receive_pack'),
-    re_path(r'^repos/(?P<repo_name>[\w-]+)\.git/(?P<path>.+)$', GitService.as_view(), name='git_static_files'),
+    re_path(r'^repos/(?P<repo_name>[\w\-\.]+)/info/refs$', GitService.as_view(), name='git_info_refs'),
+    re_path(r'^repos/(?P<repo_name>[\w\-\.]+)/(?P<path>git-upload-pack)$', GitService.as_view(), name='git_upload_pack'),
+    re_path(r'^repos/(?P<repo_name>[\w\-\.]+)/(?P<path>git-receive-pack)$', GitService.as_view(), name='git_receive_pack'),
+    re_path(r'^repos/(?P<repo_name>[\w\-\.]+)/(?P<path>.+)$', GitService.as_view(), name='git_static_files'),
 ]

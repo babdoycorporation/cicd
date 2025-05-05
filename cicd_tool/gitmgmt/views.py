@@ -227,109 +227,120 @@ def merge_branch(request, repository_id):
 
     if request.method == 'POST':
         target_branch = request.POST.get('merge_target')
-        current_branch = request.GET.get('branch', 'main')  # Default to main if no branch is selected
+        current_branch = request.GET.get('branch', 'main')
 
         if not target_branch:
             messages.error(request, "No target branch selected for merging.")
             return redirect('repository_detail', repository_id=repository.id)
 
+        if target_branch == current_branch:
+            messages.error(request, "Cannot merge a branch into itself.")
+            return redirect('repository_detail', repository_id=repository.id)
+
         with tempfile.TemporaryDirectory() as temp_dir:
-            repo = Repo.clone_from(repo_path, temp_dir)
-
             try:
-                repo.git.fetch('--all')  # Fetch the latest updates from the remote repository
+                repo = Repo.clone_from(repo_path, temp_dir)
                 
-                # Checkout target branch (where we want to merge)
+                # Verify branches exist both locally and remotely
+                remote_branches = [ref.name.split('/')[-1] for ref in repo.remotes.origin.refs]
+                if target_branch not in remote_branches or current_branch not in remote_branches:
+                    messages.error(request, "One or both branches don't exist remotely.")
+                    return redirect('repository_detail', repository_id=repository.id)
+
+                # Fetch all latest changes
+                repo.git.fetch('--all')
+
+                # Checkout current branch
                 repo.git.checkout(current_branch)
-                repo.git.pull('origin', current_branch)  # Pull latest changes before merging
+                repo.git.pull('origin', current_branch)
 
-                # Ensure branches are different
-                if repo.git.diff(current_branch, target_branch) == "":
-                    messages.info(request, "No changes to merge. Both branches are identical.")
+                # Verify if merge is needed
+                if repo.git.diff(f'origin/{current_branch}..origin/{target_branch}') == "":
+                    messages.info(request, "No changes to merge. Branches are already in sync.")
                     return redirect('repository_detail', repository_id=repository.id)
 
-                # Merge target branch into current branch
+                # Attempt merge
                 try:
-                    merge_result = repo.git.merge(target_branch)
-                except GitCommandError:
-                    repo.git.merge('--abort')  # Abort the merge on failure
-                    messages.error(request, "Merge conflict detected. Resolve conflicts manually.")
+                    merge_result = repo.git.merge(f'origin/{target_branch}')
+                    repo.git.push('origin', current_branch)
+                    messages.success(request, f"Successfully merged {target_branch} into {current_branch}.")
+                except GitCommandError as e:
+                    repo.git.merge('--abort')
+                    if 'CONFLICT' in str(e):
+                        messages.error(request, "Merge conflict detected. Please resolve conflicts manually.")
+                    else:
+                        messages.error(request, f"Merge failed: {str(e)}")
                     return redirect('repository_detail', repository_id=repository.id)
 
-                # Push merged changes
-                repo.git.push('origin', current_branch)
-
-                messages.success(request, f"Successfully merged {target_branch} into {current_branch}.")
-            except GitCommandError as e:
-                messages.error(request, f"Merge failed: {str(e)}")
             except Exception as e:
-                messages.error(request, f"Unexpected error: {str(e)}")
+                messages.error(request, f"Unexpected error during merge: {str(e)}")
+                return redirect('repository_detail', repository_id=repository.id)
 
     return redirect('repository_detail', repository_id=repository.id)
 
-
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.utils import timezone
-from .models import PullRequest
-import os
-import tempfile
-from git import Repo, GitCommandError
-
-REPO_BASE_PATH = "D:/repos"  # Ensure this is correctly set
 
 def merge_pull_request(request, pull_request_id):
     pull_request = get_object_or_404(PullRequest, id=pull_request_id)
     repo_path = os.path.join(REPO_BASE_PATH, f"{pull_request.repository.name}.git")
 
     if request.method == 'POST':
+        # Validate PR can be merged
+        if pull_request.status != 'open':
+            messages.error(request, "Only open pull requests can be merged.")
+            return redirect('pull_request_detail', pull_request_id=pull_request.id)
+
+        source_branch = pull_request.source_branch.name
+        target_branch = pull_request.target_branch.name
+
+        if source_branch == target_branch:
+            messages.error(request, "Cannot merge identical branches.")
+            return redirect('pull_request_detail', pull_request_id=pull_request.id)
+
         with tempfile.TemporaryDirectory() as temp_dir:
-            repo = Repo.clone_from(repo_path, temp_dir)
-
             try:
-                repo.git.fetch('--all')  # Ensure all remote branches are updated
-                
-                # Check if both branches exist
-                source_branch = pull_request.source_branch.name
-                target_branch = pull_request.target_branch.name
+                repo = Repo.clone_from(repo_path, temp_dir)
+                repo.git.fetch('--all')
 
-                if source_branch not in repo.heads or target_branch not in repo.heads:
-                    messages.error(request, "One or both branches do not exist.")
+                # Verify branches exist
+                remote_branches = [ref.name.split('/')[-1] for ref in repo.remotes.origin.refs]
+                if source_branch not in remote_branches or target_branch not in remote_branches:
+                    messages.error(request, "One or both branches don't exist remotely.")
                     return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
                 # Checkout target branch
                 repo.git.checkout(target_branch)
-                repo.git.pull('origin', target_branch)  # Ensure it's up to date
+                repo.git.pull('origin', target_branch)
 
-                # Prevent merging if branches are identical
-                if repo.git.diff(source_branch, target_branch) == "":
-                    messages.info(request, "No changes to merge. Both branches are identical.")
+                # Verify merge is needed
+                if repo.git.diff(f'origin/{target_branch}..origin/{source_branch}') == "":
+                    messages.info(request, "No changes to merge. Branches are already in sync.")
+                    pull_request.status = 'merged'
+                    pull_request.save()
                     return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
-                # Merge source branch into target
+                # Attempt merge
                 try:
-                    merge_result = repo.git.merge(source_branch)
-                except GitCommandError:
-                    repo.git.merge('--abort')  # Abort the merge on failure
-                    messages.error(request, "Merge conflict detected. Resolve conflicts manually.")
-                    return render(request, 'gitmgmt/merge_conflict.html', {'pull_request': pull_request})
+                    merge_result = repo.git.merge(f'origin/{source_branch}')
+                    repo.git.push('origin', target_branch)
+                    
+                    # Only mark as merged if push succeeded
+                    pull_request.status = 'merged'
+                    pull_request.merged_by = request.user
+                    pull_request.merged_at = timezone.now()
+                    pull_request.save()
+                    
+                    messages.success(request, f"Successfully merged {source_branch} into {target_branch}.")
+                except GitCommandError as e:
+                    repo.git.merge('--abort')
+                    if 'CONFLICT' in str(e):
+                        messages.error(request, "Merge conflict detected. Please resolve conflicts manually.")
+                    else:
+                        messages.error(request, f"Merge failed: {str(e)}")
+                    return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
-                # Push the merged changes
-                repo.git.push('origin', target_branch)
-
-                # Mark pull request as merged
-                pull_request.status = 'merged'
-                pull_request.merged_by = request.user
-                pull_request.merged_at = timezone.now()
-                pull_request.save()
-
-                messages.success(request, f"Successfully merged {source_branch} into {target_branch}.")
-                return redirect('pull_request_detail', pull_request_id=pull_request.id)
-
-            except GitCommandError as e:
-                messages.error(request, f"Merge failed: {str(e)}")
             except Exception as e:
-                messages.error(request, f"Unexpected error: {str(e)}")
+                messages.error(request, f"Unexpected error during merge: {str(e)}")
+                return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
     return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
