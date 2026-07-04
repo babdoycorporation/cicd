@@ -1,0 +1,219 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+    /* Specific styles for Repository Header */
+    .breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-secondary);
+    }
+
+    .breadcrumbs a {
+        color: var(--accent-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .breadcrumbs .repo-name {
+        color: var(--text-primary);
+        font-weight: 700;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        background: var(--accent-color);
+        color: white;
+        vertical-align: middle;
+    }
+
+    /* Action Bar */
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        transition: var(--transition);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn-primary {
+        background: var(--success-color);
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: #2ea043;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline {
+        background: transparent;
+        color: var(--text-primary);
+    }
+
+    .btn-outline:hover {
+        background: var(--card-bg);
+        border-color: var(--accent-color);
+    }
+
+    /* Tabs */
+    .tabs {
+        display: flex;
+        gap: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 2rem;
+        overflow-x: auto;
+    }
+
+    .tab {
+        padding: 0.75rem 0.5rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+        border-bottom: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .tab:hover {
+        color: var(--text-primary);
+    }
+
+    .tab.active {
+        color: var(--text-primary);
+        border-bottom-color: var(--accent-color);
+    }
+
+    /* Clone Modal Shorthand */
+    .clone-box {
+        background: var(--darker-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-top: 1rem;
+        font-family: monospace;
+        font-size: 0.85rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+
+<div>
+    <!-- Header & Breadcrumbs -->
+    <div class="breadcrumbs">
+        <i class="ph ph-book" style="color: var(--text-secondary);"></i>
+        {% if repository.organization %}
+        <a href="{% url 'organization_detail' repository.organization.id %}">{{ repository.organization.name }}</a>
+        {% else %}
+        <a href="{% url 'profile' %}">{{ repository.owner.username }}</a>
+        {% endif %}
+        <span>/</span>
+        <span class="repo-name">{{ repository.name }}</span>
+        <span class="badge" style="margin-left: 0.5rem;">{{ repository.visibility|upper }}</span>
+    </div>
+
+    <div class="action-bar">
+        <div class="branch-selector">
+            {% if branches %}
+            <div class="branch-pill" style="background: var(--border-color); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-git-branch"></i>
+                <select onchange="location = this.value;" style="background: transparent; border: none; color: var(--text-primary); cursor: pointer; outline: none; font-family: 'Inter', sans-serif;">
+                    {% for branch in branches %}
+                    <option value="?branch={{ branch }}" {% if branch == current_branch %}selected{% endif %} style="background: var(--card-bg); color: var(--text-primary);">{{ branch }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="btn-group">
+            <a href="#" class="btn btn-outline" onclick="toggleClone()">
+                <i class="ph ph-download-simple"></i> Code
+            </a>
+            <a href="{% url 'create_pull_request' repository.name %}" class="btn btn-primary">
+                <i class="ph ph-git-pull-request"></i> New PR
+            </a>
+        </div>
+    </div>
+
+    <div id="clonePopup" style="display: none; margin-bottom: 2rem;">
+        <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem;">
+            <h4 style="margin-top: 0;">Clone with HTTP</h4>
+            <div class="clone-box">
+                <span id="cloneUrl">http://{{ request.get_host }}/repos/{{ repository.name }}</span>
+                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem;" onclick="copyClone()">Copy</button>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem; margin-bottom: 0;">
+                Note: Use your <strong>Personal Access Token</strong> as the password when cloning.
+            </p>
+        </div>
+    </div>
+
+    <!-- Professional Tabs -->
+    <div class="tabs">
+        <a href="{% url 'repository_detail' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_detail' %}active{% endif %}">
+            <i class="ph ph-code"></i> Code
+        </a>
+        <a href="{% url 'repository_issues' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_issues' %}active{% endif %}">
+            <i class="ph ph-warning-circle"></i> Issues
+        </a>
+        <a href="{% url 'pull_request_list' repository.name %}" class="tab {% if request.resolver_match.url_name == 'pull_request_list' or request.resolver_match.url_name == 'pull_request_detail' or request.resolver_match.url_name == 'create_pull_request' %}active{% endif %}">
+            <i class="ph ph-git-pull-request"></i> Pull Requests 
+            <span class="badge" style="background: var(--border-color);">{{ repository.pull_requests.count }}</span>
+        </a>
+        <a href="{% url 'repository_rocket_ci' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_rocket_ci' %}active{% endif %}">
+            <i class="ph ph-rocket"></i> Rocket CI
+        </a>
+        <a href="{% url 'view_logs' repository.name %}?branch={{ current_branch|default:'main' }}" class="tab {% if request.resolver_match.url_name == 'view_logs' %}active{% endif %}">
+            <i class="ph ph-clock-counter-clockwise"></i> History
+        </a>
+        <a href="{% url 'repository_settings' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_settings' %}active{% endif %}">
+            <i class="ph ph-gear"></i> Settings
+        </a>
+    </div>
+
+    {% block repo_content %}{% endblock %}
+</div>
+
+<script>
+    function toggleClone() {
+        const popup = document.getElementById('clonePopup');
+        popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function copyClone() {
+        const url = document.getElementById('cloneUrl').innerText;
+        navigator.clipboard.writeText(url);
+        alert('Clone URL copied to clipboard!');
+    }
+</script>
+{% endblock %}

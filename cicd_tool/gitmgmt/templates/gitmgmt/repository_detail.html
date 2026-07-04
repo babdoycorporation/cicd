@@ -1,473 +1,183 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ repository.name }} | Git Manager</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --dark-bg: #0d1117;
-            --darker-bg: #010409;
-            --card-bg: #161b22;
-            --highlight-bg: #1e293b;
-            --border-color: #30363d;
-            --text-primary: #e6edf3;
-            --text-secondary: #7d8590;
-            --accent-color: #2f81f7;
-            --success-color: #3fb950;
-            --warning-color: #d29922;
-            --danger-color: #f85149;
+{% extends 'gitmgmt/repository_base.html' %}
+
+{% block repo_content %}
+<style>
+    /* Specific styles for Repository Detail Content */
+    /* Main Layout */
+    .repo-grid {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        gap: 2rem;
+    }
+
+    @media (max-width: 992px) {
+        .repo-grid {
+            grid-template-columns: 1fr;
         }
+    }
 
-        body {
-            background-color: var(--dark-bg);
-            color: var(--text-primary);
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
+    .file-explorer {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
 
-        .repository-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-        }
+    .explorer-header {
+        padding: 1rem 1.5rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-        .repo-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
+    .file-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
 
-        .repo-title {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin: 0;
-            color: var(--text-primary);
-        }
+    .file-item {
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: var(--transition);
+    }
 
-        .btn {
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
+    .file-item:last-child {
+        border-bottom: none;
+    }
 
-        .btn-outline {
-            background-color: transparent;
-            border-color: var(--border-color);
-            color: var(--text-primary);
-        }
+    .file-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
 
-        .btn-outline:hover {
-            border-color: var(--accent-color);
-            background-color: rgba(47, 129, 247, 0.1);
-        }
+    .file-item a {
+        color: var(--text-primary);
+        text-decoration: none;
+        flex: 1;
+        font-size: 0.95rem;
+    }
 
-        .btn-primary {
-            background-color: var(--accent-color);
-            color: white;
-        }
+    .file-item a:hover {
+        color: var(--accent-color);
+    }
 
-        .btn-primary:hover {
-            background-color: #1a6feb;
-        }
+    /* README Card */
+    .readme-card {
+        margin-top: 2rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 2.5rem;
+    }
 
-        .btn-success {
-            background-color: var(--success-color);
-            color: white;
-        }
+    .readme-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
 
-        .btn-success:hover {
-            background-color: #2ea043;
-        }
+    .readme-content {
+        font-family: inherit;
+    }
 
-        .btn-danger {
-            background-color: var(--danger-color);
-            color: white;
-        }
+    /* Sidebar stuff */
+    .repo-sidebar-section {
+        margin-bottom: 2rem;
+    }
 
-        .btn-danger:hover {
-            background-color: #da3633;
-        }
+    .repo-sidebar-section h3 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
 
-        .btn-warning {
-            background-color: var(--warning-color);
-            color: white;
-        }
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+    }
+</style>
 
-        .btn-warning:hover {
-            background-color: #bb8009;
-        }
-
-        .btn-sm {
-            padding: 0.35rem 0.75rem;
-            font-size: 0.85rem;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .card-title {
-            font-size: 1.2rem;
-            font-weight: 500;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.5rem 0.75rem;
-            background-color: var(--darker-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            transition: border-color 0.2s;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.3);
-        }
-
-        .form-select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%237d8590' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 16px 12px;
-        }
-
-        .input-group {
-            display: flex;
-            width: 100%;
-        }
-
-        .input-group .form-select {
-            flex: 1;
-            border-top-right-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-
-        .input-group .btn {
-            border-top-left-radius: 0;
-            border-bottom-left-radius: 0;
-        }
-
-        .list-group {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .list-group-item {
-            padding: 0.75rem 1.25rem;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background-color 0.2s;
-        }
-
-        .list-group-item:not(:last-child) {
-            border-bottom: none;
-        }
-
-        .list-group-item:hover {
-            background-color: var(--highlight-bg);
-        }
-
-        .list-group-item a {
-            color: var(--accent-color);
-            text-decoration: none;
-            flex: 1;
-        }
-
-        .list-group-item a:hover {
-            text-decoration: underline;
-        }
-
-        .commit-box {
-            padding: 1rem;
-            background-color: var(--darker-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-top: 0.5rem;
-        }
-
-        .commit-hash {
-            font-family: monospace;
-            color: var(--success-color);
-            font-weight: 500;
-        }
-
-        .commit-message {
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-        }
-
-        .row {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .col {
-            flex: 1;
-        }
-
-        .d-none {
-            display: none;
-        }
-
-        .mt-3 {
-            margin-top: 1rem;
-        }
-
-        .mb-2 {
-            margin-bottom: 0.5rem;
-        }
-
-        .p-3 {
-            padding: 1rem;
-        }
-
-        .bg-light {
-            background-color: var(--darker-bg);
-        }
-
-        .rounded {
-            border-radius: 6px;
-        }
-
-        .text-muted {
-            color: var(--text-secondary);
-        }
-
-        .text-success {
-            color: var(--success-color);
-        }
-
-        @media (max-width: 768px) {
-            .repo-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-
-            .row {
-                flex-direction: column;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="repository-container">
-        <!-- Repository Header -->
-        <div class="repo-header">
-            <h1 class="repo-title">
-                <i class="fas fa-book"></i> {{ repository.name }}
-            </h1>
-            <div class="btn-group">
-                <a href="{% url 'repository_list' %}" class="btn btn-outline">
-                    <i class="fas fa-arrow-left"></i> Back
-                </a>
-                <a href="{% url 'upload_file' repository_id=repository.id %}?branch={{ current_branch }}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Add File
-                </a>
-            </div>
-        </div>
-
-        <!-- Branch Selection -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <i class="fas fa-code-branch"></i> Branches
-                </h2>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col">
-                        <select id="branchSelect" class="form-control" onchange="branchChanged()">
-                            {% for branch in branches %}
-                                <option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col">
-                        <button class="btn btn-success" onclick="toggleBranchForm()">
-                            <i class="fas fa-plus"></i> New Branch
-                        </button>
-                    </div>
+<!-- Main Content Grid -->
+<div class="repo-grid">
+    <div class="main-column">
+        <div class="file-explorer">
+            <div class="explorer-header">
+                <div class="last-commit" style="font-size: 0.9rem;">
+                    <strong>Latest:</strong> <span style="color: var(--text-secondary);">{{ last_commit_message|truncatechars:100 }}</span>
                 </div>
+                <div style="font-family: monospace; font-size: 0.85rem; color: var(--accent-color);">
+                    {{ last_commit_hash|slice:":7" }}
+                </div>
+            </div>
 
-                <!-- Branch Creation Form -->
-                <form id="branchForm" method="post" action="{% url 'create_branch' repository.id %}" class="d-none mt-3 bg-light p-3 rounded">
-                    {% csrf_token %}
-                    <div class="row">
-                        <div class="col">
-                            <input type="text" name="branch_name" class="form-control" placeholder="New branch name" required>
-                        </div>
-                        <div class="col">
-                            <select name="source_branch" class="form-control">
-                                {% for branch in branches %}
-                                    <option value="{{ branch }}">{{ branch }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-check"></i> Create
-                            </button>
-                        </div>
-                    </div>
-                </form>
+            <ul class="file-list">
+                {% for file in files %}
+                <li class="file-item">
+                    <i class="fas fa-file-code" style="color: var(--text-secondary);"></i>
+                    <a href="{% url 'edit_and_save_file' repository.name file %}">{{ file }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {% if readme_content %}
+        <div class="readme-card">
+            <div class="readme-header">
+                <i class="fas fa-list"></i> README.md
+            </div>
+            <div class="readme-content">
+                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">{{ readme_content }}</pre>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="repo-sidebar">
+        <div class="repo-sidebar-section">
+            <h3>About</h3>
+            <p style="font-size: 0.95rem; color: var(--text-primary);">{{ repository.description|default:"No description provided." }}</p>
+        </div>
+
+        <div class="repo-sidebar-section">
+            <h3>Stats</h3>
+            <div class="stat-item">
+                <span><i class="fas fa-star" style="color: var(--text-secondary); width: 16px;"></i> Stars</span>
+                <strong>0</strong>
+            </div>
+            <div class="stat-item">
+                <span><i class="fas fa-code-fork" style="color: var(--text-secondary); width: 16px;"></i> Forks</span>
+                <strong>0</strong>
+            </div>
+            <div class="stat-item">
+                <span><i class="fas fa-eye" style="color: var(--text-secondary); width: 16px;"></i> Watching</span>
+                <strong>1</strong>
             </div>
         </div>
 
-        <!-- File List -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <i class="fas fa-file-code"></i> Files
-                </h2>
-            </div>
-            <div class="card-body">
-                {% if files %}
-                    <ul class="list-group">
-                        {% for file in files %}
-                            <li class="list-group-item">
-                                <a href="{% url 'edit_and_save_file' repository_id=repository.id file_path=file %}">
-                                    <i class="fas fa-file"></i> {{ file }}
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="text-muted">No files in this branch.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Last Commit -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <i class="fas fa-history"></i> Last Commit
-                </h2>
-            </div>
-            <div class="card-body">
-                {% if last_commit_hash %}
-                    <div class="commit-box">
-                        <h3>
-                            <a href="{% url 'view_logs' repository_id=repository.id %}?branch={{ current_branch }}" class="commit-hash">
-                                <i class="fas fa-code-commit"></i> {{ last_commit_hash|slice:":7" }}
-                            </a>
-                        </h3>
-                        <p class="commit-message">{{ last_commit_message }}</p>
-                    </div>
-                {% else %}
-                    <p class="text-muted">No commits yet.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Merge Branches -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <i class="fas fa-code-merge"></i> Merge Branches
-                </h2>
-            </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'merge_branch' repository.id %}" class="bg-light p-3 rounded">
-                    {% csrf_token %}
-                    <label for="mergeTarget" class="text-muted mb-2">Merge into <strong>{{ current_branch }}</strong>:</label>
-                    <div class="input-group">
-                        <select name="merge_target" id="mergeTarget" class="form-control">
-                            {% for branch in branches %}
-                                {% if branch != current_branch %}
-                                    <option value="{{ branch }}">{{ branch }}</option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-code-merge"></i> Merge
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Pull Requests -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <i class="fas fa-code-pull-request"></i> Pull Requests
-                </h2>
-            </div>
-            <div class="card-body">
-                <a href="{% url 'create_pull_request' repository_id=repository.id %}" class="btn btn-warning mb-2">
-                    <i class="fas fa-plus"></i> Create Pull Request
-                </a>
-                {% if repository.pull_requests.all %}
-                    <ul class="list-group">
-                        {% for pull_request in repository.pull_requests.all %}
-                            <li class="list-group-item">
-                                <a href="{% url 'pull_request_detail' pull_request_id=pull_request.id %}" class="d-flex justify-content-between align-items-center">
-                                    <span>
-                                        <i class="fas fa-code-pull-request"></i> {{ pull_request.title }}
-                                    </span>
-                                    <span class="text-muted">{{ pull_request.created_by.username }}</span>
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="text-muted">No pull requests yet.</p>
-                {% endif %}
+        <div class="repo-sidebar-section">
+            <h3>Branches</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for branch in branches|slice:":5" %}
+                <div style="font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-code-branch" style="color: var(--text-secondary);"></i>
+                    {{ branch }}
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
-
-    <script>
-        function branchChanged() {
-            const selectedBranch = document.getElementById('branchSelect').value;
-            window.location.href = `?branch=${selectedBranch}`;
-        }
-
-        function toggleBranchForm() {
-            document.getElementById('branchForm').classList.toggle('d-none');
-        }
-    </script>
-</body>
-</html>
+</div>
+{% endblock %}

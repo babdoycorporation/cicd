@@ -3,197 +3,360 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReleaseRocket - GitOps Platform</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>ReleaseRocket - Pipeline Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%232f81f7'%3E%3Cpath d='M152,224a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,224ZM128,112a12,12,0,1,0-12-12A12,12,0,0,0,128,112Zm95.62,43.83-12.36,55.63a16,16,0,0,1-25.51,9.11L158.51,200h-61L70.25,220.57a16,16,0,0,1-25.51-9.11L32.38,155.83a16.09,16.09,0,0,1,3.32-13.71l28.56-34.26a123.07,123.07,0,0,1,8.57-36.67c12.9-32.34,36-52.63,45.37-59.85a16,16,0,0,1,19.6,0c9.34,7.22,32.47,27.51,45.37,59.85a123.07,123.07,0,0,1,8.57,36.67l28.56,34.26A16.09,16.09,0,0,1,223.62,155.83ZM99.43,184h57.14c21.12-37.54,25.07-73.48,11.74-106.88C156.55,47.64,134.49,29,128,24c-6.51,5-28.57,23.64-40.33,53.12C74.36,110.52,78.31,146.46,99.43,184Zm-15,5.85Q68.28,160.5,64.83,132.16L48,152.36,60.36,208l.18-.13ZM208,152.36l-16.83-20.2q-3.42,28.28-19.56,57.69l23.85,18,.18.13Z'/%3E%3C/svg%3E">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>.fa-spin { animation: spin 2s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }</style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* General Styles */
+        :root {
+            --dark-bg: #0d1117;
+            --darker-bg: #010409;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #7d8590;
+            --accent-color: #2f81f7;
+            --success-color: #3fb950;
+            --danger-color: #f85149;
+            --warning-color: #d29922;
+            --transition: all 0.25s cubic-bezier(0.645, 0.045, 0.355, 1);
+            --sidebar-width: 210px;
+            --sidebar-collapsed-width: 64px;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            font-size: 16px;
-            color: #333;
-            background-color: #f8f9fa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            letter-spacing: 0.2px;
+            color: var(--text-primary);
+            background-color: var(--dark-bg);
             margin: 0;
             padding: 0;
-            transition: background-color 0.3s, color 0.3s;
         }
 
         /* Sidebar Styles */
         .sidebar {
             height: 100vh;
-            width: 250px;
+            width: var(--sidebar-width);
             position: fixed;
             top: 0;
             left: 0;
-            background-color: #2c3e50;
-            padding-top: 20px;
+            background-color: var(--darker-bg);
+            border-right: 1px solid var(--border-color);
+            padding-top: 1rem;
             overflow-x: hidden;
-            color: white;
             transition: width 0.3s;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-color), #b892ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+            text-transform: uppercase;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .logout-btn {
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            display: flex;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            color: var(--danger-color);
+        }
+
+        .sidebar.collapsed .sidebar-footer {
+            flex-direction: column;
+            padding: 1rem 0;
+        }
+        
+        .sidebar.collapsed .user-info, .sidebar.collapsed .logout-btn {
+            display: none;
         }
 
         .sidebar.collapsed {
-            width: 80px;
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar-brand {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            color: var(--text-primary);
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-decoration: none;
+        }
+
+        .sidebar-brand i {
+            color: var(--accent-color);
+            margin-right: 0.75rem;
+            font-size: 1.5rem;
+        }
+
+        .sidebar.collapsed .sidebar-brand .text {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-brand i {
+            margin-right: 0;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0 0.5rem;
         }
 
         .sidebar a {
-            padding: 15px;
+            padding: 0.6rem 1rem;
             text-decoration: none;
-            font-size: 1rem;
-            color: white;
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
-            transition: background-color 0.3s, padding 0.3s;
+            border-radius: 6px;
+            transition: var(--transition);
         }
 
         .sidebar a .icon {
-            margin-right: 10px;
-            font-size: 1.2rem;
-            min-width: 25px;
+            margin-right: 1rem;
+            font-size: 1.1rem;
+            min-width: 20px;
+            text-align: center;
         }
 
         .sidebar.collapsed a {
             justify-content: center;
-            padding: 15px 0;
+            padding: 0.75rem 0;
         }
 
         .sidebar.collapsed a .text {
             display: none;
         }
 
-        .sidebar a:hover {
-            background-color: #34495e;
+        .sidebar.collapsed a .icon {
+            margin-right: 0;
         }
 
-        /* Sidebar Toggler */
+        .sidebar a:hover, .sidebar a.active {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .sidebar a:hover .icon, .sidebar a.active .icon {
+            color: var(--accent-color);
+        }
+
+        /* Topbar & Toggler */
+        .topbar {
+            height: 60px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--dark-bg);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
         .sidebar-toggler {
-            position: fixed;
-            top: 20px;
-            left: 250px;
             border: none;
             background: none;
-            color: #333;
-            font-size: 1.5rem;
-            transition: left 0.3s;
+            color: var(--text-secondary);
+            font-size: 1.15rem;
             cursor: pointer;
-            z-index: 1000;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
         }
 
-        .sidebar-toggler.collapsed {
-            left: 80px;
+        .sidebar-toggler:hover {
+            color: var(--text-primary);
+            background-color: var(--card-bg);
         }
 
         /* Content Area */
-        .content {
-            margin-left: 250px;
-            padding: 20px;
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
             transition: margin-left 0.3s;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        .content.collapsed {
-            margin-left: 80px;
+        .main-wrapper.collapsed {
+            margin-left: var(--sidebar-collapsed-width);
         }
 
-        /* GitOps Theme Colors */
-        .gitops-primary {
-            color: #3498db;
-        }
-
-        .gitops-secondary {
-            color: #2ecc71;
+        .content {
+            padding: 2rem;
+            flex-grow: 1;
         }
 
         /* Responsive Design */
         @media (max-width: 768px) {
             .sidebar {
-                width: 80px;
+                transform: translateX(-100%);
+                width: var(--sidebar-width) !important;
             }
-
-            .sidebar.collapsed {
-                width: 0;
+            .sidebar.show {
+                transform: translateX(0);
             }
-
-            .content {
-                margin-left: 80px;
-            }
-
-            .content.collapsed {
+            .main-wrapper, .main-wrapper.collapsed {
                 margin-left: 0;
             }
-
             .sidebar-toggler {
-                left: 80px;
-            }
-
-            .sidebar-toggler.collapsed {
-                left: 20px;
+                display: block;
             }
         }
     </style>
 </head>
 <body>
     <!-- Sidebar -->
-    <div class="sidebar">
-        <a href="{% url 'dashboard' %}">
-            <i class="fas fa-rocket icon gitops-primary"></i>
+    <div class="sidebar" id="sidebar">
+        <a href="{% url 'dashboard' %}" class="sidebar-brand">
+            <i class="ph ph-rocket"></i>
             <span class="text">ReleaseRocket</span>
         </a>
-        <a href="{% url 'dashboard' %}">
-            <i class="fas fa-tachometer-alt icon gitops-secondary"></i>
-            <span class="text">Dashboard</span>
-        </a>
-        <a href="{% url 'project_list' %}">
-            <i class="fas fa-project-diagram icon gitops-secondary"></i>
-            <span class="text">Projects</span>
-        </a>
-        <a href="{% url 'agent_list' %}">
-            <i class="fas fa-users icon gitops-secondary"></i>
-            <span class="text">Agents</span>
-        </a>
-        <a href="{% url 'global_credential_list' %}">
-            <i class="fas fa-key icon gitops-secondary"></i>
-            <span class="text">Credentials</span>
-        </a>
-        <a href="{% url 'application_list' %}">
-            <i class="fas fa-cube icon gitops-secondary"></i>
-            <span class="text">Applications</span>
-        </a>
-        <a href="{% url 'create_yaml_pipeline' %}">
-            <i class="fas fa-file-code icon gitops-secondary"></i>
-            <span class="text">Pipelines</span>
-        </a>
-        <a href="{% url 'repository_list' %}">
-            <i class="fas fa-code-branch icon gitops-secondary"></i>
-            <span class="text">Repositories</span>
-        </a>
+                <div class="sidebar-menu">
+            {% if project %}
+                <a href="{% url 'project_list' %}" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); border-radius: 0;">
+                    <i class="ph ph-arrow-left icon"></i>
+                    <span class="text">Back to Hub</span>
+                </a>
+                <a href="{% url 'project_detail' project.name %}">
+                    <i class="ph ph-presentation-chart icon"></i>
+                    <span class="text">Overview</span>
+                </a>
+                <a href="#">
+                    <i class="ph ph-code icon"></i>
+                    <span class="text">Code (Repos)</span>
+                </a>
+                <a href="{% url 'pipeline_list' project.name %}">
+                    <i class="ph ph-rocket-launch icon"></i>
+                    <span class="text">Pipelines</span>
+                </a>
+                <a href="#">
+                    <i class="ph ph-cloud-check icon"></i>
+                    <span class="text">Environments</span>
+                </a>
+                <a href="{% url 'configure_project' project.name %}">
+                    <i class="ph ph-gear-six icon"></i>
+                    <span class="text">Project Settings</span>
+                </a>
+            {% else %}
+                <a href="{% url 'project_list' %}">
+                    <i class="ph ph-tree-structure icon"></i>
+                    <span class="text">Projects</span>
+                </a>
+                <a href="{% url 'organization_list' %}">
+                    <i class="ph ph-buildings icon"></i>
+                    <span class="text">Organizations</span>
+                </a>
+                <a href="{% url 'agent_list' %}">
+                    <i class="ph ph-users icon"></i>
+                    <span class="text">Agents</span>
+                </a>
+                <a href="{% url 'global_credential_list' %}">
+                    <i class="ph ph-key icon"></i>
+                    <span class="text">Credentials</span>
+                </a>
+                <a href="{% url 'global_settings' %}">
+                    <i class="ph ph-gear icon"></i>
+                    <span class="text">Global Settings</span>
+                </a>
+            {% endif %}
+        </div>
+        <div class="sidebar-footer">
+            <div class="user-avatar">
+                {{ request.user.username|make_list|first|default:"U" }}
+            </div>
+            <div class="user-info">
+                <span class="user-name">{{ request.user.username|default:"Guest" }}</span>
+                <span class="user-role">{% if request.user.is_superuser %}Admin{% else %}Developer{% endif %}</span>
+            </div>
+            <a href="{% url 'logout' %}" class="logout-btn" title="Logout">
+                <i class="ph ph-sign-out" style="font-size: 1.2rem;"></i>
+            </a>
+        </div>
     </div>
 
-    <!-- Sidebar Toggler -->
-    <button class="sidebar-toggler" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
-        <i class="fas fa-bars"></i>
-    </button>
+    <!-- Main Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="topbar">
+            <button class="sidebar-toggler" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
+                <i class="ph ph-list"></i>
+            </button>
+        </header>
 
-    <!-- Content -->
-    <div class="content">
-        {% block content %}
-        {% endblock %}
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script>
-        // Toggle Sidebar
         function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const content = document.querySelector('.content');
-            const sidebarToggler = document.querySelector('.sidebar-toggler');
-
-            sidebar.classList.toggle('collapsed');
-            content.classList.toggle('collapsed');
-            sidebarToggler.classList.toggle('collapsed');
+            const sidebar = document.getElementById('sidebar');
+            const wrapper = document.getElementById('mainWrapper');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('show');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                wrapper.classList.toggle('collapsed');
+            }
         }
     </script>
 </body>

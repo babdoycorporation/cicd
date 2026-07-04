@@ -1,0 +1,44 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% block repo_content %}
+<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 2rem;">
+    <h2 style="margin-top: 0; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+        <i class="fas fa-gear"></i> General Settings
+    </h2>
+    
+    <div style="margin-bottom: 2rem;">
+        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">Repository Name</label>
+        <input type="text" value="{{ repository.name }}" class="form-control" style="width: 100%; max-width: 400px; padding: 0.5rem 1rem; background: var(--darker-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem;">
+    </div>
+    
+    <div style="margin-bottom: 2rem;">
+        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">Description</label>
+        <input type="text" value="{{ repository.description|default:'' }}" class="form-control" style="width: 100%; max-width: 600px; padding: 0.5rem 1rem; background: var(--darker-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem;">
+    </div>
+    
+    <div style="margin-bottom: 2rem;">
+        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">Visibility</label>
+        <div style="display: flex; gap: 1rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-primary);">
+                <input type="radio" name="visibility" value="public" {% if repository.visibility == 'public' %}checked{% endif %}> Public
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-primary);">
+                <input type="radio" name="visibility" value="private" {% if repository.visibility == 'private' %}checked{% endif %}> Private
+            </label>
+        </div>
+    </div>
+    
+    <button class="btn btn-primary">Save Changes</button>
+    
+    <h2 style="margin-top: 3rem; color: #da3633; border-bottom: 1px solid #da3633; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+        Danger Zone
+    </h2>
+    
+    <div style="border: 1px solid #da3633; border-radius: 6px; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary);">Delete this repository</h4>
+            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Once you delete a repository, there is no going back. Please be certain.</p>
+        </div>
+        <button class="btn" style="background: transparent; color: #da3633; border: 1px solid #da3633;">Delete Repository</button>
+    </div>
+</div>
+{% endblock %}

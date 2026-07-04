@@ -19,7 +19,7 @@ import subprocess
 import git
 from git import Repo
 import logging
-from .models import GlobalCredential, LocalCredential, Agent
+from .models import Credential, Agent
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +83,8 @@ def execute_step(step, run_id, credentials):
 
 def prepare_credentials(project):
     logger.debug(f"Preparing credentials for project: {project.name}")
-    global_credentials = GlobalCredential.objects.all()
-    local_credentials = LocalCredential.objects.filter(project=project)
+    global_credentials = Credential.objects.filter(scope_level='global')
+    local_credentials = Credential.objects.filter(scope_level='project', project=project)
 
     credentials = {}
     for cred in global_credentials:

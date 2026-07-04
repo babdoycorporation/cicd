@@ -1,61 +1,97 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <style>
-        .application-list-container {
-            width: 150px; /* Fixed width */
-            height: 150px; /* Fixed height */
-            overflow-y: auto; /* Add scrollbar if content exceeds height */
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            padding: 10px;
-            margin: 0 auto; /* Center the container */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .page-title i { color: var(--accent-color); }
+    .app-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.5rem;
+    }
+    .app-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 2rem 1.5rem;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        text-decoration: none;
+    }
+    .app-card:hover {
+        border-color: var(--accent-color);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .app-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        background-color: rgba(47, 129, 247, 0.1);
+        color: var(--accent-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin-bottom: 1rem;
+    }
+    .app-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        background-color: var(--card-bg);
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+    }
+</style>
 
-        .application-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            width: 100%;
-        }
-
-        .application-list li {
-            margin-bottom: 5px;
-        }
-
-        .application-list li a {
-            text-decoration: none;
-            color: #333;
-            font-weight: bold;
-        }
-
-        .application-list li a:hover {
-            color: #007bff;
-        }
-
-        .no-applications {
-            color: #999;
-            text-align: center;
-            padding: 20px 0;
-            width: 100%;
-        }
-    </style>
-    <div class="application-list-container">
-        {% if applications %}
-            <ul class="application-list">
-                {% for application in applications %}
-                    <li><a href="{% url 'application_detail' application.id %}">{{ application.name }}</a></li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <div class="no-applications">No applications available.</div>
-        {% endif %}
+<div>
+    <div class="page-header">
+        <h1 class="page-title"><i class="ph ph-cube"></i> Applications</h1>
     </div>
+
+    {% if applications %}
+    <div class="app-grid">
+        {% for application in applications %}
+        <a href="{% url 'application_detail' application.name %}" class="app-card">
+            <div class="app-icon"><i class="ph ph-layers"></i></div>
+            <div class="app-name">{{ application.name }}</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                <i class="ph ph-projector-screen"></i> {{ application.project.name }}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="ph ph-package" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
+        <h3>No applications found</h3>
+        <p>There are no applications registered in this project.</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

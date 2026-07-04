@@ -1,0 +1,16 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% block repo_content %}
+<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 4rem 2rem; text-align: center;">
+    <div style="background: var(--darker-bg); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; border: 1px solid var(--border-color);">
+        <i class="fas fa-circle-dot" style="font-size: 2.5rem; color: var(--accent-color);"></i>
+    </div>
+    <h2 style="color: var(--text-primary); margin-bottom: 1rem;">Issue Tracking is Coming Soon</h2>
+    <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto; line-height: 1.6;">
+        We are building a powerful, integrated issue tracking system for Release Rocket. 
+        Soon you'll be able to link issues directly to your pull requests and CI/CD pipelines!
+    </p>
+    <button class="btn btn-primary" style="margin-top: 2rem; opacity: 0.5; cursor: not-allowed;">
+        <i class="fas fa-plus"></i> Create Issue
+    </button>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% block repo_content %}
+<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 2rem;">
+    <h2 style="margin-top: 0; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
+        <i class="fas fa-code-pull-request" style="color: var(--accent-color);"></i> Pull Requests
+    </h2>
+    
+    {% if pull_requests %}
+        <div style="margin-top: 1.5rem;">
+            {% for pr in pull_requests %}
+            <div style="border-top: 1px solid var(--border-color); padding: 1rem 0; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <a href="{% url 'pull_request_detail' pr.id %}" style="color: var(--text-primary); font-size: 1.1rem; font-weight: 600; text-decoration: none;">
+                        {{ pr.title }}
+                    </a>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">
+                        #{{ pr.id }} opened {{ pr.created_at|timesince }} ago by {{ pr.author.username }}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span style="font-size: 0.85rem; font-family: monospace; color: var(--text-secondary);">
+                        {{ pr.source_branch.name }} <i class="fas fa-arrow-right"></i> {{ pr.target_branch.name }}
+                    </span>
+                    {% if pr.status == 'open' %}
+                        <span class="badge" style="background: var(--success-color); font-size: 0.75rem;"><i class="fas fa-circle-dot"></i> Open</span>
+                    {% elif pr.status == 'merged' %}
+                        <span class="badge" style="background: #8957e5; font-size: 0.75rem;"><i class="fas fa-code-merge"></i> Merged</span>
+                    {% else %}
+                        <span class="badge" style="background: #da3633; font-size: 0.75rem;"><i class="fas fa-xmark"></i> Closed</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem 0; color: var(--text-secondary);">
+            <i class="fas fa-code-pull-request" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
+            <h3>No pull requests found</h3>
+            <p>There are no open or closed pull requests for this repository.</p>
+            <a href="{% url 'create_pull_request' repository.name %}" class="btn btn-primary" style="margin-top: 1rem;">
+                <i class="fas fa-code-pull-request"></i> New Pull Request
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

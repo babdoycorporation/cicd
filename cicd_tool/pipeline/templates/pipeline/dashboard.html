@@ -1,90 +1,353 @@
-    {% extends 'pipeline/base.html' %}
-    {% block content %}
-    <div class="container">
-        <div class="content mt-4">
-            <h1 class="mb-4">Dashboard</h1>
-            <div class="row">
-                <div class="col-md-3 mb-4">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Total Projects</h5>
-                            <p class="card-text display-4">{{ total_projects }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Total Applications</h5>
-                            <p class="card-text display-4">{{ total_applications }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Total Pipelines</h5>
-                            <p class="card-text display-4">{{ total_pipelines }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Total Pipeline Runs</h5>
-                            <p class="card-text display-4">{{ total_pipeline_runs }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Total Agents</h5>
-                            <p class="card-text display-4">{{ total_agents }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Success Pipeline Runs</h5>
-                            <p class="card-text display-4">{{ successful_runs }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Failed Pipeline Runs</h5>
-                            <p class="card-text display-4">{{ failed_runs }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-4">
-                    <div class="card text-center shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Total Repos</h5>
-                            <p class="card-text display-4">{{ total_repos }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <h3>Latest Pipeline Runs</h3>
-                    <ul>
-                        {% for pipeline_run in latest_pipeline_runs %}
-                            <li>
-                                <a href="{% url 'pipeline_run_detail' pipeline_run.run_id %}">
-                                    {{ pipeline_run.pipeline.name }} - Run ID: {{ pipeline_run.run_id|truncatechars:8 }}
-                                </a>
-                                <span class="status {{ pipeline_run.status }}">{{ pipeline_run.status }}</span>
-                                <span class="timestamp">{{ pipeline_run.started_at|date:"Y-m-d H:i:s" }}</span>
-                            </li>
-                        {% empty %}
-                            <li>No pipeline runs available.</li>
-                        {% endfor %}
-                    </ul>
-                </div>
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+    .page-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .page-title i {
+        color: var(--accent-color);
+    }
+
+    /* Metric Cards Grid */
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .metric-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.2rem;
+        display: flex;
+        align-items: center;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background-color: var(--border-color);
+        transition: var(--transition);
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-color);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .metric-card:hover::before {
+        background-color: var(--accent-color);
+    }
+
+    .metric-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background-color: rgba(47, 129, 247, 0.1);
+        color: var(--accent-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .metric-content {
+        flex-grow: 1;
+    }
+
+    .metric-title {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 0.25rem 0;
+    }
+
+    .metric-value {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1;
+    }
+
+    /* specific card colors */
+    .card-success:hover::before { background-color: var(--success-color); }
+    .card-success .metric-icon { color: var(--success-color); background-color: rgba(63, 185, 80, 0.1); }
+    .card-success:hover { border-color: var(--success-color); }
+
+    .card-danger:hover::before { background-color: var(--danger-color); }
+    .card-danger .metric-icon { color: var(--danger-color); background-color: rgba(248, 81, 73, 0.1); }
+    .card-danger:hover { border-color: var(--danger-color); }
+
+    /* Runs Section */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* Runs Table */
+    .runs-table-container {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .runs-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .runs-table th {
+        padding: 1rem 1.5rem;
+        background-color: rgba(255, 255, 255, 0.02);
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .runs-table td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .runs-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .runs-table tr:hover td {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .run-id {
+        font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        color: var(--accent-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .run-id:hover {
+        text-decoration: underline;
+    }
+
+    .pipeline-name {
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .pipeline-name i {
+        color: var(--text-secondary);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-success {
+        background-color: rgba(63, 185, 80, 0.1);
+        color: var(--success-color);
+        border: 1px solid rgba(63, 185, 80, 0.2);
+    }
+
+    .status-failed {
+        background-color: rgba(248, 81, 73, 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgba(248, 81, 73, 0.2);
+    }
+
+    .status-pending, .status-running {
+        background-color: rgba(210, 153, 34, 0.1);
+        color: var(--warning-color);
+        border: 1px solid rgba(210, 153, 34, 0.2);
+    }
+
+    .timestamp {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .empty-state {
+        padding: 3rem;
+        text-align: center;
+        color: var(--text-secondary);
+    }
+    
+    .empty-state i {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+
+<div>
+    <h1 class="page-title"><i class="ph ph-gauge"></i> Dashboard</h1>
+
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-icon"><i class="ph ph-tree-structure"></i></div>
+            <div class="metric-content">
+                <h3 class="metric-title">Projects</h3>
+                <p class="metric-value">{{ total_projects }}</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon"><i class="ph ph-cube"></i></div>
+            <div class="metric-content">
+                <h3 class="metric-title">Applications</h3>
+                <p class="metric-value">{{ total_applications }}</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon"><i class="ph ph-list-dashes"></i></div>
+            <div class="metric-content">
+                <h3 class="metric-title">Pipelines</h3>
+                <p class="metric-value">{{ total_pipelines }}</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon"><i class="ph ph-play-circle"></i></div>
+            <div class="metric-content">
+                <h3 class="metric-title">Total Runs</h3>
+                <p class="metric-value">{{ total_pipeline_runs }}</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon"><i class="ph ph-hard-drives"></i></div>
+            <div class="metric-content">
+                <h3 class="metric-title">Agents</h3>
+                <p class="metric-value">{{ total_agents }}</p>
+            </div>
+        </div>
+
+        <div class="metric-card card-success">
+            <div class="metric-icon"><i class="ph ph-check-circle"></i></div>
+            <div class="metric-content">
+                <h3 class="metric-title">Successful Runs</h3>
+                <p class="metric-value">{{ successful_runs }}</p>
+            </div>
+        </div>
+
+        <div class="metric-card card-danger">
+            <div class="metric-icon"><i class="ph ph-x-circle"></i></div>
+            <div class="metric-content">
+                <h3 class="metric-title">Failed Runs</h3>
+                <p class="metric-value">{{ failed_runs }}</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon"><i class="ph ph-git-branch"></i></div>
+            <div class="metric-content">
+                <h3 class="metric-title">Repositories</h3>
+                <p class="metric-value">{{ total_repos }}</p>
             </div>
         </div>
     </div>
-    {% endblock %}
+
+    <div class="section-header">
+        <h2 class="section-title">Latest Pipeline Runs</h2>
+    </div>
+
+    <div class="runs-table-container">
+        {% if latest_pipeline_runs %}
+        <table class="runs-table">
+            <thead>
+                <tr>
+                    <th>Pipeline</th>
+                    <th>Run ID</th>
+                    <th>Status</th>
+                    <th>Date / Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in latest_pipeline_runs %}
+                <tr>
+                    <td>
+                        <div class="pipeline-name">
+                            <i class="ph ph-list-checks"></i>
+                            {{ run.pipeline.name }}
+                        </div>
+                    </td>
+                    <td>
+                        <a href="{% url 'pipeline_run_detail' run.run_id %}" class="run-id">
+                            {{ run.run_id|truncatechars:12 }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if run.status == 'success' %}
+                            <span class="status-badge status-success"><i class="ph ph-check"></i> Success</span>
+                        {% elif run.status == 'failed' %}
+                            <span class="status-badge status-failed"><i class="ph ph-x"></i> Failed</span>
+                        {% elif run.status == 'running' %}
+                            <span class="status-badge status-running"><i class="ph ph-spinner-gap fa-spin"></i> Running</span>
+                        {% else %}
+                            <span class="status-badge status-pending"><i class="ph ph-clock"></i> Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="timestamp">
+                        {{ run.started_at|date:"Y-m-d H:i:s" }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="ph ph-clock-counter-clockwise"></i>
+            <h3>No pipeline runs yet</h3>
+            <p>Trigger your first pipeline build to see activity here.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

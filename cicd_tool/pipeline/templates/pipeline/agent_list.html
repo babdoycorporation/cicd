@@ -2,43 +2,227 @@
 
 {% block content %}
 <style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid transparent;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2ea043;
+    }
+
+    /* Table Styles */
+    .table-container {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .modern-table th {
+        padding: 1rem 1.5rem;
+        background-color: rgba(255, 255, 255, 0.02);
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modern-table td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .modern-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .modern-table tr:hover td {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .agent-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .agent-name i {
+        color: var(--text-secondary);
+    }
+
+    .monospace {
+        font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        color: var(--accent-color);
+        font-size: 0.9rem;
+    }
+
+    .os-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
     .status-live {
-    color: green;
-}
+        background-color: rgba(63, 185, 80, 0.1);
+        color: var(--success-color);
+        border: 1px solid rgba(63, 185, 80, 0.2);
+    }
 
-.status-offline {
-    color: red;
-}
+    .status-offline {
+        background-color: rgba(248, 81, 73, 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgba(248, 81, 73, 0.2);
+    }
 
+    .timestamp {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .empty-state {
+        padding: 4rem;
+        text-align: center;
+        color: var(--text-secondary);
+        background-color: var(--card-bg);
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
 </style>
-<h2>Agent List</h2>
-<a class="nav-link" href="{% url 'add_agent' %}" class="btn btn-primary">Add Agent</a>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Hostname</th>
-            <th>IP Address</th>
-            <th>Operating System</th>
-            <th>Last Heartbeat</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for agent in agents %}
-        <tr>
-            <td>{{ agent.hostname }}</td>
-            <td>{{ agent.ip_address }}</td>
-            <td>{{ agent.operating_system }}</td>
-            <td>{{ agent.last_heartbeat|date:"DATETIME_FORMAT" }}</td>
-            <td class="{% if agent.live %}status-live{% else %}status-offline{% endif %}">
-                {% if agent.live %}
-                    Live
-                {% else %}
-                    Offline
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+
+<div>
+    <div class="page-header">
+        <h1 class="page-title"><i class="fas fa-users"></i> Agent Runners</h1>
+        <a href="{% url 'add_agent' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Agent
+        </a>
+    </div>
+
+    {% if agents %}
+    <div class="table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Hostname</th>
+                    <th>IP Address</th>
+                    <th>Operating System</th>
+                    <th>Last Heartbeat</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for agent in agents %}
+                <tr>
+                    <td>
+                        <a href="{% url 'agent_detail' agent.hostname %}" class="agent-name" style="text-decoration: none;">
+                            <i class="fas fa-server"></i>
+                            {{ agent.hostname }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="monospace">{{ agent.ip_address }}</span>
+                    </td>
+                    <td>
+                        <div class="os-badge">
+                            {% if "windows" in agent.operating_system|lower %}
+                                <i class="fab fa-windows"></i>
+                            {% elif "linux" in agent.operating_system|lower or "ubuntu" in agent.operating_system|lower %}
+                                <i class="fab fa-linux"></i>
+                            {% elif "mac" in agent.operating_system|lower or "darwin" in agent.operating_system|lower %}
+                                <i class="fab fa-apple"></i>
+                            {% else %}
+                                <i class="fas fa-desktop"></i>
+                            {% endif %}
+                            {{ agent.operating_system|default:"Unknown" }}
+                        </div>
+                    </td>
+                    <td class="timestamp">
+                        {{ agent.last_heartbeat|date:"Y-m-d H:i:s"|default:"Never" }}
+                    </td>
+                    <td>
+                        {% if agent.live %}
+                            <span class="status-badge status-live"><i class="fas fa-check-circle"></i> Online</span>
+                        {% else %}
+                            <span class="status-badge status-offline"><i class="fas fa-times-circle"></i> Offline</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-network-wired"></i>
+        <h3>No agents registered</h3>
+        <p>Register your first CI/CD runner to start executing pipeline tasks.</p>
+        <a href="{% url 'add_agent' %}" class="btn btn-primary mt-3" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Add Agent
+        </a>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

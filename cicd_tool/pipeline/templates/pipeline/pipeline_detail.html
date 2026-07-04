@@ -1,104 +1,316 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<div class="container">
-    <div class="sidebar">
-        <h2>Pipelines</h2>
-        <ul class="pipeline-list">
-            {% for pipeline in pipelines %}
-                <li><a href="{% url 'pipeline_detail' pipeline.id %}">{{ pipeline.name }}</a></li>
-            {% endfor %}
-        </ul>
-    </div>
-    <div class="content">
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .pipeline-title {
+        margin: 0 0 0.5rem 0;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .pipeline-desc {
+        color: var(--text-secondary);
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    .actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid transparent;
+        font-size: 0.95rem;
+    }
+
+    .btn-primary {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2ea043;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background-color: var(--card-bg);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--text-secondary);
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+
+    @media (max-width: 992px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .panel {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .panel-title {
+        margin-top: 0;
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .run-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .run-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .run-item:last-child {
+        border-bottom: none;
+    }
+
+    .run-item a {
+        color: var(--text-primary);
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .run-item a:hover {
+        color: var(--accent-color);
+    }
+
+    .badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-success { background: rgba(35, 134, 54, 0.15); color: var(--success-color); border: 1px solid var(--success-color); }
+    .badge-danger { background: rgba(218, 54, 51, 0.15); color: #da3633; border: 1px solid #da3633; }
+    .badge-warning { background: rgba(210, 153, 34, 0.15); color: #d29922; border: 1px solid #d29922; }
+
+    /* Terminal Console */
+    .terminal {
+        background: #0d1117;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        color: #c9d1d9;
+        overflow: hidden;
+    }
+
+    .terminal-header {
+        background: #161b22;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: #8b949e;
+    }
+
+    .terminal-body {
+        padding: 1rem;
+        max-height: 500px;
+        overflow-y: auto;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .terminal-body pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-family: inherit;
+    }
+</style>
+
+<div>
+    <a href="{% url 'pipeline_list' pipeline.application.project.name %}" style="color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+        <i class="fas fa-arrow-left"></i> Back to Pipelines
+    </a>
+
+    <div class="page-header">
+        <div>
+            <h1 class="pipeline-title"><i class="ph ph-git-merge" style="color: var(--accent-color);"></i> {{ pipeline.name }}</h1>
+            <p class="pipeline-desc">{{ pipeline.description }}</p>
+        </div>
         <div class="actions">
-            <button id="run-pipeline-btn" class="btn btn-primary">Run Pipeline</button>
-            <a href="{% url 'pipeline_step_create' pipeline.id %}" class="btn btn-primary">Add Step</a>
-            <a href="{% url 'pipeline_step_list' pipeline.id %}" class="btn btn-primary">View Steps</a>
+            <a href="{% url 'pipeline_step_list' pipeline.name %}" class="btn btn-secondary">
+                <i class="fas fa-list-ol"></i> View Steps
+            </a>
+            <a href="{% url 'pipeline_step_create' pipeline.name %}" class="btn btn-secondary">
+                <i class="ph ph-plus"></i> Add Step
+            </a>
+            <button id="run-pipeline-btn" class="btn btn-primary">
+                <i class="ph ph-play"></i> Run Pipeline
+            </button>
         </div>
-        <h1>Pipeline: {{ pipeline.name }}</h1>
-        <p>Description: {{ pipeline.description }}</p>
+    </div>
 
-        <div id="live-run-container" style="display: none;">
-            <h2>Live Pipeline Run</h2>
-            <div id="live-run-content"></div>
+    <div class="dashboard-grid">
+        <div class="main-column">
+            <!-- Live Run Container -->
+            <div id="live-run-container" style="display: none; margin-bottom: 2rem;">
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <i class="fas fa-terminal"></i> Live Output Console
+                    </div>
+                    <div class="terminal-body" id="live-run-content">
+                        <!-- Output streams here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3 class="panel-title"><i class="ph ph-clock-counter-clockwise"></i> Run History</h3>
+                {% if pipeline.runs.all %}
+                <ul class="run-list">
+                    {% for run in pipeline.runs.all|dictsortreversed:"started_at" %}
+                    <li class="run-item">
+                        <div>
+                            <a href="{% url 'pipeline_run_detail' run.run_id %}">
+                                <i class="fas fa-hashtag" style="color: var(--text-secondary);"></i> {{ run.run_id|stringformat:"s"|slice:":8" }}
+                            </a>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                Started: {{ run.started_at }}
+                            </div>
+                        </div>
+                        <div>
+                            {% if run.status == 'SUCCESS' %}
+                                <span class="badge badge-success"><i class="ph ph-check"></i> {{ run.status }}</span>
+                            {% elif run.status == 'FAILED' %}
+                                <span class="badge badge-danger"><i class="fas fa-xmark"></i> {{ run.status }}</span>
+                            {% else %}
+                                <span class="badge badge-warning"><i class="ph ph-spinner-gap fa-spin"></i> {{ run.status }}</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">No runs recorded yet.</p>
+                {% endif %}
+            </div>
         </div>
 
-        <h2>Pipeline Run History</h2>
-        <ul>
-            {% for run in pipeline.runs.all %}
-                <li>
-                    <a href="{% url 'pipeline_run_detail' run.run_id %}">
-                        {{ run.run_id }} - Status: {{ run.status }}
-                    </a>
-                    (Started: {{ run.started_at }})
-                </li>
-            {% endfor %}
-        </ul>
-
-        <a class="back-to-pipelines" href="{% url 'pipeline_list' pipeline.project.id %}">Back to Pipelines</a>
+        <div class="sidebar-column">
+            <div class="panel">
+                <h3 class="panel-title"><i class="ph ph-info"></i> Pipeline Info</h3>
+                <div style="margin-bottom: 1rem;">
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.25rem;">Project</div>
+                    <div style="font-weight: 500; color: var(--text-primary);">{{ pipeline.application.project.name }}</div>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.25rem;">Steps Count</div>
+                    <div style="font-weight: 500; color: var(--text-primary);">{{ pipeline.steps.count }} Steps</div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    document.getElementById('run-pipeline-btn').addEventListener('click', function() {
-        const pipelineId = {{ pipeline.id }};
-        const liveRunContainer = document.getElementById('live-run-container');
-        const liveRunContent = document.getElementById('live-run-content');
-        liveRunContainer.style.display = 'block';
-        liveRunContent.innerHTML = '<p>Starting pipeline run...</p>';
-    
-        const eventSource = new EventSource(`/pipeline/pipeline/${pipelineId}/run/`);
-    
-        eventSource.onmessage = function(event) {
-            console.log("Received SSE event:", event.data);
-            const data = JSON.parse(event.data);
-            handleEvent(data);
-        };
-    
-        eventSource.onerror = function(error) {
-            console.error('EventSource failed:', error);
-            eventSource.close();
-            liveRunContent.innerHTML += '<p>Pipeline run ended or encountered an error.</p>';
-        };
-    
-        function handleEvent(data) {
-            console.log("Handling event:", data);
-            switch(data.event) {
-                case 'start':
-                    console.log("Pipeline run started");
-                    liveRunContent.innerHTML = `<p>Pipeline run started. Run ID: ${data.run_id}</p>`;
-                    break;
-                case 'step_start':
-                    console.log("Step started:", data.step);
-                    liveRunContent.innerHTML += `<h3>Step: ${data.step}</h3><pre id="step-${data.step}"></pre>`;
-                    break;
-                case 'log':
-                    console.log("Log message:", data.message);
-                    const stepPre = document.getElementById(`step-${data.step}`);
-                    if (stepPre) {
-                        stepPre.textContent += data.message + '\n';
-                    }
-                    break;
-                case 'step_end':
-                    console.log("Step ended:", data.step, "Status:", data.status);
-                    liveRunContent.innerHTML += `<p>Step ${data.step} ended with status: ${data.status}</p>`;
-                    break;
-                case 'error':
-                    console.error("Error in step:", data.step, "Message:", data.message);
-                    liveRunContent.innerHTML += `<p style="color: red;">Error in step ${data.step}: ${data.message}</p>`;
-                    break;
-                case 'end':
-                    console.log("Pipeline run ended. Status:", data.overall_status);
-                    liveRunContent.innerHTML += `<p>Pipeline run ended. Overall status: ${data.overall_status}</p>`;
-                    eventSource.close();
-                    // Redirect to the pipeline run detail page after a short delay
-                    setTimeout(() => {
-                        window.location.href = data.redirect_url;
-                    }, 3000);
-                    break;
-            }
+document.getElementById('run-pipeline-btn').addEventListener('click', function() {
+    const pipelineId = {{ pipeline.name }};
+    const liveRunContainer = document.getElementById('live-run-container');
+    const liveRunContent = document.getElementById('live-run-content');
+    liveRunContainer.style.display = 'block';
+    liveRunContent.innerHTML = '<div style="color: var(--success-color);">[System] Starting pipeline run...</div>';
+
+    const eventSource = new EventSource(`/pipeline/pipeline/${pipelineId}/run/`);
+
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        handleEvent(data);
+    };
+
+    eventSource.onerror = function(error) {
+        eventSource.close();
+        liveRunContent.innerHTML += '<div style="color: #da3633;">[Error] Pipeline run ended or encountered an error.</div>';
+    };
+
+    function handleEvent(data) {
+        switch(data.event) {
+            case 'start':
+                liveRunContent.innerHTML += `<div style="color: #c9d1d9;">[System] Run ID: ${data.run_id}</div>`;
+                break;
+            case 'step_start':
+                liveRunContent.innerHTML += `<div style="color: var(--accent-color); margin-top: 1rem;">>>> Step: ${data.step}</div><pre id="step-${data.step}"></pre>`;
+                break;
+            case 'log':
+                const stepPre = document.getElementById(`step-${data.step}`);
+                if (stepPre) {
+                    stepPre.textContent += data.message + '\n';
+                }
+                break;
+            case 'step_end':
+                let color = data.status.toLowerCase() === 'success' ? 'var(--success-color)' : '#da3633';
+                liveRunContent.innerHTML += `<div style="color: ${color};"><<< Step ${data.step} ended with status: ${data.status}</div>`;
+                break;
+            case 'error':
+                liveRunContent.innerHTML += `<div style="color: #da3633;">[Error in step ${data.step}]: ${data.message}</div>`;
+                break;
+            case 'end':
+                liveRunContent.innerHTML += `<div style="color: var(--success-color); margin-top: 1rem;">[System] Pipeline run ended. Overall status: ${data.overall_status}</div>`;
+                eventSource.close();
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 3000);
+                break;
         }
-    });
-    </script>
+        liveRunContent.scrollTop = liveRunContent.scrollHeight;
+    }
+});
+</script>
 {% endblock %}

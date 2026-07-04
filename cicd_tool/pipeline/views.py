@@ -52,8 +52,8 @@ def project_list(request):
     projects = Project.objects.all()
     return render(request, 'pipeline/project_list.html', {'projects': projects})
 
-def project_detail(request, project_id):
-    project = get_object_or_404(Project, pk=project_id)
+def project_detail(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
     builds = Build.objects.filter(project=project)
     return render(request, 'pipeline/project_detail.html', {'project': project, 'builds': builds})
 
@@ -71,23 +71,23 @@ from django.shortcuts import render, get_object_or_404, redirect
 from .models import Project, Build
 from django.core.management import call_command
 
-def trigger_build(request, project_id):
-    project = get_object_or_404(Project, pk=project_id)
+def trigger_build(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
     build = Build.objects.create(project=project, status='pending', log='Build started...')
     
     # Run the build command
     call_command('run_build')
 
-    return redirect('project_detail', project_id=project.id)
+    return redirect('project_detail', project_name=project.name)
 
 
-def configure_project(request, project_id):
-    project = get_object_or_404(Project, pk=project_id)
+def configure_project(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
     if request.method == 'POST':
         form = ProjectConfigurationForm(request.POST, instance=project)
         if form.is_valid():
             form.save()
-            return redirect('project_detail', project_id=project_id)
+            return redirect('project_detail', project_name=project_name)
     else:
         form = ProjectConfigurationForm(instance=project)
     return render(request, 'pipeline/configure_project.html', {'form': form, 'project': project})
@@ -107,8 +107,8 @@ def github_webhook(request):
         return JsonResponse({'status': 'success'})
     return JsonResponse({'status': 'failed'}, status=400)
 
-def project_file_download(request, project_id, path):
-    project = get_object_or_404(Project, pk=project_id)
+def project_file_download(request, project_name, path):
+    project = get_object_or_404(Project, name=project_name)
     file_path = os.path.join('D:/cicd/', project.name, path)
     if os.path.exists(file_path):
         with open(file_path, 'rb') as f:
@@ -117,8 +117,8 @@ def project_file_download(request, project_id, path):
             return response
     raise Http404
 
-def project_edit(request, project_id):
-    project = get_object_or_404(Project, pk=project_id)
+def project_edit(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
     if request.method == 'POST':
         form = ProjectForm(request.POST, instance=project)
         if form.is_valid():
@@ -128,8 +128,8 @@ def project_edit(request, project_id):
         form = ProjectForm(instance=project)
     return render(request, 'pipeline/project_form.html', {'form': form})
 
-def project_delete(request, project_id):
-    project = get_object_or_404(Project, pk=project_id)
+def project_delete(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
     if request.method == 'POST':
         project.delete()
         return redirect('project_list')
@@ -161,16 +161,16 @@ from datetime import timedelta
 import json
 from .models import Project, PipelineRun
 
-def build_history(request, project_id):
+def build_history(request, project_name):
     # Retrieve the project associated with the project_id
-    project = get_object_or_404(Project, pk=project_id)
+    project = get_object_or_404(Project, name=project_name)
 
     # Calculate the date range for the past week with timezone-aware datetimes
     end_date = timezone.now()
     start_date = end_date - timedelta(days=7)
     
     # Query the database to count successful and failed PipelineRuns per day for the specific project
-    build_history_data = PipelineRun.objects.filter(pipeline__project=project, started_at__gte=start_date, started_at__lte=end_date) \
+    build_history_data = PipelineRun.objects.filter(pipeline__application__project=project, started_at__gte=start_date, started_at__lte=end_date) \
                                             .annotate(date=TruncDate('started_at')) \
                                             .values('date', 'status') \
                                             .annotate(count=Count('id')) \
@@ -210,29 +210,29 @@ def build_history(request, project_id):
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Project, Pipeline
 
-def pipeline_list(request, project_id):
-    project = get_object_or_404(Project, id=project_id)
-    pipelines = Pipeline.objects.filter(project=project)
+def pipeline_list(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
+    pipelines = Pipeline.objects.filter(application__project=project)
     return render(request, 'pipeline/pipeline_list.html', {'project': project, 'pipelines': pipelines})
 
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Project, Pipeline, Application
 
-def pipeline_create(request, project_id, pipeline_id=None):
-    project = get_object_or_404(Project, id=project_id)
+def pipeline_create(request, project_name, pipeline_name=None):
+    project = get_object_or_404(Project, name=project_name)
     applications = project.applications.all()
     pipeline = None
     pipeline_application_ids = []
 
     if pipeline_id:
-        pipeline = get_object_or_404(Pipeline, id=pipeline_id, project=project)
+        pipeline = get_object_or_404(Pipeline, name=pipeline_name, project=project)
         pipeline_application_ids = list(pipeline.applications.values_list('id', flat=True))
     
     if request.method == 'POST':
         name = request.POST.get('name')
         description = request.POST.get('description', '')
         application_id = request.POST.get('application')
-        application = get_object_or_404(Application, id=application_id)
+        application = get_object_or_404(Application, name=application_name)
         
         if pipeline:
             pipeline.name = name
@@ -244,7 +244,7 @@ def pipeline_create(request, project_id, pipeline_id=None):
         application.pipelines.add(pipeline)
         application.save()
 
-        return redirect('pipeline_list', project_id=project.id)
+        return redirect('pipeline_list', project_name=project.name)
     
     return render(request, 'pipeline/pipeline_form.html', {
         'project': project,
@@ -253,22 +253,22 @@ def pipeline_create(request, project_id, pipeline_id=None):
         'pipeline_application_ids': pipeline_application_ids
     })
 
-def pipeline_update(request, project_id, pipeline_id):
-    project = get_object_or_404(Project, id=project_id)
-    pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+def pipeline_update(request, project_name, pipeline_name):
+    project = get_object_or_404(Project, name=project_name)
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     if request.method == 'POST':
         pipeline.name = request.POST.get('name')
         pipeline.description = request.POST.get('description', '')
         pipeline.save()
-        return redirect('pipeline_list', project_id=project.id)
+        return redirect('pipeline_list', project_name=project.name)
     return render(request, 'pipeline/pipeline_form.html', {'project': project, 'pipeline': pipeline})
 
-def pipeline_delete(request, project_id, pipeline_id):
-    project = get_object_or_404(Project, id=project_id)
-    pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+def pipeline_delete(request, project_name, pipeline_name):
+    project = get_object_or_404(Project, name=project_name)
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     if request.method == 'POST':
         pipeline.delete()
-        return redirect('pipeline_list', project_id=project.id)
+        return redirect('pipeline_list', project_name=project.name)
     return render(request, 'pipeline/pipeline_confirm_delete.html', {'project': project, 'pipeline': pipeline})
 # views.py
 
@@ -276,16 +276,16 @@ def pipeline_delete(request, project_id, pipeline_id):
 
 from .models import Project, Pipeline, PipelineStep
 
-def pipeline_step_list(request, pipeline_id):
-    pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+def pipeline_step_list(request, pipeline_name):
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     steps = PipelineStep.objects.filter(pipeline=pipeline)
     return render(request, 'pipeline/pipeline_step_list.html', {'pipeline': pipeline, 'steps': steps})
 
 from django.shortcuts import redirect, render, get_object_or_404
 from .models import Pipeline, PipelineStep
 
-def pipeline_step_create(request, pipeline_id):
-    pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+def pipeline_step_create(request, pipeline_name):
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -300,15 +300,15 @@ def pipeline_step_create(request, pipeline_id):
         
         try:
             PipelineStep.objects.create(pipeline=pipeline, name=name, description=description, condition=condition, command=command)
-            return redirect('pipeline_step_list', pipeline_id=pipeline.id)
+            return redirect('pipeline_step_list', pipeline_name=pipeline.name)
         except Exception as e:
             error_message = f"An error occurred while creating the pipeline step: {str(e)}"
             return render(request, 'pipeline/pipeline_step_form.html', {'pipeline': pipeline, 'error_message': error_message})
 
     return render(request, 'pipeline/pipeline_step_form.html', {'pipeline': pipeline})
 
-def pipeline_step_update(request, pipeline_id, step_id):
-    pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+def pipeline_step_update(request, pipeline_name, step_id):
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     step = get_object_or_404(PipelineStep, id=step_id)
     if request.method == 'POST':
         step.name = request.POST.get('name')
@@ -316,15 +316,15 @@ def pipeline_step_update(request, pipeline_id, step_id):
         step.condition = request.POST.get('condition', '')
         step.command = request.POST.get('command', '')
         step.save()
-        return redirect('pipeline_step_list', pipeline_id=pipeline.id)
+        return redirect('pipeline_step_list', pipeline_name=pipeline.name)
     return render(request, 'pipeline/pipeline_step_form.html', {'pipeline': pipeline, 'step': step})
 
-def pipeline_step_delete(request, pipeline_id, step_id):
-    pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+def pipeline_step_delete(request, pipeline_name, step_id):
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     step = get_object_or_404(PipelineStep, id=step_id)
     if request.method == 'POST':
         step.delete()
-        return redirect('pipeline_step_list', pipeline_id=pipeline.id)
+        return redirect('pipeline_step_list', pipeline_name=pipeline.name)
     return render(request, 'pipeline/pipeline_step_confirm_delete.html', {'pipeline': pipeline, 'step': step})
 
 from django.shortcuts import render, redirect
@@ -339,8 +339,8 @@ from .models import Pipeline, PipelineStep
 from django.shortcuts import get_object_or_404, render
 from .models import Pipeline, PipelineStep, PipelineRun
 
-def pipeline_detail(request, pipeline_id):
-    pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+def pipeline_detail(request, pipeline_name):
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     context = {
         'pipeline': pipeline,
     }
@@ -358,8 +358,8 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-def run_pipeline(request, pipeline_id):
-    pipeline = get_object_or_404(Pipeline, id=pipeline_id)
+def run_pipeline(request, pipeline_name):
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     project = pipeline.project
 
     logger.info(f"Starting pipeline run for pipeline {pipeline_id}")
@@ -386,7 +386,7 @@ def run_pipeline(request, pipeline_id):
     def event_stream():
         nonlocal overall_status
         logger.debug("Starting event stream")
-        yield f"data: {json.dumps({'event': 'start', 'pipeline_id': pipeline.id, 'run_id': str(pipeline_run.run_id)})}\n\n"
+        yield f"data: {json.dumps({'event': 'start', 'pipeline_name': pipeline.name, 'run_id': str(pipeline_run.run_id)})}\n\n"
         
         for step in steps:
             logger.debug(f"Starting step: {step.name}")
@@ -581,6 +581,11 @@ def agent_list(request):
     agents = Agent.objects.all()
     return render(request, 'pipeline/agent_list.html', {'agents': agents})
 
+def agent_detail(request, agent_hostname):
+    agent = get_object_or_404(Agent, hostname=agent_hostname)
+    pipeline_runs = PipelineRun.objects.filter(agent=agent).order_by('-started_at')[:10]
+    return render(request, 'pipeline/agent_detail.html', {'agent': agent, 'pipeline_runs': pipeline_runs})
+
 
 def send_command(request):
     if request.method == 'POST':
@@ -599,15 +604,15 @@ def agent_instructions(request):
 
 
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import GlobalCredential
+from .models import Credential
 from .forms import GlobalCredentialForm
 
 def global_credential_list(request):
-    credentials = GlobalCredential.objects.all()
+    credentials = Credential.objects.filter(scope_level='global')
     return render(request, 'pipeline/global_credential_list.html', {'credentials': credentials})
 
 def global_credential_detail(request, pk):
-    credential = get_object_or_404(GlobalCredential, pk=pk)
+    credential = get_object_or_404(Credential, pk=pk)
     return render(request, 'pipeline/global_credential_detail.html', {'credential': credential})
 
 def global_credential_create(request):
@@ -621,7 +626,7 @@ def global_credential_create(request):
     return render(request, 'pipeline/global_credential_form.html', {'form': form})
 
 def global_credential_update(request, pk):
-    credential = get_object_or_404(GlobalCredential, pk=pk)
+    credential = get_object_or_404(Credential, pk=pk)
     if request.method == 'POST':
         form = GlobalCredentialForm(request.POST, instance=credential)
         if form.is_valid():
@@ -632,38 +637,39 @@ def global_credential_update(request, pk):
     return render(request, 'pipeline/global_credential_form.html', {'form': form})
 
 def global_credential_delete(request, pk):
-    credential = get_object_or_404(GlobalCredential, pk=pk)
+    credential = get_object_or_404(Credential, pk=pk)
     if request.method == 'POST':
         credential.delete()
         return redirect('global_credential_list')
     return render(request, 'pipeline/global_credential_confirm_delete.html', {'credential': credential})
 
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import LocalCredential
+from .models import Credential
 from .forms import LocalCredentialForm
 
-def local_credential_list(request, project_id):
-    credentials = LocalCredential.objects.filter(project_id=project_id)
-    return render(request, 'pipeline/local_credential_list.html', {'credentials': credentials, 'project_id': project_id})
+def local_credential_list(request, project_name):
+    credentials = Credential.objects.filter(scope_level='project', project__name=project_name)
+    return render(request, 'pipeline/local_credential_list.html', {'credentials': credentials, 'project_name': project_name})
 
 def local_credential_detail(request, pk):
-    credential = get_object_or_404(LocalCredential, pk=pk)
+    credential = get_object_or_404(Credential, pk=pk)
     return render(request, 'pipeline/local_credential_detail.html', {'credential': credential})
 
-def local_credential_create(request, project_id):
+def local_credential_create(request, project_name):
     if request.method == 'POST':
         form = LocalCredentialForm(request.POST)
         if form.is_valid():
             credential = form.save(commit=False)
-            credential.project_id = project_id
+            credential.project = get_object_or_404(Project, name=project_name)
+            credential.scope_level = 'project'
             credential.save()
-            return redirect('local_credential_list', project_id=project_id)
+            return redirect('local_credential_list', project_name=project_name)
     else:
         form = LocalCredentialForm()
     return render(request, 'pipeline/local_credential_form.html', {'form': form})
 
 def local_credential_update(request, pk):
-    credential = get_object_or_404(LocalCredential, pk=pk)
+    credential = get_object_or_404(Credential, pk=pk)
     if request.method == 'POST':
         form = LocalCredentialForm(request.POST, instance=credential)
         if form.is_valid():
@@ -674,25 +680,25 @@ def local_credential_update(request, pk):
     return render(request, 'pipeline/local_credential_form.html', {'form': form})
 
 def local_credential_delete(request, pk):
-    credential = get_object_or_404(LocalCredential, pk=pk)
+    credential = get_object_or_404(Credential, pk=pk)
     project_id = credential.project_id
     if request.method == 'POST':
         credential.delete()
-        return redirect('local_credential_list', project_id=project_id)
+        return redirect('local_credential_list', project_name=project_name)
     return render(request, 'pipeline/local_credential_confirm_delete.html', {'credential': credential})
 
 from .models import Project, Application
 from .forms import ApplicationForm
 
-def create_application(request, project_id):
-    project = get_object_or_404(Project, id=project_id)
+def create_application(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
     if request.method == 'POST':
         form = ApplicationForm(request.POST)
         if form.is_valid():
             application = form.save(commit=False)
             application.project = project
             application.save()
-            return redirect('project_detail', project_id=project.id)
+            return redirect('project_detail', project_name=project.name)
     else:
         form = ApplicationForm()
     return render(request, 'pipeline/create_application.html', {'form': form, 'project': project})
@@ -701,8 +707,8 @@ def application_list(request):
     applications = Application.objects.all()
     return render(request, 'pipeline/application_list.html', {'applications':applications})
 
-def application_detail(request, application_id):
-    application = get_object_or_404(Application, id=application_id)
+def application_detail(request, application_name):
+    application = get_object_or_404(Application, name=application_name)
     pipelines = application.pipelines.all()
     return render(request, 'pipeline/application_detail.html', {'application': application, 'pipelines': pipelines})
 
@@ -710,7 +716,7 @@ def application_detail(request, application_id):
 import yaml
 from django.http import JsonResponse
 from django.shortcuts import render
-from .models import Project, GlobalCredential, LocalCredential, Agent, Pipeline, PipelineStep
+from .models import Project, Credential, Agent, Pipeline, PipelineStep
 
 def create_yaml_pipeline(request):
     if request.method == 'POST':
@@ -761,3 +767,21 @@ def create_yaml_pipeline(request):
     else:
         projects = Project.objects.all()
         return render(request, 'pipeline/create_yaml_pipeline.html', {'projects': projects})
+
+def global_pipeline_list(request):
+    pipelines = Pipeline.objects.all().select_related('application__project')
+    return render(request, 'pipeline/global_pipeline_list.html', {'pipelines': pipelines})
+
+from .models import GlobalSettings
+from .forms import GlobalSettingsForm
+
+def global_settings(request):
+    settings_list = GlobalSettings.objects.all()
+    if request.method == 'POST':
+        form = GlobalSettingsForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('global_settings')
+    else:
+        form = GlobalSettingsForm()
+    return render(request, 'pipeline/global_settings.html', {'settings': settings_list, 'form': form})

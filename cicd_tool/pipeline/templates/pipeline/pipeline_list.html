@@ -1,30 +1,227 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Pipelines of Project: {{ project.name }}</h1>
-    <a class="btn btn-primary mb-3" href="{% url 'pipeline_create' project.id %}">Create Pipeline</a>
-    <ul class="list-group">
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid transparent;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2ea043;
+    }
+    
+    .btn-secondary {
+        background-color: transparent;
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--card-bg);
+        border-color: var(--text-secondary);
+    }
+
+    .btn-danger {
+        background-color: transparent;
+        border-color: rgba(248, 81, 73, 0.3);
+        color: var(--danger-color);
+    }
+    
+    .btn-danger:hover {
+        background-color: rgba(248, 81, 73, 0.1);
+        border-color: var(--danger-color);
+    }
+
+    .pipeline-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .pipeline-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pipeline-card:hover {
+        border-color: var(--accent-color);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .pipeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .pipeline-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--accent-color);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .pipeline-name:hover {
+        text-decoration: underline;
+    }
+
+    .pipeline-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        background-color: var(--card-bg);
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+    }
+
+    /* Modal Styling */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.7);
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background-color: var(--darker-bg);
+        margin: 15% auto;
+        padding: 2rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        width: 400px;
+        text-align: center;
+        position: relative;
+    }
+
+    .close {
+        color: var(--text-secondary);
+        position: absolute;
+        right: 1.5rem;
+        top: 1rem;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover {
+        color: var(--text-primary);
+    }
+</style>
+
+<div>
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="ph ph-rocket"></i> {{ project.name }} / Pipelines
+        </h1>
+        <a href="{% url 'pipeline_create' project.name %}" class="btn btn-primary">
+            <i class="ph ph-plus"></i> Create Pipeline
+        </a>
+    </div>
+
+    {% if pipelines %}
+    <div class="pipeline-grid">
         {% for pipeline in pipelines %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <a href="{% url 'pipeline_detail' pipeline.id %}">{{ pipeline.name }}</a>
-                <div class="actions">
-                    <a href="{% url 'pipeline_update' project.id pipeline.id %}" class="btn btn-sm btn-primary mr-2">Edit</a>
-                    <a href="{% url 'pipeline_delete' project.id pipeline.id %}" class="btn btn-sm btn-danger delete-btn">Delete</a>
-                    <a href="{% url 'run_pipeline' pipeline.id %}" class="btn btn-sm btn-success ml-2">Run</a>
+        <div class="pipeline-card">
+            <div class="pipeline-header">
+                <a href="{% url 'pipeline_detail' pipeline.name %}" class="pipeline-name">
+                    <i class="ph ph-git-merge"></i> {{ pipeline.name }}
+                </a>
+                <div class="pipeline-actions">
+                    <a href="{% url 'pipeline_update' project.name pipeline.name %}" class="btn btn-secondary btn-sm" title="Edit">
+                        <i class="ph ph-pencil-simple"></i>
+                    </a>
+                    <button class="btn btn-danger btn-sm delete-btn" data-id="{{ pipeline.name }}" title="Delete">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                    <a href="{% url 'run_pipeline' pipeline.name %}" class="btn btn-primary btn-sm" title="Run Pipeline">
+                        <i class="ph ph-play"></i>
+                    </a>
                 </div>
-            </li>
+            </div>
+            
+            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-top: auto;">
+                <p style="margin: 0;"><i class="ph ph-info"></i> Pipeline configuration loaded.</p>
+            </div>
+        </div>
         {% endfor %}
-    </ul>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="ph ph-git-merge" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+        <h3>No pipelines found</h3>
+        <p>Create your first pipeline for {{ project.name }}.</p>
+        <a href="{% url 'pipeline_create' project.name %}" class="btn btn-primary" style="margin-top: 1rem;">
+            <i class="ph ph-plus"></i> Create Pipeline
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 <!-- The Modal -->
 <div id="deleteModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
-        <p>Are you sure you want to delete this pipeline?</p>
-        <button id="confirmDelete" class="btn btn-danger modal-button">Yes, delete it</button>
-        <button id="cancelDelete" class="btn btn-secondary modal-button">Cancel</button>
+        <i class="ph ph-warning" style="font-size: 3rem; color: var(--danger-color); margin-bottom: 1rem;"></i>
+        <h3 style="color: var(--text-primary); margin-top: 0;">Delete Pipeline?</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Are you sure you want to delete this pipeline? This action cannot be undone.</p>
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+            <button id="cancelDelete" class="btn btn-secondary">Cancel</button>
+            <button id="confirmDelete" class="btn btn-danger">Yes, delete it</button>
+        </div>
     </div>
 </div>
 
@@ -35,10 +232,11 @@
         var confirmDeleteBtn = document.getElementById("confirmDelete");
         var cancelDeleteBtn = document.getElementById("cancelDelete");
         var deleteButtons = document.querySelectorAll('.delete-btn');
+        let currentPipelineId = null;
 
         deleteButtons.forEach(function(btn) {
             btn.addEventListener('click', function() {
-                pipelineId = this.getAttribute('data-id');
+                currentPipelineId = this.getAttribute('data-id');
                 modal.style.display = "block";
             });
         });
@@ -52,7 +250,9 @@
         }
 
         confirmDeleteBtn.onclick = function() {
-            window.location.href = `/projects/${project.id}/pipelines/${pipelineId}/delete/`;
+            if (currentPipelineId) {
+                window.location.href = `/projects/{{ project.name }}/pipelines/${currentPipelineId}/delete/`;
+            }
         }
 
         window.onclick = function(event) {

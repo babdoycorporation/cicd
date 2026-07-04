@@ -1,9 +1,37 @@
 from django.db import models
+from django.core.validators import validate_ipv4_address
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+import requests
+import uuid
 
+# SCOPE CHOICES
+SCOPE_CHOICES = (
+    ('global', 'Global'),
+    ('project', 'Project Level'),
+    ('application', 'Application Level'),
+)
+
+class Environment(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class GlobalSettings(models.Model):
+    key = models.CharField(max_length=100, unique=True)
+    value = models.TextField()
+
+    def __str__(self):
+        return self.key
 
 class Project(models.Model):
-    name = models.CharField(max_length=100)
-    repository_url = models.URLField()
+    name = models.CharField(max_length=100, unique=True)
+    # Link to gitmgmt.Organization
+    organization = models.ForeignKey('gitmgmt.Organization', on_delete=models.CASCADE, related_name='projects', null=True, blank=True)
+    
+    repository_url = models.URLField(blank=True, null=True)
     environment_variables = models.JSONField(default=dict, blank=True)
     build_triggers = models.JSONField(default=dict, blank=True)
     notifications_enabled = models.BooleanField(default=False)
@@ -12,62 +40,71 @@ class Project(models.Model):
     build_scripts = models.TextField(blank=True)
     test_scripts = models.TextField(blank=True)
     deployment_scripts = models.TextField(blank=True)
-    # Add other fields as needed
-
-    # Add other fields as needed
 
     def __str__(self):
         return self.name
- # Add default branch field
+
+class Application(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='applications')
+    
+    def __str__(self):
+        return f"{self.project.name} / {self.name}"
+
+class Credential(models.Model):
+    service_name = models.CharField(max_length=100)
+    username = models.CharField(max_length=100)
+    password = models.CharField(max_length=100)  # Encrypted/hashed
+    token = models.CharField(max_length=100)     # Encrypted/hashed
+    
+    scope_level = models.CharField(max_length=20, choices=SCOPE_CHOICES, default='global')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True, related_name='credentials')
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, null=True, blank=True, related_name='credentials')
+
+    def __str__(self):
+        return f"{self.service_name} ({self.scope_level})"
 
 class Tag(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-
+    name = models.CharField(max_length=100)
     def __str__(self):
         return self.name
-
-class Build(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('running', 'Running'), ('success', 'Success'), ('failed', 'Failed')])
-    log = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-from django.db import models
-from django.utils.translation import gettext_lazy as _
-
 
 class Pipeline(models.Model):
-    tags = models.ManyToManyField(Tag, blank=True)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name='pipelines', null=True, blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
+    environments = models.ManyToManyField(Environment, blank=True, related_name='pipelines')
+    
+    # For YAML support
+    yaml_path = models.CharField(max_length=255, default='rockerci.yaml')
+    monitored_branch = models.CharField(max_length=100, default='main')
 
     def __str__(self):
         return self.name
 
+class Stage(models.Model):
+    name = models.CharField(max_length=100)
+    pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name='stages')
+    def __str__(self):
+        return self.name
 
-# models.py
+class Step(models.Model):
+    name = models.CharField(max_length=100)
+    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='steps')
+    command = models.TextField()
+    condition = models.CharField(max_length=100, choices=[('always', _('Always')), ('on_success', _('On Success')), ('on_failure', _('On Failure'))])
+    def __str__(self):
+        return self.name
 
 class PipelineStep(models.Model):
     pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     command = models.TextField()
-    condition = models.TextField(blank=True)  # Define condition for step execution
-
+    condition = models.TextField(blank=True)
     def __str__(self):
         return f"{self.name} - {self.pipeline.name}"
-from django.db import models
-
-from django.core.validators import validate_ipv4_address
-
-# models.py
-
-from django.db import models
-from django.core.validators import validate_ipv4_address
-from django.utils import timezone
-import requests
 
 class Agent(models.Model):
     hostname = models.CharField(max_length=255, unique=True)
@@ -76,48 +113,31 @@ class Agent(models.Model):
     last_heartbeat = models.DateTimeField(null=True, blank=True)
     operating_system = models.CharField(max_length=100, null=True, blank=True)
     live = models.BooleanField(default=False)
+    
+    scope_level = models.CharField(max_length=20, choices=SCOPE_CHOICES, default='global')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True, related_name='agents')
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, null=True, blank=True, related_name='agents')
+    environments = models.ManyToManyField(Environment, blank=True, related_name='agents')
 
     def __str__(self):
         return self.hostname
 
     def get_command_url(self):
-        """
-        Get the URL for sending commands to the agent.
-        """
         return f"http://{self.ip_address}:9000/pipeline/agents/receive-command/"
 
     def send_command(self, command_data):
-        """
-        Send command to the agent and return the response.
-        """
         try:
             endpoint = self.get_command_url()
             response = requests.post(endpoint, json=command_data)
-            response.raise_for_status()  # Raise an exception for HTTP errors
+            response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
-            # Handle communication errors
             raise RuntimeError(f"Error sending command to agent: {e}")
 
     def update_heartbeat(self):
-        """
-        Update the last heartbeat timestamp for the agent.
-        """
         self.last_heartbeat = timezone.now()
         self.save()
-
         return self.hostname
-
-
-
-
-from django.db import models
-from django.utils import timezone
-import uuid
-
-from django.db import models
-from django.utils import timezone
-import uuid
 
 class PipelineRun(models.Model):
     pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name='runs')
@@ -137,97 +157,26 @@ class PipelineRun(models.Model):
                 self.run_id = uuid.uuid4()
         super().save(*args, **kwargs)
 
-# models.py
-
-
-
-from django.utils import timezone
+class Build(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('running', 'Running'), ('success', 'Success'), ('failed', 'Failed')])
+    log = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 class Command(models.Model):
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
     command = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
 
-    def __str__(self):
-        return f"Command for {self.agent.hostname}: {self.command}"
-
-
-
 class Heartbeat(models.Model):
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Heartbeat from {self.agent.hostname} at {self.timestamp}"
-
-
-from django.db import models
-
-class GlobalCredential(models.Model):
-    service_name = models.CharField(max_length=100)
-    username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100)  # Encrypted or hashed
-    token = models.CharField(max_length=100)     # Encrypted or hashed
-    # Add other fields as needed
-
-    def __str__(self):
-        return self.service_name
-
-
-
-class LocalCredential(models.Model):
-    project = models.ForeignKey('Project', on_delete=models.CASCADE)
-    service_name = models.CharField(max_length=100)
-    username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100)  # Encrypted or hashed
-    token = models.CharField(max_length=100)     # Encrypted or hashed
-    # Add other fields as needed
-    def __str__(self):
-        return self.service_name
-
-
-
-class Application(models.Model):
-    name = models.CharField(max_length=100)
-    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='applications')
-    pipelines = models.ManyToManyField('Pipeline', related_name='applications')
-    global_credentials = models.ManyToManyField('GlobalCredential', related_name='applications')
-    local_credentials = models.ManyToManyField('LocalCredential', related_name='applications')
-    agents = models.ManyToManyField('Agent', related_name='applications')
-
-    def __str__(self):
-        return self.name
-
-
-
-from django.db import models
-from django.utils import timezone
-
 class YamlFileVersion(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True)
     pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE)
     version_number = models.IntegerField()
     yaml_content = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
-
-    def __str__(self):
-        return f"Version {self.version_number} for {self.pipeline.name}"
-
-
-class Stage(models.Model):
-    name = models.CharField(max_length=100)
-    pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE, related_name='stages')
-
-    def __str__(self):
-        return self.name
-
-
-class Step(models.Model):
-    name = models.CharField(max_length=100)
-    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='steps')
-    command = models.TextField()
-    condition = models.CharField(max_length=100, choices=[('always', _('Always')), ('on_success', _('On Success')), ('on_failure', _('On Failure'))])
-
-    def __str__(self):
-        return self.name
 

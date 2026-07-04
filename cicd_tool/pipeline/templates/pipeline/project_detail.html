@@ -1,49 +1,240 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">{{ project.name }}</h1>
-    <p><strong>Repository URL:</strong> {{ project.repository_url }}</p>
-    <div class="mb-4">
-        <a href="{% url 'trigger_build' project.id %}" class="btn btn-success mr-2">Trigger Build</a>
-        <a href="{% url 'configure_project' project.id %}" class="btn btn-primary mr-2">Configure Project</a>
-        <a href="{% url 'local_credential_list' project_id=project.id %}" class="btn btn-danger mr-2">Local Credentials</a>
-        <a href="{% url 'create_application' project_id=project.id %}" class="btn btn-info">Create Application</a>
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .page-title i { color: var(--accent-color); }
+    
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid transparent;
+        font-size: 0.9rem;
+    }
+    .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+    
+    .btn-primary { background-color: var(--success-color); color: white; }
+    .btn-primary:hover { background-color: #2ea043; }
+    
+    .btn-secondary { background-color: transparent; border-color: var(--border-color); color: var(--text-primary); }
+    .btn-secondary:hover { background-color: var(--card-bg); border-color: var(--text-secondary); }
+
+    .btn-info { background-color: rgba(47, 129, 247, 0.1); border-color: rgba(47, 129, 247, 0.3); color: var(--accent-color); }
+    .btn-info:hover { background-color: rgba(47, 129, 247, 0.2); border-color: var(--accent-color); }
+
+    .btn-warning { background-color: rgba(210, 153, 34, 0.1); border-color: rgba(210, 153, 34, 0.3); color: var(--warning-color); }
+    .btn-warning:hover { background-color: rgba(210, 153, 34, 0.2); border-color: var(--warning-color); }
+
+    .info-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        color: var(--text-secondary);
+    }
+    .meta-item i { font-size: 1.25rem; color: var(--accent-color); width: 24px; text-align: center; }
+    .meta-item a { color: var(--text-primary); text-decoration: none; font-family: ui-monospace, SFMono-Regular, monospace; }
+    .meta-item a:hover { text-decoration: underline; color: var(--accent-color); }
+
+    .action-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 2rem 0 1rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .section-title i { color: var(--text-secondary); }
+
+    .runs-table-container {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .runs-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+    .runs-table th {
+        padding: 1rem;
+        background-color: rgba(255, 255, 255, 0.02);
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .runs-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: top;
+    }
+    .runs-table tr:last-child td { border-bottom: none; }
+    .runs-table tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+
+    .log-box {
+        background-color: var(--darker-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0.75rem;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 0.8rem;
+        color: #b5cea8;
+        max-height: 120px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    .log-box::-webkit-scrollbar { width: 6px; }
+    .log-box::-webkit-scrollbar-track { background: transparent; }
+    .log-box::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-success { background-color: rgba(63, 185, 80, 0.1); color: var(--success-color); border: 1px solid rgba(63, 185, 80, 0.2); }
+    .status-failed { background-color: rgba(248, 81, 73, 0.1); color: var(--danger-color); border: 1px solid rgba(248, 81, 73, 0.2); }
+    .status-pending { background-color: rgba(210, 153, 34, 0.1); color: var(--warning-color); border: 1px solid rgba(210, 153, 34, 0.2); }
+</style>
+
+<div>
+    <div class="page-header">
+        <h1 class="page-title"><i class="ph ph-book-open"></i> {{ project.name }}</h1>
+        <a href="{% url 'project_list' %}" class="btn btn-secondary">
+            <i class="ph ph-arrow-left"></i> Back to Projects
+        </a>
     </div>
-    <div class="mb-4">
-        <h2>Build History</h2>
-        <a href="{% url 'build_history' project.id %}" class="btn btn-info">View Build History</a>
+
+    <div class="info-card">
+        <div class="meta-item">
+            <i class="ph ph-git-branch"></i>
+            <div>
+                <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Repository URL</div>
+                <a href="{{ project.repository_url }}" target="_blank">{{ project.repository_url }}</a>
+            </div>
+        </div>
+
+        <div class="action-grid">
+            <a href="{% url 'trigger_build' project.name %}" class="btn btn-primary">
+                <i class="ph ph-play"></i> Trigger Build
+            </a>
+            <a href="{% url 'configure_project' project.name %}" class="btn btn-secondary">
+                <i class="ph ph-gear"></i> Configure Project
+            </a>
+            <a href="{% url 'local_credential_list' project_name=project.name %}" class="btn btn-warning">
+                <i class="ph ph-key"></i> Local Credentials
+            </a>
+            <a href="{% url 'create_application' project_name=project.name %}" class="btn btn-info">
+                <i class="ph ph-cube"></i> Create Application
+            </a>
+            <a href="{% url 'pipeline_list' project.name %}" class="btn btn-info">
+                <i class="ph ph-git-merge"></i> Manage Pipelines
+            </a>
+            <a href="{% url 'build_history' project.name %}" class="btn btn-secondary">
+                <i class="ph ph-clock-counter-clockwise"></i> View Build History
+            </a>
+        </div>
     </div>
-    <div class="mb-4">
-        <h2>Pipelines</h2>
-        <a href="{% url 'pipeline_list' project.id  %}" class="btn btn-primary">Manage Pipelines</a>
+
+    <h2 class="section-title"><i class="ph ph-terminal-window"></i> Recent Builds</h2>
+    <div class="runs-table-container">
+        {% if builds %}
+        <table class="runs-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th style="width: 120px;">Status</th>
+                    <th>Build Log Output</th>
+                    <th style="width: 180px;">Timestamps</th>
+                    <th style="width: 100px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for build in builds %}
+                <tr>
+                    <td style="font-family: monospace; color: var(--text-secondary);">#{{ build.id }}</td>
+                    <td>
+                        {% if build.status|lower == 'success' %}
+                            <span class="status-badge status-success"><i class="ph ph-check"></i> Success</span>
+                        {% elif build.status|lower == 'failed' %}
+                            <span class="status-badge status-failed"><i class="ph ph-x"></i> Failed</span>
+                        {% else %}
+                            <span class="status-badge status-pending"><i class="ph ph-spinner-gap fa-spin"></i> {{ build.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="log-box">{{ build.log }}</div>
+                    </td>
+                    <td style="font-size: 0.85rem; color: var(--text-secondary);">
+                        <div><i class="ph ph-calendar-blank"></i> {{ build.created_at|date:"M d, Y H:i" }}</div>
+                    </td>
+                    <td>
+                        <a href="{% url 'download_log' build.id %}" class="btn btn-secondary btn-sm" title="Download Log">
+                            <i class="ph ph-download-simple"></i> Download
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 3rem; text-align: center; color: var(--text-secondary);">
+            <i class="ph ph-terminal-window" style="font-size: 2.5rem; opacity: 0.5; margin-bottom: 1rem;"></i>
+            <h3>No builds found</h3>
+            <p>Trigger your first build for this project to see logs here.</p>
+        </div>
+        {% endif %}
     </div>
-    <h2 class="mt-4">Builds</h2>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Log</th>
-                <th>Created At</th>
-                <th>Updated At</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for build in builds %}
-            <tr>
-                <td>{{ build.id }}</td>
-                <td>{{ build.status }}</td>
-                <td>{{ build.log|linebreaks }}</td>
-                <td>{{ build.created_at }}</td>
-                <td>{{ build.updated_at }}</td>
-                <td>
-                    <a href="{% url 'download_log' build.id %}" class="btn btn-primary btn-sm">Download</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 </div>
 {% endblock %}

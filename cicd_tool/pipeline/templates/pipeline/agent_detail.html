@@ -1,0 +1,302 @@
+{% extends "pipeline/base.html" %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .page-title i {
+        color: var(--accent-color);
+    }
+
+    .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid var(--border-color);
+        background-color: transparent;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--card-bg);
+        border-color: var(--text-secondary);
+    }
+
+    .layout-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+    }
+
+    @media (max-width: 992px) {
+        .layout-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .panel {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+    }
+
+    .panel-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.75rem;
+    }
+
+    .info-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .info-value {
+        color: var(--text-primary);
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .monospace {
+        font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        color: var(--accent-color);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-live {
+        background-color: rgba(63, 185, 80, 0.1);
+        color: var(--success-color);
+        border: 1px solid rgba(63, 185, 80, 0.2);
+    }
+
+    .status-offline {
+        background-color: rgba(248, 81, 73, 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgba(248, 81, 73, 0.2);
+    }
+
+    .status-success {
+        background-color: rgba(63, 185, 80, 0.1);
+        color: var(--success-color);
+        border: 1px solid rgba(63, 185, 80, 0.2);
+    }
+
+    .status-failed {
+        background-color: rgba(248, 81, 73, 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgba(248, 81, 73, 0.2);
+    }
+
+    .status-pending, .status-running {
+        background-color: rgba(210, 153, 34, 0.1);
+        color: var(--warning-color);
+        border: 1px solid rgba(210, 153, 34, 0.2);
+    }
+
+    /* Runs Table */
+    .runs-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .runs-table th {
+        padding: 1rem;
+        background-color: rgba(255, 255, 255, 0.02);
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .runs-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+    }
+
+    .runs-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .run-id {
+        font-family: ui-monospace, SFMono-Regular, SF Mono, monospace;
+        color: var(--accent-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .run-id:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div>
+    <div class="page-header">
+        <h1 class="page-title"><i class="fas fa-server"></i> {{ agent.hostname }}</h1>
+        <a href="{% url 'agent_list' %}" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Agents
+        </a>
+    </div>
+
+    <div class="layout-grid">
+        <!-- Agent Details Panel -->
+        <div class="panel">
+            <h2 class="panel-title"><i class="fas fa-info-circle"></i> System Information</h2>
+            <ul class="info-list">
+                <li class="info-item">
+                    <span class="info-label">Status</span>
+                    <span class="info-value">
+                        {% if agent.live %}
+                            <span class="status-badge status-live"><i class="fas fa-check-circle"></i> Online</span>
+                        {% else %}
+                            <span class="status-badge status-offline"><i class="fas fa-times-circle"></i> Offline</span>
+                        {% endif %}
+                    </span>
+                </li>
+                <li class="info-item">
+                    <span class="info-label">IP Address</span>
+                    <span class="info-value monospace">{{ agent.ip_address }}</span>
+                </li>
+                <li class="info-item">
+                    <span class="info-label">Operating System</span>
+                    <span class="info-value">
+                        {% if "windows" in agent.operating_system|lower %}
+                            <i class="fab fa-windows" style="color: var(--text-secondary);"></i>
+                        {% elif "linux" in agent.operating_system|lower or "ubuntu" in agent.operating_system|lower %}
+                            <i class="fab fa-linux" style="color: var(--text-secondary);"></i>
+                        {% elif "mac" in agent.operating_system|lower or "darwin" in agent.operating_system|lower %}
+                            <i class="fab fa-apple" style="color: var(--text-secondary);"></i>
+                        {% else %}
+                            <i class="fas fa-desktop" style="color: var(--text-secondary);"></i>
+                        {% endif %}
+                        {{ agent.operating_system|default:"Unknown" }}
+                    </span>
+                </li>
+                <li class="info-item">
+                    <span class="info-label">Last Heartbeat</span>
+                    <span class="info-value" style="color: var(--text-secondary); font-size: 0.9rem;">
+                        {{ agent.last_heartbeat|date:"Y-m-d H:i:s"|default:"Never" }}
+                    </span>
+                </li>
+                <li class="info-item" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                    <span class="info-label">Agent Hash Key</span>
+                    <div style="background-color: var(--darker-bg); border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 4px; width: 100%; word-break: break-all;">
+                        <span class="info-value monospace" style="font-size: 0.8rem;">{{ agent.hash_key }}</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Recent Runs Panel -->
+        <div class="panel">
+            <h2 class="panel-title"><i class="fas fa-history"></i> Recent Execution History</h2>
+            {% if pipeline_runs %}
+            <table class="runs-table">
+                <thead>
+                    <tr>
+                        <th>Pipeline</th>
+                        <th>Run ID</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in pipeline_runs %}
+                    <tr>
+                        <td style="font-weight: 500;">
+                            <i class="fas fa-tasks" style="color: var(--text-secondary); margin-right: 0.5rem;"></i>
+                            {{ run.pipeline.name }}
+                        </td>
+                        <td>
+                            <a href="{% url 'pipeline_run_detail' run.run_id %}" class="run-id">
+                                {{ run.run_id|truncatechars:12 }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if run.status == 'success' %}
+                                <span class="status-badge status-success"><i class="fas fa-check"></i> Success</span>
+                            {% elif run.status == 'failed' %}
+                                <span class="status-badge status-failed"><i class="fas fa-times"></i> Failed</span>
+                            {% elif run.status == 'running' %}
+                                <span class="status-badge status-running"><i class="fas fa-spinner fa-spin"></i> Running</span>
+                            {% else %}
+                                <span class="status-badge status-pending"><i class="fas fa-clock"></i> Pending</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: var(--text-secondary); font-size: 0.9rem;">
+                            {{ run.started_at|date:"M d, H:i" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                <i class="fas fa-bed" style="font-size: 2.5rem; opacity: 0.5; margin-bottom: 1rem; display: block;"></i>
+                <p>This agent hasn't executed any pipelines yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

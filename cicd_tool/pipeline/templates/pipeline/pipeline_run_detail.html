@@ -1,28 +1,197 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<div class="container">
-    <h1>Pipeline Run: {{ pipeline_run.pipeline.name }}</h1>
-    <p>Run ID: {{ pipeline_run.run_id }}</p>
-    <p>Status: <span class="status {{ pipeline_run.status }}">{{ pipeline_run.status }}</span></p>
-    <p>Started at: {{ pipeline_run.started_at }}</p>
-    {% if pipeline_run.finished_at %}
-        <p>Finished at: {{ pipeline_run.finished_at }}</p>
-    {% endif %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
 
-    <h2>Log Output</h2>
-    {% if pipeline_run.log %}
-        {% for step_name, step_data in pipeline_run.log.items %}
-            <div class="step-log">
-                <h3>Step: {{ step_name }}</h3>
-                <p>Status: <span class="status {{ step_data.status }}">{{ step_data.status }}</span></p>
-                <pre>{{ step_data.output }}</pre>
+    .run-title {
+        margin: 0 0 0.5rem 0;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .badge-success { background: rgba(35, 134, 54, 0.15); color: var(--success-color); border: 1px solid var(--success-color); }
+    .badge-danger { background: rgba(218, 54, 51, 0.15); color: #da3633; border: 1px solid #da3633; }
+    .badge-warning { background: rgba(210, 153, 34, 0.15); color: #d29922; border: 1px solid #d29922; }
+
+    .run-meta {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .run-meta {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+
+    .meta-item {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        flex: 1;
+    }
+
+    .meta-label {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .meta-value {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .terminal {
+        background: #0d1117;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        color: #c9d1d9;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .terminal-header {
+        background: #161b22;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: #8b949e;
+    }
+
+    .terminal-body {
+        padding: 1rem;
+        max-height: 600px;
+        overflow-y: auto;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .terminal-body pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-family: inherit;
+    }
+
+    .step-log {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px dashed rgba(255,255,255,0.1);
+    }
+    
+    .step-log:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .step-title {
+        color: var(--accent-color);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+
+<div>
+    <a href="{% url 'pipeline_detail' pipeline_run.pipeline.name %}" style="color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+        <i class="fas fa-arrow-left"></i> Back to Pipeline
+    </a>
+
+    <div class="page-header">
+        <div>
+            <h1 class="run-title">
+                <i class="fas fa-hashtag" style="color: var(--text-secondary);"></i> {{ pipeline_run.run_id|stringformat:"s"|slice:":8" }}
+            </h1>
+            <p style="color: var(--text-secondary); margin: 0;">Run for pipeline: <strong>{{ pipeline_run.pipeline.name }}</strong></p>
+        </div>
+        <div>
+            {% if pipeline_run.status == 'SUCCESS' %}
+                <span class="badge badge-success"><i class="fas fa-check"></i> {{ pipeline_run.status }}</span>
+            {% elif pipeline_run.status == 'FAILED' %}
+                <span class="badge badge-danger"><i class="fas fa-xmark"></i> {{ pipeline_run.status }}</span>
+            {% else %}
+                <span class="badge badge-warning"><i class="fas fa-spinner fa-spin"></i> {{ pipeline_run.status }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="run-meta">
+        <div class="meta-item">
+            <div class="meta-label">Started At</div>
+            <div class="meta-value"><i class="fas fa-clock" style="color: var(--text-secondary);"></i> {{ pipeline_run.started_at }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Finished At</div>
+            <div class="meta-value">
+                {% if pipeline_run.finished_at %}
+                    <i class="fas fa-flag-checkered" style="color: var(--text-secondary);"></i> {{ pipeline_run.finished_at }}
+                {% else %}
+                    <i class="fas fa-minus" style="color: var(--text-secondary);"></i> In Progress
+                {% endif %}
             </div>
-        {% endfor %}
-    {% else %}
-        <p>No log data available.</p>
-    {% endif %}
+        </div>
+    </div>
 
-    <a href="{% url 'pipeline_detail' pipeline_run.pipeline.id %}" class="btn btn-secondary">Back to Pipeline</a>
+    <div class="terminal">
+        <div class="terminal-header">
+            <div><i class="fas fa-terminal"></i> Execution Logs</div>
+            <div>
+                <a href="{% url 'download_log' pipeline_run.id %}" style="color: inherit; text-decoration: none; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border-radius: 4px;">
+                    <i class="fas fa-download"></i> Download
+                </a>
+            </div>
+        </div>
+        <div class="terminal-body">
+            {% if pipeline_run.log %}
+                {% for step_name, step_data in pipeline_run.log.items %}
+                    <div class="step-log">
+                        <div class="step-title">
+                            >>> Step: {{ step_name }}
+                            {% if step_data.status == 'SUCCESS' %}
+                                <span style="color: var(--success-color); font-size: 0.8rem;">[SUCCESS]</span>
+                            {% elif step_data.status == 'FAILED' %}
+                                <span style="color: #da3633; font-size: 0.8rem;">[FAILED]</span>
+                            {% endif %}
+                        </div>
+                        <pre>{{ step_data.output }}</pre>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">No log data available.</div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}

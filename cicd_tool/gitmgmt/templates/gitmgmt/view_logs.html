@@ -1,116 +1,48 @@
-
-{% block content %}
-<style>
-/* Add this CSS to your stylesheet */
-.logs-page {
-    padding: 20px;
-    font-family: Arial, sans-serif;
-}
-
-.logs-container {
-    max-width: 800px;
-    margin: 0 auto;
-    background: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-}
-
-.logs-container .content {
-    text-align: center;
-}
-
-.logs-container h2 {
-    font-size: 24px;
-    margin-bottom: 20px;
-}
-
-.logs-container .section {
-    text-align: left;
-}
-
-.logs-container .logs-history {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-}
-
-.logs-container .log-entry {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    padding: 10px;
-    border-bottom: 1px solid #eaeaea;
-}
-
-.logs-container .logs-history li:nth-child(even) {
-    background: #f1f1f1;
-}
-
-.logs-container .log-date,
-.logs-container .log-author,
-.logs-container .log-message,
-.logs-container .log-hash {
-    flex: 1;
-    margin: 0 5px;
-}
-
-.logs-container .log-date {
-    flex-basis: 15%;
-}
-
-.logs-container .log-author {
-    flex-basis: 20%;
-}
-
-.logs-container .log-message {
-    flex-basis: 50%;
-}
-
-.logs-container .log-hash {
-    flex-basis: 15%;
-    text-align: right;
-}
-
-.logs-container .back-link {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 10px 20px;
-    background-color: #12f382;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
-
-.logs-container .back-link:hover {
-    background-color: #21b860;
-}
-
-</style>
-
-<div class="logs-page">
-    <div class="logs-container">
-        <div class="content">
-            <h2>{{ repository.name }} - Logs</h2>
-
-            <div class="section">
-                <h3>Logs History</h3>
-                <ul class="logs-history">
-                    {% for log in logs %}
-                        <li class="log-entry">
-                            <span class="log-date">{{ log.date }}</span>
-                            <span class="log-author">{{ log.author }}</span>
-                            <span class="log-message">{{ log.message }}</span>
-                            <span class="log-hash">({{ log.hash }})</span>
-                        </li>
-                    {% endfor %}
-                </ul>
-            </div>
-
-            <a href="{% url 'repository_detail' repository_id=repository.id %}" class="back-link">Back to Repository</a>
+{% extends 'gitmgmt/repository_base.html' %}
+{% block repo_content %}
+<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 2rem;">
+    <h2 style="margin-top: 0; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+        <i class="fas fa-clock-rotate-left" style="color: var(--accent-color);"></i> Commit History
+    </h2>
+    
+    {% if error_message %}
+        <div style="background: rgba(218, 54, 51, 0.1); border: 1px solid #da3633; color: #da3633; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+            {{ error_message }}
         </div>
-    </div>
+    {% endif %}
+
+    {% if logs %}
+        <div style="position: relative; padding-left: 2rem;">
+            <!-- Vertical line -->
+            <div style="position: absolute; left: 7px; top: 10px; bottom: 0; width: 2px; background: var(--border-color);"></div>
+            
+            {% for log in logs %}
+            <div style="position: relative; margin-bottom: 2rem;">
+                <!-- Node dot -->
+                <div style="position: absolute; left: -2rem; top: 0.35rem; width: 16px; height: 16px; border-radius: 50%; background: var(--card-bg); border: 2px solid var(--accent-color); z-index: 1;"></div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">
+                            {{ log.message }}
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                            <span style="font-weight: 600; color: var(--text-primary);">{{ log.author }}</span> committed on {{ log.date }}
+                        </div>
+                    </div>
+                    <div style="font-family: monospace; background: var(--darker-bg); border: 1px solid var(--border-color); padding: 0.25rem 0.5rem; border-radius: 6px; color: var(--accent-color); font-size: 0.85rem;">
+                        {{ log.hash }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem 0; color: var(--text-secondary);">
+            <i class="fas fa-code-commit" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
+            <h3>No commits found</h3>
+            <p>This repository doesn't have any commits on this branch yet.</p>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

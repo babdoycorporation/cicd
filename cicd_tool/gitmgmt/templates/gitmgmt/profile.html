@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{ request.user.username }} | Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6e44ff;
+            --secondary: #b892ff;
+            --dark: #0f0e17;
+            --card: #16161a;
+            --light: #fffffe;
+            --border: #242629;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark);
+            color: var(--light);
+        }
+
+        .navbar {
+            padding: 1rem 5%;
+            background: rgba(15, 14, 23, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sidebar-link {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #a7a9be;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: rgba(110, 68, 255, 0.1);
+            color: var(--primary);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-header {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .avatar-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .token-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .token-item:last-child {
+            border-bottom: none;
+        }
+
+        .token-name {
+            font-weight: 600;
+        }
+
+        .token-meta {
+            font-size: 0.8rem;
+            color: #72757e;
+        }
+
+        .new-token-alert {
+            background: rgba(255, 137, 6, 0.1);
+            border: 1px solid var(--accent);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            color: #ffbd69;
+        }
+
+        .token-code {
+            font-family: monospace;
+            background: #000;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: block;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+            color: #a7a9be;
+        }
+
+        .form-control {
+            width: 100%;
+            background: #242629;
+            border: 1px solid #36383d;
+            border-radius: 6px;
+            padding: 0.6rem;
+            color: white;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="{% url 'repository_list' %}" class="logo">Release Rocket</a>
+        <div>
+            <span>{{ request.user.username }}</span>
+            <a href="{% url 'logout' %}" style="margin-left: 1rem; color: #ff3860; text-decoration: none;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="sidebar">
+            <a href="#" class="sidebar-link active"><i class="fas fa-user"></i> Public Profile</a>
+            <a href="{% url 'repository_list' %}" class="sidebar-link"><i class="fas fa-book"></i> Repositories</a>
+            <a href="{% url 'organization_list' %}" class="sidebar-link"><i class="fas fa-building"></i>
+                Organizations</a>
+            <a href="#" class="sidebar-link"><i class="fas fa-key"></i> Passwords & Security</a>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <div class="profile-header">
+                    <div class="avatar-circle">{{ request.user.username|slice:":1"|upper }}</div>
+                    <div>
+                        <h1 style="margin: 0;">{{ request.user.username }}</h1>
+                        <p style="color: #a7a9be; margin: 0.2rem 0;">Member since {{ request.user.date_joining|date:"M
+                            Y" }}</p>
+                    </div>
+                </div>
+
+                <form>
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input type="text" class="form-control" value="{{ request.user.username }}">
+                    </div>
+                    <div class="form-group">
+                        <label>Bio</label>
+                        <textarea class="form-control" rows="3"
+                            placeholder="Tell us about yourself">{{ profile.bio }}</textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary">Update Profile</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    Personal Access Tokens
+                </div>
+
+                {% if new_token %}
+                <div class="new-token-alert">
+                    <strong>Success!</strong> Your new token has been generated.
+                    Make sure to copy it now. You won't be able to see it again!
+                    <code class="token-code">{{ new_token }}</code>
+                </div>
+                {% endif %}
+
+                <form method="post" style="margin-bottom: 2rem;">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label>Token Name</label>
+                            <input type="text" name="token_name" class="form-control" placeholder="e.g. CLI or Jenkins"
+                                required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Generate Token</button>
+                    </div>
+                </form>
+
+                <div class="token-list">
+                    {% for token in tokens %}
+                    <div class="token-item">
+                        <div>
+                            <div class="token-name">{{ token.name }}</div>
+                            <div class="token-meta">Created {{ token.created_at|timesince }} ago</div>
+                        </div>
+                        <button class="btn" style="color: #ff3860; background: transparent;"><i
+                                class="fas fa-trash"></i></button>
+                    </div>
+                    {% empty %}
+                    <p style="color: #a7a9be; text-align: center;">No active tokens.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

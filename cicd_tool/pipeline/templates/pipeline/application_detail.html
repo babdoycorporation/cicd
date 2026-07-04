@@ -1,29 +1,127 @@
 {% extends 'pipeline/base.html' %}
+
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Detail</title>
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .page-title i { color: var(--accent-color); }
+    .detail-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .detail-item {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+    }
+    .detail-item strong {
+        color: var(--text-secondary);
+        display: inline-block;
+        width: 150px;
+    }
+    .pipeline-list {
+        list-style: none;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+    .pipeline-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: var(--transition);
+        text-decoration: none;
+        color: var(--text-primary);
+    }
+    .pipeline-card:hover {
+        border-color: var(--accent-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .pipeline-card i {
+        color: var(--accent-color);
+        font-size: 1.5rem;
+    }
+    .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        background-color: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        transition: var(--transition);
+        cursor: pointer;
+    }
+    .btn-secondary:hover {
+        background-color: var(--card-bg);
+        border-color: var(--text-secondary);
+    }
+</style>
 
-</head>
-<body>
-    <div class="container">
-        <h1>{{ application.name }}</h1>
-        <p>project : {{ application.project}}</p>
-        <!-- Add more details as needed -->
-
-        <a href="{% url 'application_list' %}" class="back-link">Back to Applications</a>
+<div>
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="ph ph-cube"></i> {{ application.name }}
+        </h1>
+        <a href="{% url 'application_list' %}" class="btn-secondary">
+            <i class="ph ph-arrow-left"></i> Back to Applications
+        </a>
     </div>
-<h2>Pipelines:</h2>
-<ul class="pipeline-list">
-    {% for pipeline in pipelines %}
-        <li style="text-decoration: none;"><a href="{% url 'pipeline_detail' pipeline.id %}">{{ pipeline.name }}</a></li>
-    {% endfor %}
-</ul>
 
+    <div class="detail-card">
+        <div class="detail-item">
+            <strong>Project:</strong> 
+            <i class="ph ph-projector-screen" style="color: var(--text-secondary); margin-right: 0.5rem;"></i> {{ application.project }}
+        </div>
+    </div>
+
+    <h2 style="font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="ph ph-git-merge"></i> Attached Pipelines
+    </h2>
     
-</body>
-</html>
+    {% if pipelines %}
+    <ul class="pipeline-list">
+        {% for pipeline in pipelines %}
+        <li>
+            <a href="{% url 'pipeline_detail' pipeline.name %}" class="pipeline-card">
+                <i class="ph ph-git-merge"></i>
+                <span style="font-weight: 500;">{{ pipeline.name }}</span>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div style="padding: 2rem; text-align: center; color: var(--text-secondary); background: var(--card-bg); border: 1px dashed var(--border-color); border-radius: 8px;">
+        <i class="ph ph-git-merge" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+        <p style="margin: 0;">No pipelines attached to this application.</p>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

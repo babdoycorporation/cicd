@@ -96,7 +96,7 @@
         <p>Started at: {{ pipeline_run.created_at }}</p>
         <p>Finished at: {{ pipeline_run.finished_at }}</p>
 
-        <a href="{% url 'pipeline_detail' pipeline.id %}">Back to Pipeline</a>
+        <a href="{% url 'pipeline_detail' pipeline.name %}">Back to Pipeline</a>
     </div>
 </body>
 </html>

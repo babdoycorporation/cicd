@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Repository, PullRequest
 from .forms import RepositoryForm, PullRequestForm
+from django.contrib.auth.models import User
 import os
 from git import Repo
 from django.http import HttpResponse
@@ -26,18 +27,21 @@ def repository_list(request):
     else:
         repositories = Repository.objects.all()
     
-    favorites = repositories.filter(is_favorite=True)
+    favorites = repositories.filter(stars=request.user)
     
     return render(request, 'gitmgmt/repository_list.html', {
         'repositories': repositories,
         'favorites': favorites
     })
 
-def toggle_favorite(request, repository_id):
-    repository = get_object_or_404(Repository, id=repository_id)
+@login_required
+def toggle_favorite(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
     if request.method == 'POST':
-        repository.is_favorite = not repository.is_favorite
-        repository.save()
+        if request.user in repository.stars.all():
+            repository.stars.remove(request.user)
+        else:
+            repository.stars.add(request.user)
     return redirect('repository_list')
 import os
 from git import Repo
@@ -109,7 +113,7 @@ def create_repository(request):
             try:
                 initialize_repository(repository.name)
                 repository.save()
-                return redirect('repository_detail', repository_id=repository.id)
+                return redirect('repository_detail', repository_name=repository.name)
             except Exception as e:
                 form.add_error(None, f"Failed to initialize repository: {str(e)}")
     else:
@@ -118,8 +122,8 @@ def create_repository(request):
 
 from git import Repo, GitCommandError
 
-def repository_detail(request, repository_id):
-    repository = get_object_or_404(Repository, id=repository_id)
+def repository_detail(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
     repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
     
     branches = []
@@ -145,9 +149,16 @@ def repository_detail(request, repository_id):
         last_commit_hash = last_commit.hexsha
         last_commit_message = last_commit.message
 
+        # README rendering
+        readme_content = None
+        if 'README.md' in tree:
+            readme_content = tree['README.md'].data_stream.read().decode('utf-8')
+        elif 'readme.md' in tree:
+            readme_content = tree['readme.md'].data_stream.read().decode('utf-8')
+
     except Exception as e:
         error_message = f"Error accessing repository: {str(e)}"
-        print(error_message)  # For server logs
+        print(error_message)
 
     return render(request, 'gitmgmt/repository_detail.html', {
         'repository': repository,
@@ -156,6 +167,7 @@ def repository_detail(request, repository_id):
         'files': files,
         'last_commit_hash': last_commit_hash,
         'last_commit_message': last_commit_message,
+        'readme_content': readme_content,
         'error_message': error_message,
     })
 
@@ -170,8 +182,8 @@ import tempfile
 import os
 import subprocess
 
-def create_pull_request(request, repository_id):
-    repository = get_object_or_404(Repository, id=repository_id)
+def create_pull_request(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
     if request.method == 'POST':
         form = PullRequestForm(request.POST)
         if form.is_valid():
@@ -224,21 +236,34 @@ from git import Repo, GitCommandError
 
 REPO_BASE_PATH = "D:/repos"
 
-def merge_branch(request, repository_id):
-    repository = get_object_or_404(Repository, id=repository_id)
+
+def merge_branch(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
     repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
 
     if request.method == 'POST':
-        target_branch = request.POST.get('merge_target')
-        current_branch = request.GET.get('branch', 'main')
+        target_branch_name = request.POST.get('merge_target')
+        current_branch_name = request.GET.get('branch', 'main')
 
-        if not target_branch:
+        if not target_branch_name:
             messages.error(request, "No target branch selected for merging.")
-            return redirect('repository_detail', repository_id=repository.id)
+            return redirect('repository_detail', repository_name=repository.name)
+            
+        import re
+        if not re.match(r'^[A-Za-z0-9_.-]+$', target_branch_name) or not re.match(r'^[A-Za-z0-9_.-]+$', current_branch_name):
+            messages.error(request, "Invalid branch name format.")
+            return redirect('repository_detail', repository_name=repository.name)
 
-        if target_branch == current_branch:
+        # Branch Protection Check
+        from .models import Branch
+        target_branch_obj = Branch.objects.filter(repository=repository, name=target_branch_name).first()
+        if target_branch_obj and target_branch_obj.is_protected and not (repository.owner == request.user or request.user.is_staff):
+             messages.error(request, f"Branch '{target_branch_name}' is protected. Only owners or admins can merge into it.")
+             return redirect('repository_detail', repository_name=repository.name)
+
+        if target_branch_name == current_branch_name:
             messages.error(request, "Cannot merge a branch into itself.")
-            return redirect('repository_detail', repository_id=repository.id)
+            return redirect('repository_detail', repository_name=repository.name)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
@@ -246,40 +271,44 @@ def merge_branch(request, repository_id):
                 
                 # Verify branches exist both locally and remotely
                 remote_branches = [ref.name.split('/')[-1] for ref in repo.remotes.origin.refs]
-                if target_branch not in remote_branches or current_branch not in remote_branches:
+                if target_branch_name not in remote_branches or current_branch_name not in remote_branches:
                     messages.error(request, "One or both branches don't exist remotely.")
-                    return redirect('repository_detail', repository_id=repository.id)
+                    return redirect('repository_detail', repository_name=repository.name)
 
                 # Fetch all latest changes
                 repo.git.fetch('--all')
 
-                # Checkout current branch
-                repo.git.checkout(current_branch)
-                repo.git.pull('origin', current_branch)
+                # Checkout current branch safely
+                repo.git.checkout('--', current_branch_name)
+                repo.git.pull('origin', current_branch_name)
 
-                # Verify if merge is needed
-                if repo.git.diff(f'origin/{current_branch}..origin/{target_branch}') == "":
+                # Verify if merge is needed safely
+                if repo.git.diff('--', f'origin/{current_branch_name}..origin/{target_branch_name}') == "":
                     messages.info(request, "No changes to merge. Branches are already in sync.")
-                    return redirect('repository_detail', repository_id=repository.id)
+                    return redirect('repository_detail', repository_name=repository.name)
 
-                # Attempt merge
+                # Attempt merge safely
                 try:
-                    merge_result = repo.git.merge(f'origin/{target_branch}')
-                    repo.git.push('origin', current_branch)
-                    messages.success(request, f"Successfully merged {target_branch} into {current_branch}.")
+                    repo.git.merge(f'origin/{target_branch_name}')
+                    repo.git.push('origin', current_branch_name)
+                    messages.success(request, f"Successfully merged {target_branch_name} into {current_branch_name}.")
                 except GitCommandError as e:
                     repo.git.merge('--abort')
                     if 'CONFLICT' in str(e):
                         messages.error(request, "Merge conflict detected. Please resolve conflicts manually.")
                     else:
-                        messages.error(request, f"Merge failed: {str(e)}")
-                    return redirect('repository_detail', repository_id=repository.id)
+                        logger.error(f"Merge failed: {str(e)}")
+                        messages.error(request, "Merge failed due to a git error.")
+                    return redirect('repository_detail', repository_name=repository.name)
 
             except Exception as e:
-                messages.error(request, f"Unexpected error during merge: {str(e)}")
-                return redirect('repository_detail', repository_id=repository.id)
+                logger.error(f"Unexpected error during merge: {str(e)}")
+                messages.error(request, "Unexpected error during merge.")
+                return redirect('repository_detail', repository_name=repository.name)
 
-    return redirect('repository_detail', repository_id=repository.id)
+    return redirect('repository_detail', repository_name=repository.name)
+
+
 
 
 def merge_pull_request(request, pull_request_id):
@@ -287,6 +316,13 @@ def merge_pull_request(request, pull_request_id):
     repo_path = os.path.join(REPO_BASE_PATH, f"{pull_request.repository.name}.git")
 
     if request.method == 'POST':
+        # Branch Protection Check
+        from .models import Branch
+        target_branch_obj = Branch.objects.filter(repository=pull_request.repository, name=pull_request.target_branch.name).first()
+        if target_branch_obj and target_branch_obj.is_protected and not (pull_request.repository.owner == request.user or request.user.is_staff):
+             messages.error(request, f"Target branch '{pull_request.target_branch.name}' is protected. Only owners or admins can merge into it.")
+             return redirect('pull_request_detail', pull_request_id=pull_request.id)
+
         # Validate PR can be merged
         if pull_request.status != 'open':
             messages.error(request, "Only open pull requests can be merged.")
@@ -294,6 +330,11 @@ def merge_pull_request(request, pull_request_id):
 
         source_branch = pull_request.source_branch.name
         target_branch = pull_request.target_branch.name
+        
+        import re
+        if not re.match(r'^[A-Za-z0-9_.-]+$', source_branch) or not re.match(r'^[A-Za-z0-9_.-]+$', target_branch):
+            messages.error(request, "Invalid branch name format in PR.")
+            return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
         if source_branch == target_branch:
             messages.error(request, "Cannot merge identical branches.")
@@ -310,20 +351,20 @@ def merge_pull_request(request, pull_request_id):
                     messages.error(request, "One or both branches don't exist remotely.")
                     return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
-                # Checkout target branch
-                repo.git.checkout(target_branch)
+                # Checkout target branch safely
+                repo.git.checkout('--', target_branch)
                 repo.git.pull('origin', target_branch)
 
-                # Verify merge is needed
-                if repo.git.diff(f'origin/{target_branch}..origin/{source_branch}') == "":
+                # Verify merge is needed safely
+                if repo.git.diff('--', f'origin/{target_branch}..origin/{source_branch}') == "":
                     messages.info(request, "No changes to merge. Branches are already in sync.")
                     pull_request.status = 'merged'
                     pull_request.save()
                     return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
-                # Attempt merge
+                # Attempt merge safely
                 try:
-                    merge_result = repo.git.merge(f'origin/{source_branch}')
+                    repo.git.merge(f'origin/{source_branch}')
                     repo.git.push('origin', target_branch)
                     
                     # Only mark as merged if push succeeded
@@ -338,14 +379,17 @@ def merge_pull_request(request, pull_request_id):
                     if 'CONFLICT' in str(e):
                         messages.error(request, "Merge conflict detected. Please resolve conflicts manually.")
                     else:
-                        messages.error(request, f"Merge failed: {str(e)}")
+                        logger.error(f"Merge failed: {str(e)}")
+                        messages.error(request, "Merge failed due to a git error.")
                     return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
             except Exception as e:
-                messages.error(request, f"Unexpected error during merge: {str(e)}")
+                logger.error(f"Unexpected error during merge PR: {str(e)}")
+                messages.error(request, "Unexpected error during merge.")
                 return redirect('pull_request_detail', pull_request_id=pull_request.id)
 
     return redirect('pull_request_detail', pull_request_id=pull_request.id)
+
 
 
 
@@ -366,14 +410,27 @@ from git import Repo, GitCommandError
 
 REPO_BASE_PATH = "D:/repos"  # Ensure this is the correct repository base path
 
-def upload_file(request, repository_id):
-    repository = get_object_or_404(Repository, id=repository_id)
+
+def upload_file(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
     repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
     current_branch = request.GET.get('branch', 'main')  # Default to main
 
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
-        commit_message = request.POST.get('commit_message', f"Added {file.name}")
+        
+        # Path Traversal Prevention
+        safe_file_name = os.path.basename(file.name)
+        if not safe_file_name:
+            messages.error(request, "Invalid file name.")
+            return redirect(reverse('repository_detail', kwargs={'repository_name': repository.name}) + f"?branch={current_branch}")
+            
+        import re
+        if not re.match(r'^[A-Za-z0-9_.-]+$', current_branch):
+            messages.error(request, "Invalid branch name format.")
+            return redirect(reverse('repository_detail', kwargs={'repository_name': repository.name}) + "?branch=main")
+
+        commit_message = request.POST.get('commit_message', f"Added {safe_file_name}")
 
         try:
             # Clone the repo into a temporary directory
@@ -387,47 +444,48 @@ def upload_file(request, repository_id):
                 # Check if the branch exists remotely
                 remote_branches = git.branch('-r')  # List remote branches
                 
-                print("Remote Branches:", remote_branches)
-                
                 if f'origin/{current_branch}' in remote_branches:
-                    print(f"Checking out existing remote branch: {current_branch}")
                     git.checkout('-B', current_branch, f'origin/{current_branch}')  # Ensure it's linked to remote
                 else:
-                    print(f"Creating new branch {current_branch}")
                     git.checkout('-b', current_branch)
 
                 # Save file in the repo
-                temp_file_path = os.path.join(temp_dir, file.name)
+                temp_file_path = os.path.join(temp_dir, safe_file_name)
+                # Verify path traversal (redundant due to basename, but good practice)
+                if not os.path.abspath(temp_file_path).startswith(os.path.abspath(temp_dir)):
+                    messages.error(request, "Invalid file path.")
+                    return redirect(reverse('repository_detail', kwargs={'repository_name': repository.name}) + f"?branch={current_branch}")
+                    
                 with open(temp_file_path, 'wb+') as destination:
                     for chunk in file.chunks():
                         destination.write(chunk)
 
-                # Add file, commit, and push changes
-                git.add(A=True)
+                # Add file, commit, and push changes safely
+                git.add('--', safe_file_name)
                 status_output = git.status()
-                print(f"Git Status Before Commit:\n{status_output}")
 
                 if "nothing to commit" in status_output.lower():
                     messages.error(request, "No changes detected. File may not have been saved.")
-                    return redirect(reverse('repository_detail', kwargs={'repository_id': repository.id}) + f"?branch={current_branch}")
+                    return redirect(reverse('repository_detail', kwargs={'repository_name': repository.name}) + f"?branch={current_branch}")
 
                 # Commit the file
                 temp_repo.index.commit(commit_message)
-                print(f"Committed changes with message: {commit_message}")
 
                 # Push changes explicitly to the correct branch
-                push_result = git.push('origin', current_branch)
-                print(f"Git Push Output:\n{push_result}")
+                git.push('origin', current_branch)
 
-                messages.success(request, f"File '{file.name}' uploaded successfully to branch '{current_branch}'.")
+                messages.success(request, f"File '{safe_file_name}' uploaded successfully to branch '{current_branch}'.")
         except GitCommandError as e:
-            messages.error(request, f"Git error while uploading file: {str(e)}")
+            logger.error(f"Git error while uploading file: {str(e)}")
+            messages.error(request, "Git error while uploading file.")
         except Exception as e:
-            messages.error(request, f"Unexpected error: {str(e)}")
+            logger.error(f"Unexpected error: {str(e)}")
+            messages.error(request, "Unexpected error occurred during upload.")
 
-        return redirect(reverse('repository_detail', kwargs={'repository_id': repository.id}) + f"?branch={current_branch}")
+        return redirect(reverse('repository_detail', kwargs={'repository_name': repository.name}) + f"?branch={current_branch}")
 
     return render(request, 'gitmgmt/upload_file.html', {'repository': repository, 'current_branch': current_branch})
+
 
 
 from django.shortcuts import get_object_or_404, redirect
@@ -436,17 +494,23 @@ from .models import Repository
 from git import Repo, GitCommandError
 import os
 
-def create_branch(request, repository_id):
-    repository = get_object_or_404(Repository, id=repository_id)
+
+def create_branch(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
     repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
 
     if request.method == 'POST':
         branch_name = request.POST.get('branch_name')
-        source_branch_name = request.POST.get('source_branch', 'main')  # Get source branch from form
+        source_branch_name = request.POST.get('source_branch', 'main')
 
         if not branch_name:
             messages.error(request, "Branch name is required.")
-            return redirect('repository_detail', repository_id=repository.id)
+            return redirect('repository_detail', repository_name=repository.name)
+            
+        import re
+        if not re.match(r'^[A-Za-z0-9_.-]+$', branch_name) or not re.match(r'^[A-Za-z0-9_.-]+$', source_branch_name):
+            messages.error(request, "Invalid branch name format.")
+            return redirect('repository_detail', repository_name=repository.name)
 
         try:
             repo = Repo(repo_path)
@@ -454,26 +518,29 @@ def create_branch(request, repository_id):
             # Check if branch exists
             if branch_name in repo.heads:
                 messages.error(request, f"Branch '{branch_name}' already exists.")
-                return redirect('repository_detail', repository_id=repository.id)
+                return redirect('repository_detail', repository_name=repository.name)
 
             # Validate source branch
             if source_branch_name not in repo.heads:
                 messages.error(request, f"Source branch '{source_branch_name}' does not exist.")
-                return redirect('repository_detail', repository_id=repository.id)
+                return redirect('repository_detail', repository_name=repository.name)
 
             # Create new branch from source branch
             source_branch = repo.heads[source_branch_name]
             new_branch = repo.create_head(branch_name, source_branch.commit)
 
             messages.success(request, f"Branch '{branch_name}' created successfully from '{source_branch_name}'.")
-            return redirect('repository_detail', repository_id=repository.id)
+            return redirect('repository_detail', repository_name=repository.name)
 
         except GitCommandError as e:
-            messages.error(request, f"Git error: {str(e)}")
+            logger.error(f"Git error creating branch: {str(e)}")
+            messages.error(request, "Git error occurred while creating branch.")
         except Exception as e:
-            messages.error(request, f"Failed to create branch: {str(e)}")
+            logger.error(f"Failed to create branch: {str(e)}")
+            messages.error(request, "Failed to create branch.")
 
-    return redirect('repository_detail', repository_id=repository.id)
+    return redirect('repository_detail', repository_name=repository.name)
+
 
 import logging
 from git import Repo, GitCommandError
@@ -482,8 +549,8 @@ import os
 
 logger = logging.getLogger(__name__)
 
-def view_logs(request, repository_id):
-    repository = get_object_or_404(Repository, id=repository_id)
+def view_logs(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
     repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
     current_branch = request.GET.get('branch', 'main')  # Default to main branch
 
@@ -542,8 +609,10 @@ logger = logging.getLogger(__name__)
 REPO_BASE_PATH = 'D:/repos'  # Update this to your repository base path
 
 @csrf_exempt
-def edit_and_save_file(request, repository_id, file_path):
-    repository = get_object_or_404(Repository, id=repository_id)
+
+@csrf_exempt
+def edit_and_save_file(request, repository_name, file_path):
+    repository = get_object_or_404(Repository, name=repository_name)
     repo_path = os.path.join(REPO_BASE_PATH, f"{repository.name}.git")
 
     def get_file_content(repo_path, file_path):
@@ -556,7 +625,12 @@ def edit_and_save_file(request, repository_id, file_path):
             branch_result = subprocess.run(branch_command, cwd=temp_repo_path, capture_output=True, text=True, check=True)
             current_branch = branch_result.stdout.strip()
 
-            temp_file_path = os.path.join(temp_repo_path, file_path.replace('\\', '/'))
+            # Path Traversal Prevention
+            normalized_path = os.path.normpath(file_path.replace('\\', '/')).lstrip('/')
+            temp_file_path = os.path.abspath(os.path.join(temp_repo_path, normalized_path))
+            if not temp_file_path.startswith(os.path.abspath(temp_repo_path)):
+                raise ValueError("Invalid file path: path traversal detected.")
+
             with open(temp_file_path, 'r', encoding='utf-8') as file:
                 return file.read(), current_branch
 
@@ -565,7 +639,7 @@ def edit_and_save_file(request, repository_id, file_path):
             file_content, current_branch = get_file_content(repo_path, file_path)
         except Exception as e:
             logger.error(f"Error reading file: {str(e)}")
-            return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
+            return JsonResponse({'status': 'error', 'error': "Error reading file"}, status=500)
 
         return render(request, 'gitmgmt/edit_and_save_file.html', {
             'repository': repository,
@@ -583,6 +657,10 @@ def edit_and_save_file(request, repository_id, file_path):
 
             if not commit_message:
                 return JsonResponse({'status': 'error', 'error': 'Commit message is required'}, status=400)
+                
+            import re
+            if not re.match(r'^[A-Za-z0-9_.-]+$', current_branch):
+                return JsonResponse({'status': 'error', 'error': 'Invalid branch name'}, status=400)
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_repo_path = os.path.join(temp_dir, repository.name)
@@ -591,12 +669,16 @@ def edit_and_save_file(request, repository_id, file_path):
                 clone_command = ['git', 'clone', repo_path, temp_repo_path]
                 subprocess.run(clone_command, check=True, capture_output=True, text=True)
 
-                # Checkout the current branch
-                checkout_command = ['git', 'checkout', current_branch]
+                # Checkout the current branch safely
+                checkout_command = ['git', 'checkout', '--', current_branch]
                 subprocess.run(checkout_command, cwd=temp_repo_path, check=True, capture_output=True, text=True)
 
-                # Write the new content to the file
-                temp_file_path = os.path.join(temp_repo_path, file_path.replace('\\', '/'))
+                # Write the new content to the file safely
+                normalized_path = os.path.normpath(file_path.replace('\\', '/')).lstrip('/')
+                temp_file_path = os.path.abspath(os.path.join(temp_repo_path, normalized_path))
+                if not temp_file_path.startswith(os.path.abspath(temp_repo_path)):
+                    return JsonResponse({'status': 'error', 'error': 'Invalid file path'}, status=400)
+                    
                 os.makedirs(os.path.dirname(temp_file_path), exist_ok=True)
                 with open(temp_file_path, 'w', encoding='utf-8') as file:
                     file.write(file_content)
@@ -605,8 +687,8 @@ def edit_and_save_file(request, repository_id, file_path):
                 subprocess.run(['git', 'config', 'user.email', "user@example.com"], cwd=temp_repo_path, check=True)
                 subprocess.run(['git', 'config', 'user.name', "User"], cwd=temp_repo_path, check=True)
 
-                # Stage the changes
-                add_command = ['git', 'add', file_path.replace('\\', '/')]
+                # Stage the changes safely
+                add_command = ['git', 'add', '--', normalized_path]
                 subprocess.run(add_command, cwd=temp_repo_path, check=True, capture_output=True, text=True)
 
                 # Commit the changes
@@ -615,7 +697,7 @@ def edit_and_save_file(request, repository_id, file_path):
                 
                 if commit_result.returncode != 0:
                     logger.error(f"Commit failed: {commit_result.stderr}")
-                    return JsonResponse({'status': 'error', 'error': f"Commit failed: {commit_result.stderr}"}, status=500)
+                    return JsonResponse({'status': 'error', 'error': "Commit failed. Please check your commit message."}, status=500)
 
                 # Push the changes
                 push_command = ['git', 'push', 'origin', f'{current_branch}:{current_branch}']
@@ -623,7 +705,7 @@ def edit_and_save_file(request, repository_id, file_path):
                 
                 if push_result.returncode != 0:
                     logger.error(f"Push failed: {push_result.stderr}")
-                    return JsonResponse({'status': 'error', 'error': f"Push failed: {push_result.stderr}"}, status=500)
+                    return JsonResponse({'status': 'error', 'error': "Push failed. Remote may have rejected the commit."}, status=500)
 
                 # Get the updated file content
                 updated_file_content, _ = get_file_content(repo_path, file_path)
@@ -632,9 +714,10 @@ def edit_and_save_file(request, repository_id, file_path):
 
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
-            return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
+            return JsonResponse({'status': 'error', 'error': "An internal error occurred."}, status=500)
 
     return JsonResponse({'status': 'error', 'error': 'Invalid request method'}, status=405)
+
     
 import logging
 import os
@@ -648,6 +731,52 @@ logger = logging.getLogger(__name__)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GitService(View):
+    def dispatch(self, request, *args, **kwargs):
+        user = self.authenticate(request)
+        if not user:
+            response = HttpResponse("Unauthorized", status=401)
+            response['WWW-Authenticate'] = 'Basic realm="Git Access"'
+            return response
+        request.user = user
+        return super().dispatch(request, *args, **kwargs)
+
+    def authenticate(self, request):
+        import base64
+        from django.contrib.auth import authenticate as django_authenticate
+        
+        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        if not auth_header:
+            return None
+        
+        try:
+            auth_type, credentials = auth_header.split(' ')
+            if auth_type.lower() != 'basic':
+                return None
+            
+            decoded_creds = base64.b64decode(credentials).decode('utf-8')
+            username, password = decoded_creds.split(':')
+            
+            # 1. Try standard Django auth
+            user = django_authenticate(username=username, password=password)
+            if user:
+                return user
+            
+            # 2. Try Personal Access Token
+            try:
+                user_obj = User.objects.get(username=username)
+                token_obj = PersonalAccessToken.objects.filter(user=user_obj, token=password).first()
+                if token_obj:
+                    token_obj.last_used = timezone.now()
+                    token_obj.save()
+                    return user_obj
+            except User.DoesNotExist:
+                pass
+                
+        except Exception as e:
+            logger.error(f"Git authentication error: {str(e)}")
+            
+        return None
+
     def get(self, request, repo_name, path=None):
         logger.info(f"GET request received for repo: {repo_name}, path: {path}")
         try:
@@ -739,12 +868,51 @@ class GitService(View):
                 logger.error(f"Error in Git operation: {stderr.decode()}")
                 return HttpResponseServerError(f"Error in Git operation: {stderr.decode()}")
 
+
+            if service == 'git-receive-pack' and process.returncode == 0:
+                self.trigger_yaml_pipeline(repo_path)
             content_type = f'application/x-{service}-result'
             return HttpResponse(stdout, content_type=content_type)
         except Exception as e:
             logger.exception(f"Error in handle_service: {str(e)}")
             return HttpResponseServerError(f"Internal server error: {str(e)}")
 
+
+    def trigger_yaml_pipeline(self, repo_path):
+        import yaml
+        import os
+        from git import Repo
+        from pipeline.models import Pipeline, PipelineRun, YamlFileVersion, Application
+        
+        repo_name = os.path.basename(repo_path).replace('.git', '')
+        try:
+            repo = Repo(repo_path)
+            application = Application.objects.filter(repository__name=repo_name).first()
+            if not application:
+                return
+                
+            pipelines = application.pipelines.all()
+            for pipeline in pipelines:
+                branch_name = pipeline.monitored_branch
+                if branch_name in repo.heads:
+                    tree = repo.heads[branch_name].commit.tree
+                    yaml_path = pipeline.yaml_path
+                    if yaml_path in tree:
+                        yaml_content = tree[yaml_path].data_stream.read().decode('utf-8')
+                        version = YamlFileVersion.objects.filter(pipeline=pipeline).count() + 1
+                        YamlFileVersion.objects.create(
+                            pipeline=pipeline,
+                            version_number=version,
+                            yaml_content=yaml_content
+                        )
+                        PipelineRun.objects.create(
+                            pipeline=pipeline,
+                            status='pending',
+                            log=f'Pipeline triggered via Git Push parsing {yaml_path}'
+                        )
+                        logger.info(f'Triggered pipeline {pipeline.name} for repo {repo_name}')
+        except Exception as e:
+            logger.error(f'Failed to trigger pipeline for {repo_name}: {e}')
     def handle_static_file(self, repo_path, path):
         logger.info(f"Handling static file: {path} for repo: {repo_path}")
         try:
@@ -757,3 +925,120 @@ class GitService(View):
         except Exception as e:
             logger.exception(f"Error in handle_static_file: {str(e)}")
             return HttpResponseServerError(f"Internal server error: {str(e)}")
+
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login as auth_login
+from .models import UserProfile, Organization, Team, PersonalAccessToken
+import secrets
+
+def signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            UserProfile.objects.get_or_create(user=user)
+            auth_login(request, user)
+            return redirect('repository_list')
+    else:
+        form = UserCreationForm()
+    return render(request, 'gitmgmt/signup.html', {'form': form})
+
+@login_required
+def profile(request):
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    tokens = request.user.tokens.all()
+    new_token = None
+    
+    if request.method == 'POST':
+        if 'token_name' in request.POST:
+            token_name = request.POST.get('token_name')
+            raw_token = secrets.token_hex(32)
+            # Store hashed token in reality, but for simplicity here we store raw
+            PersonalAccessToken.objects.create(user=request.user, name=token_name, token=raw_token)
+            new_token = raw_token
+            
+    return render(request, 'gitmgmt/profile.html', {
+        'profile': profile, 
+        'tokens': tokens,
+        'new_token': new_token
+    })
+
+@login_required
+def organization_list(request):
+    from django.db.models import Q
+    orgs = Organization.objects.filter(Q(owner=request.user) | Q(teams__members=request.user)).distinct()
+    return render(request, 'gitmgmt/organization_list.html', {'organizations': orgs})
+
+@login_required
+def create_organization(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        Organization.objects.create(name=name, description=description, owner=request.user)
+        return redirect('organization_list')
+    return render(request, 'gitmgmt/organization_form.html')
+
+@login_required
+def organization_detail(request, org_id):
+    organization = get_object_or_404(Organization, id=org_id)
+    return render(request, 'gitmgmt/organization_detail.html', {'organization': organization})
+
+@login_required
+def add_org_member(request, org_id):
+    organization = get_object_or_404(Organization, id=org_id)
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        user = User.objects.filter(username=username).first()
+        if user:
+            team, _ = Team.objects.get_or_create(name="Members", organization=organization)
+            team.members.add(user)
+            messages.success(request, f"User {username} added to {organization.name}.")
+        else:
+            messages.error(request, f"User {username} not found.")
+    return redirect('organization_detail', org_id=organization.id)
+
+@login_required
+def create_team(request, org_id):
+    organization = get_object_or_404(Organization, id=org_id)
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            Team.objects.create(name=name, organization=organization)
+            messages.success(request, f"Team {name} created successfully.")
+    return redirect('organization_detail', org_id=organization.id)
+
+@login_required
+def pull_request_list(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
+    pull_requests = repository.pull_requests.all().order_by('-created_at')
+    return render(request, 'gitmgmt/pull_request_list.html', {
+        'repository': repository,
+        'pull_requests': pull_requests
+    })
+
+@login_required
+def repository_issues(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
+    return render(request, 'gitmgmt/repository_issues.html', {
+        'repository': repository
+    })
+
+@login_required
+def repository_settings(request, repository_name):
+    repository = get_object_or_404(Repository, name=repository_name)
+    return render(request, 'gitmgmt/repository_settings.html', {
+        'repository': repository
+    })
+
+@login_required
+def repository_rocket_ci(request, repository_name):
+    from pipeline.models import Project
+    repository = get_object_or_404(Repository, name=repository_name)
+    project = Project.objects.filter(name=repository.name).first()
+    pipelines = project.pipeline_set.all() if project else []
+    
+    return render(request, 'gitmgmt/repository_rocket_ci.html', {
+        'repository': repository,
+        'project': project,
+        'pipelines': pipelines
+    })
