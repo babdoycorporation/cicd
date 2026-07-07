@@ -366,6 +366,10 @@
                     <i class="ph ph-key icon"></i>
                     <span class="text">Credentials</span>
                 </a>
+                <a href="{% url 'deployment_target_list' %}">
+                    <i class="ph ph-cloud-arrow-up icon"></i>
+                    <span class="text">Deploy Targets</span>
+                </a>
                 <a href="{% url 'global_settings' %}">
                     <i class="ph ph-gear icon"></i>
                     <span class="text">Global Settings</span>
@@ -411,6 +415,9 @@
                         <i class="ph ph-activity"></i> Activity
                     </a>
                     <div class="dropdown-divider"></div>
+                    <a href="{% url 'notification_preferences' %}" class="dropdown-item">
+                        <i class="ph ph-bell"></i> Notifications
+                    </a>
                     <a href="{% url 'global_settings' %}" class="dropdown-item">
                         <i class="ph ph-gear"></i> Settings
                     </a>

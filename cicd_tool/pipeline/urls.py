@@ -84,4 +84,19 @@ urlpatterns = [
 
     # ── Webhooks (no auth) ────────────────────────────────────────────────────
     path('webhook/github/', views.github_webhook, name='github_webhook'),
+
+    # ── Notification integrations & preferences ───────────────────────────────
+    path('settings/integrations/email/save/', login_required(views.save_email_integration), name='save_email_integration'),
+    path('settings/integrations/email/test/', login_required(views.test_email_integration), name='test_email_integration'),
+    path('notifications/preferences/', login_required(views.notification_preferences), name='notification_preferences'),
+
+    # ── Build Artifacts ───────────────────────────────────────────────────────
+    path('pipeline/run/<uuid:run_id>/artifacts/<int:artifact_id>/download/', login_required(views.artifact_download), name='artifact_download'),
+
+    # ── Deployment Targets ────────────────────────────────────────────────────
+    path('deployment-targets/', login_required(views.deployment_target_list), name='deployment_target_list'),
+    path('deployment-targets/create/', login_required(views.deployment_target_create), name='deployment_target_create'),
+    path('deployment-targets/<int:pk>/', login_required(views.deployment_target_detail), name='deployment_target_detail'),
+    path('deployment-targets/<int:pk>/edit/', login_required(views.deployment_target_update), name='deployment_target_update'),
+    path('deployment-targets/<int:pk>/delete/', login_required(views.deployment_target_delete), name='deployment_target_delete'),
 ]

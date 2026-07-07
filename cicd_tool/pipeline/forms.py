@@ -1,5 +1,6 @@
 from django import forms
-from .models import Project, Pipeline, Stage, Step, Agent, Credential, Application, GlobalSettings
+from .models import (Project, Pipeline, Stage, Step, Agent, Credential,
+                     Application, GlobalSettings, DeploymentTarget)
 import json
 
 class ProjectForm(forms.ModelForm):
@@ -59,12 +60,29 @@ class AgentForm(forms.ModelForm):
 class GlobalCredentialForm(forms.ModelForm):
     class Meta:
         model = Credential
-        fields = ['service_name', 'username', 'password', 'token']
+        fields = ['service_name', 'credential_type', 'username', 'password', 'token']
 
 class LocalCredentialForm(forms.ModelForm):
     class Meta:
         model = Credential
-        fields = ['service_name', 'username', 'password', 'token']
+        fields = ['service_name', 'credential_type', 'username', 'password', 'token']
+
+
+class DeploymentTargetForm(forms.ModelForm):
+    class Meta:
+        model = DeploymentTarget
+        fields = [
+            'name', 'description', 'target_type',
+            'endpoint', 'region', 'namespace',
+            'environment', 'project', 'credential',
+        ]
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['credential'].queryset = Credential.objects.all().order_by('service_name')
 
 class ApplicationForm(forms.ModelForm):
     REPO_MODE_CHOICES = (

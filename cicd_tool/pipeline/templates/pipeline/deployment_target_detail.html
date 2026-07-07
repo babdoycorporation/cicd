@@ -1,0 +1,205 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<style>
+    .breadcrumb {
+        display:flex; align-items:center; gap:0.5rem;
+        color:var(--text-secondary); font-size:0.82rem; margin-bottom:1.5rem;
+    }
+    .breadcrumb a { color:var(--accent-color); text-decoration:none; }
+    .breadcrumb a:hover { text-decoration:underline; }
+
+    .detail-header {
+        display:flex; align-items:flex-start; gap:1rem; margin-bottom:1.5rem;
+    }
+
+    .detail-icon {
+        width:52px; height:52px; border-radius:10px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.5rem; flex-shrink:0;
+        background:rgba(47,129,247,0.15); color:var(--accent-color);
+    }
+
+    .detail-title { font-size:1.3rem; font-weight:600; color:var(--text-primary); margin:0 0 0.3rem; }
+
+    .type-badge {
+        display:inline-block; font-size:0.72rem; font-weight:600;
+        text-transform:uppercase; letter-spacing:0.04em;
+        padding:0.1rem 0.45rem; border-radius:20px;
+        background:rgba(47,129,247,0.12); color:var(--accent-color);
+    }
+
+    .detail-actions { display:flex; gap:0.5rem; margin-left:auto; }
+
+    .detail-layout {
+        display:grid; grid-template-columns:1fr 280px; gap:1.5rem; align-items:start;
+    }
+    @media (max-width:768px) { .detail-layout { grid-template-columns:1fr; } }
+
+    .dcard {
+        background:var(--card-bg); border:1px solid var(--border-color);
+        border-radius:10px; padding:1.5rem; margin-bottom:1.25rem;
+    }
+    .dcard:last-child { margin-bottom:0; }
+
+    .dcard h3 {
+        font-size:0.9rem; font-weight:600; color:var(--text-primary);
+        margin:0 0 1rem; padding-bottom:0.75rem;
+        border-bottom:1px solid var(--border-color);
+        display:flex; align-items:center; gap:0.4rem;
+    }
+
+    .field-row {
+        display:flex; align-items:flex-start; gap:1rem;
+        padding:0.5rem 0; border-bottom:1px solid rgba(48,54,61,0.5);
+        font-size:0.85rem;
+    }
+    .field-row:last-child { border-bottom:none; padding-bottom:0; }
+    .field-label { color:var(--text-secondary); min-width:130px; flex-shrink:0; }
+    .field-value { color:var(--text-primary); word-break:break-all; }
+    .field-value.mono { font-family:monospace; font-size:0.8rem; }
+    .field-value.empty { color:var(--text-secondary); font-style:italic; }
+
+    .btn {
+        display:inline-flex; align-items:center; gap:0.4rem;
+        border-radius:6px; padding:0.4rem 0.8rem; font-size:0.82rem;
+        font-weight:600; cursor:pointer; font-family:inherit;
+        transition:all 0.2s; border:1px solid transparent; text-decoration:none;
+    }
+    .btn-outline { background:transparent; color:var(--text-secondary); border-color:var(--border-color); }
+    .btn-outline:hover { background:rgba(255,255,255,0.05); color:var(--text-primary); }
+    .btn-danger  { background:transparent; color:var(--danger-color); border-color:rgba(248,81,73,0.4); }
+    .btn-danger:hover  { background:rgba(248,81,73,0.08); }
+    .btn-primary { background:var(--accent-color); color:#fff; }
+    .btn-primary:hover { background:#1f6feb; }
+
+    .info-box {
+        background:rgba(47,129,247,0.07); border:1px solid rgba(47,129,247,0.2);
+        border-radius:8px; padding:0.9rem 1rem; font-size:0.83rem;
+        color:var(--text-secondary); line-height:1.6;
+    }
+    .info-box strong { color:var(--text-primary); }
+    .info-box code {
+        background:rgba(255,255,255,0.06); padding:0.1rem 0.35rem;
+        border-radius:4px; font-size:0.8rem; color:var(--accent-color);
+    }
+</style>
+
+<div class="breadcrumb">
+    <a href="{% url 'deployment_target_list' %}">Deployment Targets</a>
+    <i class="ph ph-caret-right"></i>
+    <span>{{ target.name }}</span>
+</div>
+
+<div class="detail-header">
+    <div class="detail-icon"><i class="ph ph-cloud-arrow-up"></i></div>
+    <div>
+        <h1 class="detail-title">{{ target.name }}</h1>
+        <span class="type-badge">{{ target.get_target_type_display }}</span>
+    </div>
+    <div class="detail-actions">
+        <a href="{% url 'deployment_target_update' target.pk %}" class="btn btn-outline">
+            <i class="ph ph-pencil"></i> Edit
+        </a>
+        <a href="{% url 'deployment_target_delete' target.pk %}" class="btn btn-danger">
+            <i class="ph ph-trash"></i> Delete
+        </a>
+    </div>
+</div>
+
+<div class="detail-layout">
+    <!-- Main -->
+    <div>
+        <div class="dcard">
+            <h3><i class="ph ph-info"></i> Details</h3>
+
+            {% if target.description %}
+            <div style="font-size:0.87rem; color:var(--text-secondary); margin-bottom:1rem;">{{ target.description }}</div>
+            {% endif %}
+
+            <div class="field-row">
+                <span class="field-label">Type</span>
+                <span class="field-value">{{ target.get_target_type_display }}</span>
+            </div>
+            <div class="field-row">
+                <span class="field-label">Endpoint / Host</span>
+                <span class="field-value mono {% if not target.endpoint %}empty{% endif %}">
+                    {{ target.endpoint|default:"—" }}
+                </span>
+            </div>
+            <div class="field-row">
+                <span class="field-label">Region</span>
+                <span class="field-value {% if not target.region %}empty{% endif %}">{{ target.region|default:"—" }}</span>
+            </div>
+            <div class="field-row">
+                <span class="field-label">Namespace / Cluster</span>
+                <span class="field-value {% if not target.namespace %}empty{% endif %}">{{ target.namespace|default:"—" }}</span>
+            </div>
+            <div class="field-row">
+                <span class="field-label">Environment</span>
+                <span class="field-value {% if not target.environment %}empty{% endif %}">{{ target.environment.name|default:"—" }}</span>
+            </div>
+            <div class="field-row">
+                <span class="field-label">Project</span>
+                <span class="field-value {% if not target.project %}empty{% endif %}">{{ target.project.name|default:"—" }}</span>
+            </div>
+            <div class="field-row">
+                <span class="field-label">Credential</span>
+                <span class="field-value {% if not target.credential %}empty{% endif %}">
+                    {% if target.credential %}
+                        {{ target.credential.service_name }} [{{ target.credential.credential_type }}]
+                    {% else %}—{% endif %}
+                </span>
+            </div>
+            <div class="field-row">
+                <span class="field-label">Created</span>
+                <span class="field-value">{{ target.created_at|date:"N j, Y, P" }}</span>
+            </div>
+            <div class="field-row">
+                <span class="field-label">Last updated</span>
+                <span class="field-value">{{ target.updated_at|timesince }} ago</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+        <div class="dcard">
+            <h3><i class="ph ph-lightning"></i> How to use</h3>
+            <div class="info-box">
+                <strong>In a pipeline step, use:</strong><br><br>
+                <code>deploy:{{ target.target_type }}:{{ target.pk }}</code><br><br>
+                Set this as the step <em>command</em> to trigger this connector.
+                The worker will inject credentials and execute the appropriate
+                SDK/CLI automatically.<br><br>
+                Example YAML:
+                <pre style="margin:0.5rem 0 0; font-size:0.78rem; color:var(--accent-color); white-space:pre-wrap;">stages:
+  - name: Deploy
+    steps:
+      - name: Push to {{ target.name }}
+        command: deploy:{{ target.target_type }}:{{ target.pk }}</pre>
+            </div>
+        </div>
+
+        <div class="dcard">
+            <h3><i class="ph ph-wrench"></i> Quick Actions</h3>
+            <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                <a href="{% url 'deployment_target_update' target.pk %}" class="btn btn-primary" style="justify-content:center;">
+                    <i class="ph ph-pencil"></i> Edit Target
+                </a>
+                {% if target.credential %}
+                <a href="{% url 'global_credential_detail' target.credential.pk %}" class="btn btn-outline" style="justify-content:center;">
+                    <i class="ph ph-key"></i> View Credential
+                </a>
+                {% else %}
+                <a href="{% url 'global_credential_create' %}" class="btn btn-outline" style="justify-content:center;">
+                    <i class="ph ph-plus"></i> Add Credential
+                </a>
+                {% endif %}
+                <a href="{% url 'deployment_target_list' %}" class="btn btn-outline" style="justify-content:center;">
+                    <i class="ph ph-arrow-left"></i> All Targets
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

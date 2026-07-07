@@ -30,13 +30,16 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from gitmgmt.models import Repository
-from .forms import (AgentForm, ApplicationForm, GlobalCredentialForm,
-                     GlobalSettingsForm, LocalCredentialForm, PipelineForm,
+from .forms import (AgentForm, ApplicationForm, DeploymentTargetForm,
+                     GlobalCredentialForm, GlobalSettingsForm,
+                     LocalCredentialForm, PipelineForm,
                      ProjectConfigurationForm, ProjectForm)
-from .models import (Agent, Application, Command, Credential,
-                      Environment, GlobalSettings, Heartbeat, Pipeline,
-                      PipelineRun, PipelineStep, Project, ProjectPipeline, ProjectPipelineRun, ProjectOrchestrationStep, Stage, Step,
-                      YamlFileVersion)
+from .models import (Agent, Application, BuildArtifact, Command, Credential,
+                      DeploymentTarget, Environment, GlobalSettings,
+                      Heartbeat, NotificationIntegration, Pipeline,
+                      PipelineRun, PipelineStep, Project, ProjectPipeline,
+                      ProjectPipelineRun, ProjectOrchestrationStep, Stage,
+                      Step, UserNotificationPreference, YamlFileVersion)
 from .utils import execute_step, get_available_agent, prepare_credentials
 
 logger = logging.getLogger(__name__)
@@ -1053,6 +1056,7 @@ def global_pipeline_list(request):
 @login_required
 def global_settings(request):
     settings_list = GlobalSettings.objects.all()
+    show_email_modal = False
     if request.method == 'POST':
         form = GlobalSettingsForm(request.POST)
         if form.is_valid():
@@ -1062,7 +1066,113 @@ def global_settings(request):
             return redirect('global_settings')
     else:
         form = GlobalSettingsForm()
-    return render(request, 'pipeline/global_settings.html', {'settings': settings_list, 'form': form})
+
+    # Build integration map
+    integrations = {
+        obj.integration_type: obj
+        for obj in NotificationIntegration.objects.all()
+    }
+    return render(request, 'pipeline/global_settings.html', {
+        'settings': settings_list,
+        'form': form,
+        'integrations': integrations,
+        'show_email_modal': show_email_modal,
+    })
+
+
+@login_required
+def save_email_integration(request):
+    """Save SMTP config into NotificationIntegration for email."""
+    if request.method != 'POST':
+        return redirect('global_settings')
+
+    existing = NotificationIntegration.objects.filter(integration_type='email').first()
+    smtp_host     = request.POST.get('smtp_host', '').strip()
+    smtp_port     = request.POST.get('smtp_port', '587').strip()
+    smtp_user     = request.POST.get('smtp_user', '').strip()
+    smtp_password = request.POST.get('smtp_password', '').strip()
+    smtp_from     = request.POST.get('smtp_from', '').strip()
+    use_tls       = bool(request.POST.get('use_tls'))
+
+    config = {
+        'smtp_host': smtp_host,
+        'smtp_port': int(smtp_port) if smtp_port.isdigit() else 587,
+        'smtp_user': smtp_user,
+        'smtp_from': smtp_from or f'ReleaseRocket <noreply@{smtp_host}>',
+        'use_tls': use_tls,
+    }
+    # Only update password if a new one was provided
+    if smtp_password:
+        config['smtp_password'] = smtp_password
+    elif existing and existing.config.get('smtp_password'):
+        config['smtp_password'] = existing.config['smtp_password']
+
+    NotificationIntegration.objects.update_or_create(
+        integration_type='email',
+        defaults={
+            'name': 'Email (SMTP)',
+            'config': config,
+            'is_active': bool(smtp_host),
+        }
+    )
+    messages.success(request, 'Email integration saved and activated.' if smtp_host else 'Email integration saved (inactive — no host).')
+    return redirect('global_settings')
+
+
+@login_required
+def test_email_integration(request):
+    """
+    GET  → send a test email to the current user (from the run detail page test button).
+    POST → AJAX test of connection only (from the modal).
+    """
+    from .notifications import test_smtp_connection, send_notification
+    integration = NotificationIntegration.objects.filter(integration_type='email').first()
+
+    if request.method == 'POST':
+        # AJAX connection test
+        if not integration:
+            return JsonResponse({'ok': False, 'message': 'No email integration configured yet.'})
+        config = integration.config.copy()
+        # Allow overriding with form values if provided (modal test-before-save)
+        for field in ('smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from', 'use_tls'):
+            val = request.POST.get(field)
+            if val is not None and val != '':
+                config[field] = int(val) if field == 'smtp_port' else (val == '1' if field == 'use_tls' else val)
+        ok, msg = test_smtp_connection(config)
+        return JsonResponse({'ok': ok, 'message': msg})
+
+    # GET → send actual test email
+    if not integration or not integration.is_active:
+        messages.error(request, 'Email integration is not configured or not active.')
+        return redirect('global_settings')
+    if not request.user.email:
+        messages.error(request, 'Your account has no email address. Update your profile first.')
+        return redirect('global_settings')
+    send_notification(
+        event_type='pipeline_failure',   # use a pref that is on by default
+        subject='Test notification from ReleaseRocket',
+        body='This is a test email to confirm your SMTP configuration is working correctly.',
+        users=[request.user],
+    )
+    messages.success(request, f'Test email sent to {request.user.email}.')
+    return redirect('global_settings')
+
+
+@login_required
+def notification_preferences(request):
+    """Per-user notification preference toggles."""
+    prefs = UserNotificationPreference.for_user(request.user)
+    if request.method == 'POST':
+        prefs.pipeline_success = bool(request.POST.get('pipeline_success'))
+        prefs.pipeline_failure = bool(request.POST.get('pipeline_failure'))
+        prefs.pr_assigned      = bool(request.POST.get('pr_assigned'))
+        prefs.pr_merged        = bool(request.POST.get('pr_merged'))
+        prefs.issue_assigned   = bool(request.POST.get('issue_assigned'))
+        prefs.issue_commented  = bool(request.POST.get('issue_commented'))
+        prefs.save()
+        messages.success(request, 'Notification preferences saved.')
+        return redirect('notification_preferences')
+    return render(request, 'pipeline/notification_preferences.html', {'prefs': prefs})
 
 
 def documentation(request):
@@ -1105,3 +1215,78 @@ def pipeline_metrics_api(request):
         .annotate(count=Count('id'))
     )
     return JsonResponse({'metrics': list(data)})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Build Artifacts
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def artifact_download(request, run_id, artifact_id):
+    run      = get_object_or_404(PipelineRun, run_id=run_id)
+    artifact = get_object_or_404(BuildArtifact, pk=artifact_id, pipeline_run=run)
+    artifacts_dir = os.environ.get('CI_ARTIFACTS_DIR', 'D:/cicd/artifacts')
+    full_path = os.path.join(artifacts_dir, artifact.file_path)
+    full_path = os.path.abspath(full_path)
+    if not full_path.startswith(os.path.abspath(artifacts_dir)):
+        raise Http404
+    if not os.path.exists(full_path):
+        messages.error(request, 'Artifact file not found on disk.')
+        return redirect('pipeline_run_detail', run_id=run_id)
+    response = HttpResponse(open(full_path, 'rb').read(),
+                            content_type=artifact.content_type)
+    response['Content-Disposition'] = f'attachment; filename="{artifact.name}"'
+    return response
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Deployment Targets
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def deployment_target_list(request):
+    targets = DeploymentTarget.objects.select_related('environment', 'project', 'credential').all()
+    return render(request, 'pipeline/deployment_target_list.html', {'targets': targets})
+
+
+@login_required
+def deployment_target_detail(request, pk):
+    target = get_object_or_404(DeploymentTarget, pk=pk)
+    return render(request, 'pipeline/deployment_target_detail.html', {'target': target})
+
+
+@login_required
+def deployment_target_create(request):
+    if request.method == 'POST':
+        form = DeploymentTargetForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Deployment target created.')
+            return redirect('deployment_target_list')
+    else:
+        form = DeploymentTargetForm()
+    return render(request, 'pipeline/deployment_target_form.html', {'form': form, 'action': 'Create'})
+
+
+@login_required
+def deployment_target_update(request, pk):
+    target = get_object_or_404(DeploymentTarget, pk=pk)
+    if request.method == 'POST':
+        form = DeploymentTargetForm(request.POST, instance=target)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Deployment target updated.')
+            return redirect('deployment_target_detail', pk=target.pk)
+    else:
+        form = DeploymentTargetForm(instance=target)
+    return render(request, 'pipeline/deployment_target_form.html', {'form': form, 'target': target, 'action': 'Edit'})
+
+
+@login_required
+def deployment_target_delete(request, pk):
+    target = get_object_or_404(DeploymentTarget, pk=pk)
+    if request.method == 'POST':
+        target.delete()
+        messages.success(request, 'Deployment target deleted.')
+        return redirect('deployment_target_list')
+    return render(request, 'pipeline/deployment_target_confirm_delete.html', {'target': target})

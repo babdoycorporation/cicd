@@ -250,7 +250,8 @@
 
         <div class="docs-nav-label">Administration</div>
         <a href="#agents">Build Agents</a>
-        <a href="#deployment">Deployment</a>
+        <a href="#deploy-targets">Deployment Targets</a>
+        <a href="#deployment">Server Deployment</a>
 
         <div class="docs-nav-label">Reference</div>
         <a href="#api">API Reference</a>
@@ -276,6 +277,7 @@
                     <tr><td><strong>Issue tracking</strong></td><td>Labels, milestones, assignees, and automatic closing from pull requests.</td></tr>
                     <tr><td><strong>CI/CD pipelines</strong></td><td>Builds trigger on every push. Logs stream live to the browser.</td></tr>
                     <tr><td><strong>Build agents</strong></td><td>Execute builds on any Linux machine in your network.</td></tr>
+                    <tr><td><strong>Deployment targets</strong></td><td>Deploy to Kubernetes, AWS, Azure, GCP, Docker registries, or SSH servers — one connector per target, no scripts.</td></tr>
                     <tr><td><strong>Organizations</strong></td><td>Group users, teams, and repositories under a shared identity.</td></tr>
                 </table>
             </div>
@@ -526,9 +528,100 @@ git remote set-url origin \
             </div>
         </section>
 
+        <!-- DEPLOYMENT TARGETS -->
+        <section id="deploy-targets">
+            <h2><i class="ph ph-cloud-arrow-up"></i> Deployment Targets</h2>
+            <p>Deployment Targets let a pipeline push directly to cloud infrastructure or a remote server — without writing deployment shell scripts by hand. The worker detects a special <code>deploy:</code> command in a step and routes it through the right SDK/CLI automatically.</p>
+
+            <h3>Supported connector types</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Type</th><th>What it runs</th></tr>
+                    <tr><td><code>kubernetes</code></td><td><code>kubectl rollout restart deployment</code> using a kubeconfig token</td></tr>
+                    <tr><td><code>aws_ecs</code></td><td><code>aws ecs update-service --force-new-deployment</code></td></tr>
+                    <tr><td><code>aws_eks</code></td><td>Fetches kubeconfig via <code>aws eks update-kubeconfig</code>, then runs <code>kubectl rollout restart</code></td></tr>
+                    <tr><td><code>aws_lambda</code></td><td><code>aws lambda update-function-code --image-uri $IMAGE_URI</code></td></tr>
+                    <tr><td><code>azure_aks</code></td><td><code>az aks get-credentials</code> then <code>kubectl rollout restart</code></td></tr>
+                    <tr><td><code>azure_appservice</code></td><td><code>az webapp restart</code></td></tr>
+                    <tr><td><code>gcp_gke</code></td><td><code>gcloud container clusters get-credentials</code> then <code>kubectl rollout restart</code></td></tr>
+                    <tr><td><code>gcp_cloudrun</code></td><td><code>gcloud run services update --image $IMAGE_URI</code></td></tr>
+                    <tr><td><code>docker_registry</code></td><td><code>docker build</code> + <code>docker push</code> to the configured registry</td></tr>
+                    <tr><td><code>ssh</code></td><td>SSH into the target host and runs <code>./deploy.sh</code> in <code>/app</code></td></tr>
+                </table>
+            </div>
+
+            <h3>Step 1 — Create a credential</h3>
+            <p>Go to <strong>Credentials</strong> in the sidebar and add a new credential. Choose the <strong>Type</strong> that matches your cloud provider:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Cloud</th><th>Credential fields</th></tr>
+                    <tr><td>AWS</td><td><em>Username</em> = Access Key ID &nbsp;·&nbsp; <em>Token</em> = Secret Access Key &nbsp;·&nbsp; <em>Extra</em>: <code>{"region":"us-east-1"}</code></td></tr>
+                    <tr><td>Azure</td><td><em>Username</em> = Client ID &nbsp;·&nbsp; <em>Password</em> = Client Secret &nbsp;·&nbsp; <em>Token</em> = Tenant ID</td></tr>
+                    <tr><td>GCP</td><td><em>Token</em> = Service Account JSON &nbsp;·&nbsp; <em>Extra</em>: <code>{"project_id":"my-proj"}</code></td></tr>
+                    <tr><td>Kubernetes</td><td><em>Token</em> = full kubeconfig YAML</td></tr>
+                    <tr><td>SSH</td><td><em>Username</em> = remote user &nbsp;·&nbsp; <em>Password</em> = private key content</td></tr>
+                    <tr><td>Docker Registry</td><td><em>Username</em> = registry username &nbsp;·&nbsp; <em>Token</em> = token or password</td></tr>
+                </table>
+            </div>
+
+            <h3>Step 2 — Create a Deployment Target</h3>
+            <p>Go to <strong>Deploy Targets</strong> in the sidebar and click <strong>Add Target</strong>. Fill in:</p>
+            <ul>
+                <li><strong>Name</strong> — a human-readable label, e.g. <em>Production K8s</em></li>
+                <li><strong>Type</strong> — pick the connector type</li>
+                <li><strong>Endpoint / Host</strong> — cluster API URL, registry hostname, SSH IP, etc.</li>
+                <li><strong>Region</strong> — AWS/Azure/GCP region (e.g. <code>us-east-1</code>)</li>
+                <li><strong>Namespace / Cluster</strong> — K8s namespace, ECS cluster name, resource group</li>
+                <li><strong>Credential</strong> — select the credential you created in Step 1</li>
+                <li><strong>Environment</strong> — optionally tag this target as <em>production</em>, <em>staging</em>, etc.</li>
+            </ul>
+            <p>After saving, open the target's detail page and note its <strong>numeric ID</strong> in the URL (<code>/deployment-targets/<strong>3</strong>/</code>) — you need it in Step 3.</p>
+
+            <h3>Step 3 — Add a deploy step to your pipeline</h3>
+            <p>In your <code>rockerci.yaml</code>, add a step whose <code>run</code> (or <code>command</code>) is a deploy directive:</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-file-code"></i> rockerci.yaml</div>
+                <pre><code>stages:
+  - name: Build
+    steps:
+      - name: Build Docker image
+        command: docker build -t myapp:$CI_RUN_ID .
+
+  - name: Deploy
+    steps:
+      - name: Push to Production Kubernetes
+        command: deploy:kubernetes:3   <span class="c"># ← type:pk of the target</span>
+
+      - name: Update AWS Lambda
+        command: deploy:aws_lambda:7</code></pre>
+            </div>
+            <p>The format is <code>deploy:&lt;type&gt;:&lt;target_pk&gt;</code>. The worker detects this prefix, looks up the target, injects its credentials as environment variables, and runs the correct CLI command — no manual SDK setup needed on the build agent.</p>
+
+            <div class="docs-note">
+                <i class="ph ph-info"></i>
+                <p>The target's detail page shows the exact command string to copy. Go to <strong>Deploy Targets → &lt;target name&gt;</strong> and read the <em>How to use</em> box.</p>
+            </div>
+
+            <h3>Environment variables injected at deploy time</h3>
+            <p>In addition to the standard CI variables, the connector injects all credential fields under a prefixed namespace:</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-info"></i> Naming pattern</div>
+                <pre><code>DEPLOY_&lt;SERVICE_NAME&gt;_USERNAME
+DEPLOY_&lt;SERVICE_NAME&gt;_PASSWORD
+DEPLOY_&lt;SERVICE_NAME&gt;_TOKEN
+DEPLOY_&lt;SERVICE_NAME&gt;_&lt;EXTRA_KEY&gt;</code></pre>
+            </div>
+            <p>For example, a credential named <em>AWS Prod</em> exposes <code>DEPLOY_AWS_PROD_USERNAME</code> (Access Key ID) and <code>DEPLOY_AWS_PROD_TOKEN</code> (Secret Access Key). Your own shell scripts in the same pipeline can reference these variables too.</p>
+
+            <div class="docs-note warn">
+                <i class="ph ph-warning"></i>
+                <p>The build agent must have the required CLI installed (<code>kubectl</code>, <code>aws</code>, <code>az</code>, <code>gcloud</code>, <code>docker</code>, <code>ssh</code>) and available on its <code>PATH</code>. ReleaseRocket generates the command — it does not bundle the SDKs.</p>
+            </div>
+        </section>
+
         <!-- DEPLOYMENT -->
         <section id="deployment">
-            <h2><i class="ph ph-cloud-arrow-up"></i> Deployment</h2>
+            <h2><i class="ph ph-server"></i> Server Deployment</h2>
 
             <h3>Requirements</h3>
             <div class="docs-table-wrap">

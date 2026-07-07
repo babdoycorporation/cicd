@@ -1,0 +1,48 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<style>
+    .confirm-card {
+        max-width: 520px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 2rem;
+    }
+    .confirm-title {
+        font-size: 1.1rem; font-weight: 600; color: var(--text-primary);
+        margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .confirm-title i { color: var(--danger-color); }
+    .confirm-body { font-size: 0.87rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem; }
+    .confirm-body strong { color: var(--text-primary); }
+    .actions { display: flex; gap: 0.75rem; }
+    .btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.82rem;
+        font-weight: 600; cursor: pointer; font-family: inherit;
+        border: 1px solid transparent; text-decoration: none; transition: all 0.2s;
+    }
+    .btn-danger  { background: var(--danger-color); color: #fff; }
+    .btn-danger:hover { background: #c9372c; }
+    .btn-outline { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+    .btn-outline:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+</style>
+
+<div class="confirm-card">
+    <h1 class="confirm-title"><i class="ph ph-warning"></i> Delete Deployment Target</h1>
+    <div class="confirm-body">
+        Are you sure you want to delete <strong>{{ target.name }}</strong>
+        (<em>{{ target.get_target_type_display }}</em>)?
+        This action cannot be undone. Any pipeline steps referencing this target will fail.
+    </div>
+    <div class="actions">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="ph ph-trash"></i> Yes, Delete
+            </button>
+        </form>
+        <a href="{% url 'deployment_target_detail' target.pk %}" class="btn btn-outline">Cancel</a>
+    </div>
+</div>
+{% endblock %}

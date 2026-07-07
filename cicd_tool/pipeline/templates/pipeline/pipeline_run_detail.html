@@ -122,6 +122,39 @@
         align-items: center;
         gap: 0.5rem;
     }
+
+    /* Artifacts */
+    .artifacts-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+    .artifacts-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.75rem 1.25rem;
+        background: var(--darker-bg); border-bottom: 1px solid var(--border-color);
+        font-size: 0.87rem; font-weight: 600; color: var(--text-primary);
+    }
+    .artifact-row {
+        display: flex; align-items: center; gap: 1rem;
+        padding: 0.65rem 1.25rem; border-bottom: 1px solid var(--border-color);
+        font-size: 0.85rem; transition: background 0.1s;
+    }
+    .artifact-row:last-child { border-bottom: none; }
+    .artifact-row:hover { background: rgba(255,255,255,0.02); }
+    .artifact-icon { color: var(--accent-color); font-size: 1.1rem; flex-shrink:0; }
+    .artifact-name { flex: 1; color: var(--text-primary); font-weight: 500; }
+    .artifact-size { color: var(--text-secondary); font-size: 0.78rem; white-space: nowrap; }
+    .artifact-dl {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.6rem;
+        background: rgba(47,129,247,0.1); color: var(--accent-color);
+        border: 1px solid rgba(47,129,247,0.25); border-radius: 5px;
+        text-decoration: none; transition: all 0.15s; white-space: nowrap;
+    }
+    .artifact-dl:hover { background: rgba(47,129,247,0.2); }
 </style>
 
 <div>
@@ -163,6 +196,26 @@
             </div>
         </div>
     </div>
+
+    {% with artifacts=pipeline_run.artifacts.all %}
+    {% if artifacts %}
+    <div class="artifacts-card">
+        <div class="artifacts-header">
+            <span><i class="ph ph-archive-box" style="color:var(--accent-color);"></i> Build Artifacts ({{ artifacts.count }})</span>
+        </div>
+        {% for art in artifacts %}
+        <div class="artifact-row">
+            <i class="ph ph-file-archive artifact-icon"></i>
+            <span class="artifact-name">{{ art.name }}</span>
+            <span class="artifact-size">{{ art.size_display }}</span>
+            <a href="{% url 'artifact_download' pipeline_run.run_id art.pk %}" class="artifact-dl">
+                <i class="ph ph-download-simple"></i> Download
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
 
     <div class="terminal">
         <div class="terminal-header">

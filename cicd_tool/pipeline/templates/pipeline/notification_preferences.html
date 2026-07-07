@@ -1,0 +1,184 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<style>
+    .page-header { display:flex; align-items:center; gap:0.75rem; margin-bottom:1.75rem; }
+    .page-title  { font-size:1.2rem; font-weight:600; color:var(--text-primary); margin:0; }
+    .page-title i { color:var(--accent-color); }
+
+    .prefs-card {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 12px; max-width: 640px; overflow: hidden;
+    }
+
+    .prefs-section { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); }
+    .prefs-section:last-child { border-bottom: none; }
+
+    .prefs-section-title {
+        font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.06em; color: var(--text-secondary);
+        margin: 0 0 0.85rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .prefs-section-title i { font-size: 0.95rem; }
+
+    .pref-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.6rem 0; border-bottom: 1px solid rgba(48,54,61,0.5);
+    }
+    .pref-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .pref-info {}
+    .pref-label { font-size: 0.88rem; font-weight: 500; color: var(--text-primary); }
+    .pref-desc  { font-size: 0.77rem; color: var(--text-secondary); margin-top: 0.1rem; }
+
+    /* Toggle switch */
+    .toggle { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute; cursor: pointer; inset: 0;
+        background: var(--border-color); border-radius: 22px;
+        transition: background 0.2s;
+    }
+    .slider::before {
+        content: ""; position: absolute;
+        height: 16px; width: 16px; left: 3px; bottom: 3px;
+        background: #fff; border-radius: 50%; transition: transform 0.2s;
+    }
+    input:checked + .slider { background: var(--accent-color); }
+    input:checked + .slider::before { transform: translateX(18px); }
+
+    .prefs-footer {
+        padding: 1.25rem 1.5rem;
+        background: rgba(255,255,255,0.01);
+        border-top: 1px solid var(--border-color);
+        display: flex; gap: 0.75rem; align-items: center;
+    }
+
+    .btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.82rem;
+        font-weight: 600; cursor: pointer; font-family: inherit;
+        border: 1px solid transparent; text-decoration: none; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent-color); color: #fff; }
+    .btn-primary:hover { background: #1f6feb; }
+    .btn-outline { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+    .btn-outline:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+
+    .info-note {
+        background: rgba(47,129,247,0.07); border: 1px solid rgba(47,129,247,0.2);
+        border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem;
+        color: var(--text-secondary); margin-bottom: 1.25rem; max-width: 640px;
+        line-height: 1.6;
+    }
+    .info-note strong { color: var(--text-primary); }
+</style>
+
+<div class="page-header">
+    <a href="{% url 'profile' %}" style="color:var(--text-secondary); text-decoration:none; font-size:1.2rem;">
+        <i class="ph ph-arrow-left"></i>
+    </a>
+    <h1 class="page-title"><i class="ph ph-bell"></i> Notification Preferences</h1>
+</div>
+
+<div class="info-note">
+    <strong>Email required.</strong> Notifications are sent to <strong>{{ request.user.email|default:"no email on file" }}</strong>.
+    {% if not request.user.email %}
+    <a href="{% url 'profile' %}" style="color:var(--accent-color);">Add your email address</a> to receive notifications.
+    {% endif %}
+    An admin must also configure SMTP under <a href="{% url 'global_settings' %}" style="color:var(--accent-color);">Global Settings → Integrations</a>.
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="prefs-card">
+
+        <!-- Pipeline -->
+        <div class="prefs-section">
+            <div class="prefs-section-title"><i class="ph ph-rocket-launch"></i> Pipeline Events</div>
+
+            <div class="pref-row">
+                <div class="pref-info">
+                    <div class="pref-label">Build succeeded</div>
+                    <div class="pref-desc">Notify when a pipeline run completes successfully</div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" name="pipeline_success" {% if prefs.pipeline_success %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="pref-row">
+                <div class="pref-info">
+                    <div class="pref-label">Build failed</div>
+                    <div class="pref-desc">Notify when a pipeline run fails at any step</div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" name="pipeline_failure" {% if prefs.pipeline_failure %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Pull Requests -->
+        <div class="prefs-section">
+            <div class="prefs-section-title"><i class="ph ph-git-pull-request"></i> Pull Requests</div>
+
+            <div class="pref-row">
+                <div class="pref-info">
+                    <div class="pref-label">Assigned for review</div>
+                    <div class="pref-desc">Notify when you are added as a reviewer on a PR</div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" name="pr_assigned" {% if prefs.pr_assigned %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="pref-row">
+                <div class="pref-info">
+                    <div class="pref-label">PR merged</div>
+                    <div class="pref-desc">Notify when your pull request is merged</div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" name="pr_merged" {% if prefs.pr_merged %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Issues -->
+        <div class="prefs-section">
+            <div class="prefs-section-title"><i class="ph ph-warning-circle"></i> Issues</div>
+
+            <div class="pref-row">
+                <div class="pref-info">
+                    <div class="pref-label">Issue assigned to me</div>
+                    <div class="pref-desc">Notify when you are assigned to an issue</div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" name="issue_assigned" {% if prefs.issue_assigned %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="pref-row">
+                <div class="pref-info">
+                    <div class="pref-label">New comment on my issue</div>
+                    <div class="pref-desc">Notify when someone comments on an issue you opened</div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" name="issue_commented" {% if prefs.issue_commented %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="prefs-footer">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph ph-floppy-disk"></i> Save Preferences
+            </button>
+            <a href="{% url 'profile' %}" class="btn btn-outline">Cancel</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

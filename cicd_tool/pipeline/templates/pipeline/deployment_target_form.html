@@ -1,0 +1,181 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<style>
+    .page-header { display:flex; align-items:center; gap:0.75rem; margin-bottom:1.5rem; }
+    .page-title  { font-size:1.2rem; font-weight:600; color:var(--text-primary); margin:0; }
+
+    .form-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 1.5rem;
+        max-width: 680px;
+    }
+
+    .form-section { margin-bottom: 1.5rem; }
+    .form-section-title {
+        font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.04em; color: var(--text-secondary);
+        margin: 0 0 1rem; padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .form-row { margin-bottom: 1rem; }
+    .form-row label {
+        display: block; font-size: 0.82rem; font-weight: 500;
+        color: var(--text-primary); margin-bottom: 0.3rem;
+    }
+    .form-row .help { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem; }
+
+    .form-control {
+        width: 100%; background: var(--darker-bg);
+        border: 1px solid var(--border-color); border-radius: 6px;
+        color: var(--text-primary); padding: 0.5rem 0.75rem;
+        font-size: 0.87rem; font-family: inherit;
+        box-sizing: border-box; outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+    }
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; min-height: 60px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width:600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .form-actions {
+        display: flex; gap: 0.75rem; margin-top: 1.5rem;
+        padding-top: 1rem; border-top: 1px solid var(--border-color);
+    }
+
+    .btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.82rem;
+        font-weight: 600; cursor: pointer; font-family: inherit;
+        transition: all 0.2s; border: 1px solid transparent; text-decoration: none;
+    }
+    .btn-primary { background: var(--accent-color); color: #fff; }
+    .btn-primary:hover { background: #1f6feb; }
+    .btn-outline { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+    .btn-outline:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+</style>
+
+<div class="page-header">
+    <a href="{% url 'deployment_target_list' %}" style="color:var(--text-secondary); text-decoration:none; font-size:1.2rem;">
+        <i class="ph ph-arrow-left"></i>
+    </a>
+    <h1 class="page-title">{{ action }} Deployment Target</h1>
+</div>
+
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-section">
+            <div class="form-section-title">Basic Info</div>
+
+            <div class="form-row">
+                <label>Name</label>
+                <input type="text" name="{{ form.name.html_name }}" class="form-control"
+                       value="{{ form.name.value|default:'' }}" placeholder="e.g. Production K8s, Staging ECS">
+                {% if form.name.errors %}<div class="help" style="color:var(--danger-color);">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-row">
+                <label>Type</label>
+                <select name="{{ form.target_type.html_name }}" class="form-control">
+                    {% for val, label in form.fields.target_type.choices %}
+                    <option value="{{ val }}" {% if form.target_type.value == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-row">
+                <label>Description <span style="color:var(--text-secondary); font-weight:400;">(optional)</span></label>
+                <textarea name="{{ form.description.html_name }}" class="form-control">{{ form.description.value|default:'' }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title">Connection Details</div>
+
+            <div class="form-row">
+                <label>Endpoint / Host</label>
+                <input type="text" name="{{ form.endpoint.html_name }}" class="form-control"
+                       value="{{ form.endpoint.value|default:'' }}"
+                       placeholder="e.g. https://cluster.example.com, registry.hub.docker.com">
+                <div class="help">Cluster URL, registry host, SSH hostname/IP, etc.</div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-row">
+                    <label>Region</label>
+                    <input type="text" name="{{ form.region.html_name }}" class="form-control"
+                           value="{{ form.region.value|default:'' }}"
+                           placeholder="e.g. us-east-1, eastus">
+                </div>
+                <div class="form-row">
+                    <label>Namespace / Cluster / Resource Group</label>
+                    <input type="text" name="{{ form.namespace.html_name }}" class="form-control"
+                           value="{{ form.namespace.value|default:'' }}"
+                           placeholder="e.g. default, production">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title">Scope &amp; Credentials</div>
+
+            <div class="grid-2">
+                <div class="form-row">
+                    <label>Environment</label>
+                    <select name="{{ form.environment.html_name }}" class="form-control">
+                        <option value="">— None —</option>
+                        {% for val, label in form.fields.environment.choices %}
+                        {% if val %}
+                        <option value="{{ val }}" {% if form.environment.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Project</label>
+                    <select name="{{ form.project.html_name }}" class="form-control">
+                        <option value="">— None —</option>
+                        {% for val, label in form.fields.project.choices %}
+                        {% if val %}
+                        <option value="{{ val }}" {% if form.project.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Credential</label>
+                <select name="{{ form.credential.html_name }}" class="form-control">
+                    <option value="">— None —</option>
+                    {% for val, label in form.fields.credential.choices %}
+                    {% if val %}
+                    <option value="{{ val }}" {% if form.credential.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                <div class="help">
+                    Select a saved credential.
+                    <a href="{% url 'global_credential_create' %}" style="color:var(--accent-color);">Add one</a> if none exist.
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="ph ph-floppy-disk"></i> Save Target
+            </button>
+            <a href="{% url 'deployment_target_list' %}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

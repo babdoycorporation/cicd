@@ -270,3 +270,218 @@ def get_repository_files(project):
             full = os.path.join(root, name)
             files.append(os.path.relpath(full, repo_dir))
     return files
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Build Artifacts
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARTIFACTS_DIR = os.environ.get('CI_ARTIFACTS_DIR', 'D:/cicd/artifacts')
+
+
+def is_artifact_command(command: str) -> bool:
+    """Return True when command is  artifact:<glob>  e.g. artifact:dist/*.zip"""
+    return command.strip().startswith('artifact:')
+
+
+def store_artifact(command: str, run, workdir: str):
+    """
+    Copy files matching the glob pattern to the artifacts store and
+    create BuildArtifact DB records.
+
+    Command format:  artifact:<glob>
+    e.g.             artifact:dist/*.zip
+                     artifact:reports/coverage.html
+    """
+    import glob as _glob
+    import mimetypes
+    import shutil
+    from .models import BuildArtifact
+
+    pattern = command.strip()[len('artifact:'):].strip()
+    run_artifacts_dir = os.path.join(ARTIFACTS_DIR, str(run.run_id))
+    os.makedirs(run_artifacts_dir, exist_ok=True)
+
+    matched = _glob.glob(os.path.join(workdir, pattern), recursive=True)
+    stored = []
+    for src in matched:
+        if not os.path.isfile(src):
+            continue
+        filename = os.path.basename(src)
+        dest = os.path.join(run_artifacts_dir, filename)
+        shutil.copy2(src, dest)
+        mime, _ = mimetypes.guess_type(filename)
+        size = os.path.getsize(dest)
+        rel_path = os.path.join(str(run.run_id), filename)
+        art = BuildArtifact.objects.create(
+            pipeline_run=run,
+            name=filename,
+            file_path=rel_path,
+            file_size=size,
+            content_type=mime or 'application/octet-stream',
+        )
+        stored.append(art)
+        logger.info(f"Stored artifact {filename} ({size} bytes) for run {run.run_id}")
+
+    return stored
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Deployment connector
+# ─────────────────────────────────────────────────────────────────────────────
+
+def is_deploy_command(command: str) -> bool:
+    """Return True when the command is a connector directive, e.g. deploy:kubernetes:3"""
+    return command.strip().startswith('deploy:')
+
+
+def execute_deploy(command: str, run_id, workdir=None):
+    """
+    Execute a connector deploy directive.
+
+    Command format:  deploy:<target_type>:<target_pk>
+
+    Looks up the DeploymentTarget, builds a CLI command from its fields and
+    attached credential, and runs it via subprocess.
+    Returns a CompletedProcess-like object with .returncode and .stdout.
+    """
+    from .models import DeploymentTarget
+
+    parts = command.strip().split(':')
+    if len(parts) < 3:
+        return subprocess.CompletedProcess(
+            args=command, returncode=1,
+            stdout='[DEPLOY-ERROR] Invalid deploy command format. Expected deploy:<type>:<target_pk>')
+
+    target_pk_str = parts[2]
+    try:
+        target = DeploymentTarget.objects.select_related('credential').get(pk=int(target_pk_str))
+    except (ValueError, DeploymentTarget.DoesNotExist):
+        return subprocess.CompletedProcess(
+            args=command, returncode=1,
+            stdout=f'[DEPLOY-ERROR] DeploymentTarget #{target_pk_str} not found.')
+
+    cred = target.credential
+    env  = os.environ.copy()
+    log  = [f'[DEPLOY] Target: {target.name} ({target.get_target_type_display()})']
+
+    # Inject credential values as env vars
+    if cred:
+        pfx = f'DEPLOY_{cred.service_name.upper().replace(" ", "_")}'
+        if cred.username: env[f'{pfx}_USERNAME'] = cred.username
+        if cred.password: env[f'{pfx}_PASSWORD'] = cred.password
+        if cred.token:    env[f'{pfx}_TOKEN']    = cred.token
+        for k, v in (cred.extra or {}).items():
+            env[f'{pfx}_{k.upper()}'] = str(v)
+
+    run_dir = workdir or os.path.join(os.environ.get('CI_RUNS_DIR', 'D:/cicd/runs'), str(run_id))
+    os.makedirs(run_dir, exist_ok=True)
+
+    cli_cmd = _build_deploy_cli(target, cred, env, run_dir)
+    log.append(f'[DEPLOY] Running: {cli_cmd}')
+
+    process = subprocess.Popen(
+        cli_cmd, shell=True, env=env, cwd=run_dir,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        universal_newlines=True, bufsize=1,
+    )
+    for line in process.stdout:
+        log.append(line.rstrip())
+    process.wait()
+
+    if process.returncode == 0:
+        log.append(f'[DEPLOY-OK] {target.name} deployed successfully.')
+    else:
+        log.append(f'[DEPLOY-FAILED] {target.name} exited {process.returncode}.')
+
+    return subprocess.CompletedProcess(
+        args=command,
+        returncode=process.returncode,
+        stdout='\n'.join(log),
+    )
+
+
+def _build_deploy_cli(target, cred, env, run_dir) -> str:
+    """Build a shell command string for the given target type."""
+    t      = target.target_type
+    ep     = target.endpoint or ''
+    ns     = target.namespace or 'default'
+    region = target.region or ''
+
+    if t == 'kubernetes':
+        kubeconfig_path = os.path.join(run_dir, 'kubeconfig')
+        if cred and cred.token:
+            with open(kubeconfig_path, 'w') as fh:
+                fh.write(cred.token)
+            env['KUBECONFIG'] = kubeconfig_path
+        server_flag = f'--server={ep}' if ep else ''
+        return f'kubectl {server_flag} --namespace={ns} rollout restart deployment'
+
+    if t == 'aws_ecs':
+        region_flag = f'--region {region}' if region else ''
+        cluster = ns
+        return (f'aws ecs update-service {region_flag} --cluster {cluster} '
+                f'--service {ep} --force-new-deployment')
+
+    if t == 'aws_eks':
+        region_flag = f'--region {region}' if region else ''
+        cluster_name = ep.split('/')[-1] if '/' in ep else ep
+        if cluster_name:
+            env['KUBECONFIG'] = os.path.join(run_dir, 'eks_kubeconfig')
+            return (f'aws eks update-kubeconfig {region_flag} --name {cluster_name} '
+                    f'--kubeconfig {env["KUBECONFIG"]} && '
+                    f'kubectl --namespace={ns} rollout restart deployment')
+        return 'echo "aws_eks: no cluster endpoint configured"; exit 1'
+
+    if t == 'aws_lambda':
+        region_flag = f'--region {region}' if region else ''
+        func = ep or ns
+        return f'aws lambda update-function-code {region_flag} --function-name {func} --image-uri $IMAGE_URI'
+
+    if t == 'azure_aks':
+        rg = ns
+        cluster = ep or 'my-cluster'
+        return (f'az aks get-credentials --resource-group {rg} --name {cluster} '
+                f'--overwrite-existing && kubectl rollout restart deployment')
+
+    if t == 'azure_appservice':
+        rg = ns
+        app = ep or 'my-app'
+        return f'az webapp restart --resource-group {rg} --name {app}'
+
+    if t == 'gcp_gke':
+        zone = region or 'us-central1-a'
+        cluster = ep or 'my-cluster'
+        project_id = (cred.extra or {}).get('project_id', '') if cred else ''
+        proj_flag = f'--project={project_id}' if project_id else ''
+        return (f'gcloud container clusters get-credentials {cluster} '
+                f'--zone={zone} {proj_flag} && '
+                f'kubectl --namespace={ns} rollout restart deployment')
+
+    if t == 'gcp_cloudrun':
+        region_flag = f'--region={region}' if region else ''
+        service = ep or 'my-service'
+        project_id = (cred.extra or {}).get('project_id', '') if cred else ''
+        proj_flag = f'--project={project_id}' if project_id else ''
+        return (f'gcloud run services update {service} {region_flag} {proj_flag} '
+                f'--image=$IMAGE_URI')
+
+    if t == 'docker_registry':
+        registry = ep or 'docker.io'
+        image = ns or 'myimage'
+        return (f'docker build -t {registry}/{image}:$CI_RUN_ID . && '
+                f'docker push {registry}/{image}:$CI_RUN_ID')
+
+    if t == 'ssh':
+        host = ep or 'localhost'
+        user = (cred.username if cred else None) or 'deploy'
+        ssh_key_path = os.path.join(run_dir, 'ssh_key')
+        if cred and cred.password:
+            with open(ssh_key_path, 'w') as fh:
+                fh.write(cred.password)
+            os.chmod(ssh_key_path, 0o600)
+            return (f'ssh -i {ssh_key_path} -o StrictHostKeyChecking=no '
+                    f'{user}@{host} "cd /app && ./deploy.sh"')
+        return f'ssh -o StrictHostKeyChecking=no {user}@{host} "cd /app && ./deploy.sh"'
+
+    return f'echo "No connector defined for target type: {t}"; exit 1'

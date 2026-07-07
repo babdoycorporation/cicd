@@ -750,7 +750,7 @@ def create_pull_request(request, repository_name):
             pr.save()
             form.save_m2m()
             log_activity(request.user, 'pull_request', f"Opened PR #{pr.number}: {pr.title}", repository=repo)
-            # Notify reviewers
+            # In-app: notify reviewers
             if pr.reviewers.exists():
                 notify(
                     list(pr.reviewers.all()), 'review_requested',
@@ -759,6 +759,21 @@ def create_pull_request(request, repository_name):
                     link=pr.repository.get_absolute_url(),
                     repository=repo,
                 )
+                # Email: notify reviewers
+                try:
+                    from pipeline.notifications import send_notification
+                    send_notification(
+                        event_type='pr_assigned',
+                        subject=f"Review requested: PR #{pr.number} — {pr.title}",
+                        body=(
+                            f"{request.user.username} requested your review on:\n\n"
+                            f"  PR #{pr.number}: {pr.title}\n"
+                            f"  Repository: {repo.name}"
+                        ),
+                        users=list(pr.reviewers.all()),
+                    )
+                except Exception as _ne:
+                    pass
             messages.success(request, f"Pull request #{pr.number} created.")
             return redirect('pull_request_detail', pull_request_id=pr.id)
     else:
@@ -867,11 +882,26 @@ def merge_pull_request(request, pull_request_id):
             pr.merged_at = timezone.now()
             pr.save()
             log_activity(request.user, 'merge', f"Merged PR #{pr.number}: {pr.title}", repository=pr.repository)
-            # Notify PR author
+            # Notify PR author (in-app + email)
             if pr.author and pr.author != request.user:
                 notify(pr.author, 'pull_request', f"PR #{pr.number} merged",
                        f"{request.user.username} merged your PR '{pr.title}'",
                        repository=pr.repository)
+                try:
+                    from pipeline.notifications import send_notification
+                    send_notification(
+                        event_type='pr_merged',
+                        subject=f"PR #{pr.number} merged — {pr.title}",
+                        body=(
+                            f"{request.user.username} merged your pull request:\n\n"
+                            f"  PR #{pr.number}: {pr.title}\n"
+                            f"  Repository: {pr.repository.name}\n"
+                            f"  Merged into: {pr.target_branch.name}"
+                        ),
+                        users=[pr.author],
+                    )
+                except Exception:
+                    pass
             messages.success(request, f"PR #{pr.number} merged successfully.")
         except GitCommandError as e:
             try: r.git.merge('--abort')
@@ -966,11 +996,25 @@ def create_issue(request, repository_name):
             issue.save()
             form.save_m2m()
             log_activity(request.user, 'issue', f"Opened issue #{issue.number}: {issue.title}", repository=repo)
-            # Notify assignees
+            # Notify assignees (in-app + email)
             assignees = list(issue.assignees.exclude(id=request.user.id))
             if assignees:
                 notify(assignees, 'issue', f"Issue #{issue.number} assigned to you",
                        issue.title, repository=repo)
+                try:
+                    from pipeline.notifications import send_notification
+                    send_notification(
+                        event_type='issue_assigned',
+                        subject=f"Issue #{issue.number} assigned to you — {issue.title}",
+                        body=(
+                            f"{request.user.username} assigned you to issue #{issue.number}:\n\n"
+                            f"  {issue.title}\n"
+                            f"  Repository: {repo.name}"
+                        ),
+                        users=assignees,
+                    )
+                except Exception:
+                    pass
             # Notify watchers
             watchers = list(repo.watchers.exclude(id=request.user.id))
             if watchers:
@@ -997,6 +1041,23 @@ def issue_detail(request, repository_name, issue_number):
                 c.issue = issue
                 c.author = request.user
                 c.save()
+                # Email: notify issue author
+                if issue.author and issue.author != request.user:
+                    try:
+                        from pipeline.notifications import send_notification
+                        send_notification(
+                            event_type='issue_commented',
+                            subject=f"New comment on issue #{issue.number} — {issue.title}",
+                            body=(
+                                f"{request.user.username} commented on your issue:\n\n"
+                                f"  {c.body[:200]}\n\n"
+                                f"  Issue: #{issue.number} {issue.title}\n"
+                                f"  Repository: {repo.name}"
+                            ),
+                            users=[issue.author],
+                        )
+                    except Exception:
+                        pass
                 return redirect('issue_detail', repository_name=repo.name, issue_number=issue.number)
         elif action == 'close' and issue.state == 'open':
             issue.state = 'closed'

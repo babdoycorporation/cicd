@@ -65,8 +65,9 @@ def _execute_run(run_pk, agent_pk):
     import os
     from django.utils import timezone
     from .models import Agent, PipelineRun
-    from .utils import (BASE_RUNS_DIR, checkout_repository, execute_step,
-                        prepare_credentials)
+    from .utils import (BASE_RUNS_DIR, checkout_repository, execute_deploy,
+                        execute_step, is_artifact_command, is_deploy_command,
+                        prepare_credentials, store_artifact)
 
     run = PipelineRun.objects.select_related('pipeline__application__project').get(pk=run_pk)
     agent = Agent.objects.get(pk=agent_pk)
@@ -107,10 +108,22 @@ def _execute_run(run_pk, agent_pk):
                 run.log = '\n'.join(log_lines)
                 run.save(update_fields=['log'])
                 try:
-                    result = execute_step(step, run.run_id, credentials, workdir=workdir)
-                    log_lines.extend(result.stdout.splitlines())
-                    if result.returncode != 0:
-                        log_lines.append(f"[FAILED] {step.name} exited {result.returncode}")
+                    if is_artifact_command(step.command):
+                        stored = store_artifact(step.command, run, workdir)
+                        names = ', '.join(a.name for a in stored) or 'no files matched'
+                        log_lines.append(f"[ARTIFACT] Stored: {names}")
+                        result_rc = 0
+                    elif is_deploy_command(step.command):
+                        result = execute_deploy(step.command, run.run_id, workdir=workdir)
+                        log_lines.extend(result.stdout.splitlines())
+                        result_rc = result.returncode
+                    else:
+                        result = execute_step(step, run.run_id, credentials, workdir=workdir)
+                        log_lines.extend(result.stdout.splitlines())
+                        result_rc = result.returncode
+
+                    if result_rc != 0:
+                        log_lines.append(f"[FAILED] {step.name} exited {result_rc}")
                         overall_status = 'failed'
                         break
                     log_lines.append(f"[OK] {step.name}")
@@ -134,6 +147,35 @@ def _execute_run(run_pk, agent_pk):
         agent.last_heartbeat = timezone.now()
         agent.save(update_fields=['live', 'last_heartbeat'])
         logger.info(f"Run {run.run_id} finished: {overall_status}")
+
+        # ── Email notification ────────────────────────────────────────────────
+        try:
+            from .notifications import send_notification
+            from django.contrib.auth.models import User
+            event = 'pipeline_success' if overall_status == 'success' else 'pipeline_failure'
+            emoji = '✅' if overall_status == 'success' else '❌'
+            # Notify all users who triggered or are members of this pipeline's project
+            pipeline_obj = run.pipeline
+            app = pipeline_obj.application
+            notify_users = []
+            if app and app.project:
+                notify_users = list(User.objects.filter(
+                    project_memberships__project=app.project
+                ).exclude(email=''))
+            send_notification(
+                event_type=event,
+                subject=f"{emoji} {pipeline_obj.name} — {overall_status.upper()}",
+                body=(
+                    f"Pipeline:  {pipeline_obj.name}\n"
+                    f"Status:    {overall_status.upper()}\n"
+                    f"Run ID:    {run.run_id}\n"
+                    f"Branch:    {pipeline_obj.monitored_branch}\n"
+                    f"Agent:     {agent.hostname}"
+                ),
+                users=notify_users,
+            )
+        except Exception as notify_err:
+            logger.warning(f"Notification send error: {notify_err}")
 
 def _dispatch_project_runs():
     from .models import ProjectPipelineRun

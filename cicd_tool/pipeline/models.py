@@ -100,18 +100,31 @@ class Application(models.Model):
         from gitmgmt.models import Repository
         return Repository.objects.filter(application=self).first()
 
+CREDENTIAL_TYPE_CHOICES = (
+    ('generic',         'Generic / Other'),
+    ('aws',             'AWS (Access Key)'),
+    ('azure',           'Azure (Service Principal)'),
+    ('gcp',             'GCP (Service Account)'),
+    ('kubernetes',      'Kubernetes (Kubeconfig / Token)'),
+    ('docker_registry', 'Docker Registry'),
+    ('ssh',             'SSH Key / Password'),
+    ('git',             'Git (Username + Token)'),
+)
+
 class Credential(models.Model):
     service_name = models.CharField(max_length=100)
-    username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100)  # Encrypted/hashed
-    token = models.CharField(max_length=100)     # Encrypted/hashed
-    
+    credential_type = models.CharField(max_length=30, choices=CREDENTIAL_TYPE_CHOICES, default='generic')
+    username = models.CharField(max_length=100, blank=True)
+    password = models.CharField(max_length=500, blank=True)
+    token = models.CharField(max_length=500, blank=True)
+    extra = models.JSONField(default=dict, blank=True)
+
     scope_level = models.CharField(max_length=20, choices=SCOPE_CHOICES, default='global')
     project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=True, related_name='credentials')
     application = models.ForeignKey(Application, on_delete=models.CASCADE, null=True, blank=True, related_name='credentials')
 
     def __str__(self):
-        return f"{self.service_name} ({self.scope_level})"
+        return f"{self.service_name} [{self.credential_type}] ({self.scope_level})"
 
 class Tag(models.Model):
     name = models.CharField(max_length=100)
@@ -256,4 +269,120 @@ class YamlFileVersion(models.Model):
     version_number = models.IntegerField()
     yaml_content = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Build Artifacts
+# ─────────────────────────────────────────────────────────────────────────────
+
+class BuildArtifact(models.Model):
+    pipeline_run  = models.ForeignKey(PipelineRun, on_delete=models.CASCADE, related_name='artifacts')
+    name          = models.CharField(max_length=255)
+    file_path     = models.CharField(max_length=500)   # relative path under ARTIFACTS_DIR
+    file_size     = models.BigIntegerField(default=0)  # bytes
+    content_type  = models.CharField(max_length=100, default='application/octet-stream')
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} (run {self.pipeline_run.run_id})"
+
+    @property
+    def size_display(self):
+        b = self.file_size
+        for unit in ('B', 'KB', 'MB', 'GB'):
+            if b < 1024:
+                return f"{b:.1f} {unit}"
+            b /= 1024
+        return f"{b:.1f} TB"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Notification Integrations
+# ─────────────────────────────────────────────────────────────────────────────
+
+NOTIFICATION_INTEGRATION_TYPES = (
+    ('email', 'Email (SMTP)'),
+    ('slack', 'Slack'),
+    ('teams', 'Microsoft Teams'),
+)
+
+class NotificationIntegration(models.Model):
+    integration_type = models.CharField(max_length=20, choices=NOTIFICATION_INTEGRATION_TYPES, unique=True)
+    name             = models.CharField(max_length=100)
+    config           = models.JSONField(default=dict, blank=True)
+    # config keys for email: smtp_host, smtp_port, smtp_user, smtp_password, smtp_from, use_tls
+    # config keys for slack: webhook_url, channel
+    # config keys for teams: webhook_url
+    is_active        = models.BooleanField(default=False)
+    created_at       = models.DateTimeField(auto_now_add=True)
+    updated_at       = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.get_integration_type_display()} ({'active' if self.is_active else 'inactive'})"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  User Notification Preferences
+# ─────────────────────────────────────────────────────────────────────────────
+
+class UserNotificationPreference(models.Model):
+    user             = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='notification_prefs')
+    # Pipeline events
+    pipeline_success = models.BooleanField(default=True)
+    pipeline_failure = models.BooleanField(default=True)
+    # Pull request events
+    pr_assigned      = models.BooleanField(default=True)
+    pr_merged        = models.BooleanField(default=False)
+    # Issue events
+    issue_assigned   = models.BooleanField(default=True)
+    issue_commented  = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Notification prefs for {self.user.username}"
+
+    @classmethod
+    def for_user(cls, user):
+        obj, _ = cls.objects.get_or_create(user=user)
+        return obj
+
+
+DEPLOYMENT_TARGET_TYPE_CHOICES = (
+    ('kubernetes',      'Kubernetes (kubectl / Helm)'),
+    ('aws_ecs',         'AWS ECS'),
+    ('aws_eks',         'AWS EKS'),
+    ('aws_lambda',      'AWS Lambda'),
+    ('azure_aks',       'Azure AKS'),
+    ('azure_appservice','Azure App Service'),
+    ('gcp_gke',         'GCP GKE'),
+    ('gcp_cloudrun',    'GCP Cloud Run'),
+    ('docker_registry', 'Docker Registry (push image)'),
+    ('ssh',             'SSH / Server (shell over SSH)'),
+)
+
+class DeploymentTarget(models.Model):
+    name        = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    target_type = models.CharField(max_length=30, choices=DEPLOYMENT_TARGET_TYPE_CHOICES)
+
+    # Where to deploy
+    endpoint    = models.CharField(max_length=500, blank=True, help_text="Cluster URL, registry host, SSH host, etc.")
+    region      = models.CharField(max_length=100, blank=True, help_text="AWS/Azure/GCP region")
+    namespace   = models.CharField(max_length=100, blank=True, help_text="K8s namespace / ECS cluster / resource group")
+
+    # Scope
+    environment  = models.ForeignKey(Environment,  on_delete=models.SET_NULL, null=True, blank=True, related_name='deployment_targets')
+    project      = models.ForeignKey(Project,      on_delete=models.CASCADE,  null=True, blank=True, related_name='deployment_targets')
+    credential   = models.ForeignKey(Credential,   on_delete=models.SET_NULL, null=True, blank=True, related_name='deployment_targets')
+
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.get_target_type_display()})"
 
