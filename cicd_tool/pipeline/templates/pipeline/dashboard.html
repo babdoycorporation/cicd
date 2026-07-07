@@ -19,9 +19,23 @@
     /* Metric Cards Grid */
     .metric-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(4, 1fr);
         gap: 1rem;
         margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 1100px) {
+        .metric-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 720px) {
+        .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric-card-link {
+        text-decoration: none;
+        color: inherit;
+        display: flex;   /* flex so the inner card stretches to full height */
     }
 
     .metric-card {
@@ -34,6 +48,8 @@
         transition: var(--transition);
         position: relative;
         overflow: hidden;
+        cursor: pointer;
+        width: 100%;
     }
 
     .metric-card::before {
@@ -47,13 +63,13 @@
         transition: var(--transition);
     }
 
-    .metric-card:hover {
+    .metric-card-link:hover .metric-card {
         transform: translateY(-4px);
         border-color: var(--accent-color);
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
     }
 
-    .metric-card:hover::before {
+    .metric-card-link:hover .metric-card::before {
         background-color: var(--accent-color);
     }
 
@@ -68,6 +84,7 @@
         justify-content: center;
         font-size: 1.5rem;
         margin-right: 1rem;
+        flex-shrink: 0;
     }
 
     .metric-content {
@@ -91,14 +108,89 @@
         line-height: 1;
     }
 
-    /* specific card colors */
-    .card-success:hover::before { background-color: var(--success-color); }
-    .card-success .metric-icon { color: var(--success-color); background-color: rgba(63, 185, 80, 0.1); }
-    .card-success:hover { border-color: var(--success-color); }
+    .metric-card-link:hover .metric-value {
+        color: var(--accent-color);
+    }
 
-    .card-danger:hover::before { background-color: var(--danger-color); }
+    /* specific card colors */
+    .card-success .metric-icon { color: var(--success-color); background-color: rgba(63, 185, 80, 0.1); }
+    .metric-card-link:hover .card-success { border-color: var(--success-color); }
+    .metric-card-link:hover .card-success::before { background-color: var(--success-color); }
+    .metric-card-link:hover .card-success .metric-value { color: var(--success-color); }
+
     .card-danger .metric-icon { color: var(--danger-color); background-color: rgba(248, 81, 73, 0.1); }
-    .card-danger:hover { border-color: var(--danger-color); }
+    .metric-card-link:hover .card-danger { border-color: var(--danger-color); }
+    .metric-card-link:hover .card-danger::before { background-color: var(--danger-color); }
+    .metric-card-link:hover .card-danger .metric-value { color: var(--danger-color); }
+
+    /* Charts Section */
+    .charts-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .charts-row { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.25rem;
+    }
+
+    .chart-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .chart-card-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    .chart-filters {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .chart-filter-btn {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        border-radius: 4px;
+        padding: 0.2rem 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        line-height: 1.4;
+    }
+
+    .chart-filter-btn:hover {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+    }
+
+    .chart-filter-btn.active {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+        color: #fff;
+    }
+
+    .chart-wrap {
+        position: relative;
+        height: 200px;
+    }
 
     /* Runs Section */
     .section-header {
@@ -217,7 +309,7 @@
         text-align: center;
         color: var(--text-secondary);
     }
-    
+
     .empty-state i {
         font-size: 2.5rem;
         margin-bottom: 1rem;
@@ -229,67 +321,107 @@
     <h1 class="page-title"><i class="ph ph-gauge"></i> Dashboard</h1>
 
     <div class="metric-grid">
-        <div class="metric-card">
-            <div class="metric-icon"><i class="ph ph-tree-structure"></i></div>
-            <div class="metric-content">
-                <h3 class="metric-title">Projects</h3>
-                <p class="metric-value">{{ total_projects }}</p>
+        <a href="{% url 'project_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-tree-structure"></i></div>
+                <div class="metric-content">
+                    <h3 class="metric-title">Projects</h3>
+                    <p class="metric-value">{{ total_projects }}</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'application_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-cube"></i></div>
+                <div class="metric-content">
+                    <h3 class="metric-title">Applications</h3>
+                    <p class="metric-value">{{ total_applications }}</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'global_pipeline_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-list-dashes"></i></div>
+                <div class="metric-content">
+                    <h3 class="metric-title">Pipelines</h3>
+                    <p class="metric-value">{{ total_pipelines }}</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'global_pipeline_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-play-circle"></i></div>
+                <div class="metric-content">
+                    <h3 class="metric-title">Total Runs</h3>
+                    <p class="metric-value">{{ total_pipeline_runs }}</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'agent_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-hard-drives"></i></div>
+                <div class="metric-content">
+                    <h3 class="metric-title">Agents</h3>
+                    <p class="metric-value">{{ total_agents }}</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'global_pipeline_list' %}" class="metric-card-link">
+            <div class="metric-card card-success">
+                <div class="metric-icon"><i class="ph ph-check-circle"></i></div>
+                <div class="metric-content">
+                    <h3 class="metric-title">Successful Runs</h3>
+                    <p class="metric-value">{{ successful_runs }}</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'global_pipeline_list' %}" class="metric-card-link">
+            <div class="metric-card card-danger">
+                <div class="metric-icon"><i class="ph ph-x-circle"></i></div>
+                <div class="metric-content">
+                    <h3 class="metric-title">Failed Runs</h3>
+                    <p class="metric-value">{{ failed_runs }}</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{% url 'repository_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-git-branch"></i></div>
+                <div class="metric-content">
+                    <h3 class="metric-title">Repositories</h3>
+                    <p class="metric-value">{{ total_repos }}</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <p class="chart-card-title"><i class="ph ph-chart-bar"></i> Pipeline Runs</p>
+                <div class="chart-filters">
+                    <button class="chart-filter-btn" data-days="7">7D</button>
+                    <button class="chart-filter-btn" data-days="30">30D</button>
+                    <button class="chart-filter-btn" data-days="90">90D</button>
+                    <button class="chart-filter-btn active" data-days="0">All</button>
+                </div>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="runsBarChart"></canvas>
             </div>
         </div>
-
-        <div class="metric-card">
-            <div class="metric-icon"><i class="ph ph-cube"></i></div>
-            <div class="metric-content">
-                <h3 class="metric-title">Applications</h3>
-                <p class="metric-value">{{ total_applications }}</p>
-            </div>
-        </div>
-
-        <div class="metric-card">
-            <div class="metric-icon"><i class="ph ph-list-dashes"></i></div>
-            <div class="metric-content">
-                <h3 class="metric-title">Pipelines</h3>
-                <p class="metric-value">{{ total_pipelines }}</p>
-            </div>
-        </div>
-
-        <div class="metric-card">
-            <div class="metric-icon"><i class="ph ph-play-circle"></i></div>
-            <div class="metric-content">
-                <h3 class="metric-title">Total Runs</h3>
-                <p class="metric-value">{{ total_pipeline_runs }}</p>
-            </div>
-        </div>
-
-        <div class="metric-card">
-            <div class="metric-icon"><i class="ph ph-hard-drives"></i></div>
-            <div class="metric-content">
-                <h3 class="metric-title">Agents</h3>
-                <p class="metric-value">{{ total_agents }}</p>
-            </div>
-        </div>
-
-        <div class="metric-card card-success">
-            <div class="metric-icon"><i class="ph ph-check-circle"></i></div>
-            <div class="metric-content">
-                <h3 class="metric-title">Successful Runs</h3>
-                <p class="metric-value">{{ successful_runs }}</p>
-            </div>
-        </div>
-
-        <div class="metric-card card-danger">
-            <div class="metric-icon"><i class="ph ph-x-circle"></i></div>
-            <div class="metric-content">
-                <h3 class="metric-title">Failed Runs</h3>
-                <p class="metric-value">{{ failed_runs }}</p>
-            </div>
-        </div>
-
-        <div class="metric-card">
-            <div class="metric-icon"><i class="ph ph-git-branch"></i></div>
-            <div class="metric-content">
-                <h3 class="metric-title">Repositories</h3>
-                <p class="metric-value">{{ total_repos }}</p>
+        <div class="chart-card">
+            <p class="chart-card-title"><i class="ph ph-chart-pie"></i> Run Status Breakdown</p>
+            <div class="chart-wrap">
+                <canvas id="statusDonutChart"></canvas>
             </div>
         </div>
     </div>
@@ -350,4 +482,130 @@
         {% endif %}
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const allLabels  = {{ chart_labels|safe }};
+    const allSuccess = {{ chart_success|safe }};
+    const allFailed  = {{ chart_failed|safe }};
+
+    const gridColor  = 'rgba(255,255,255,0.06)';
+    const textColor  = '#8b949e';
+    Chart.defaults.color = textColor;
+    Chart.defaults.font.family = "'Inter','Segoe UI',sans-serif";
+
+    /* ── filter helper ────────────────────────────── */
+    function filterByDays(days) {
+        if (!days) return { labels: allLabels, success: allSuccess, failed: allFailed };
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cut = cutoff.toISOString().slice(0, 10);
+        const labels = [], success = [], failed = [];
+        allLabels.forEach((d, i) => {
+            if (d >= cut) { labels.push(d); success.push(allSuccess[i]); failed.push(allFailed[i]); }
+        });
+        return { labels, success, failed };
+    }
+
+    /* ── Bar chart ─────────────────────────────────── */
+    const initial = filterByDays(0);
+    const barChart = new Chart(document.getElementById('runsBarChart'), {
+        type: 'bar',
+        data: {
+            labels: initial.labels.map(d => d.slice(5)),
+            datasets: [
+                {
+                    label: 'Success',
+                    data: initial.success,
+                    backgroundColor: 'rgba(63, 185, 80, 0.75)',
+                    borderColor: 'rgba(63, 185, 80, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Failed',
+                    data: initial.failed,
+                    backgroundColor: 'rgba(248, 81, 73, 0.75)',
+                    borderColor: 'rgba(248, 81, 73, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } },
+                tooltip: { mode: 'index', intersect: false },
+            },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: textColor, maxTicksLimit: 14 } },
+                y: {
+                    grid: { color: gridColor },
+                    ticks: { color: textColor, precision: 0 },
+                    beginAtZero: true,
+                },
+            },
+        },
+    });
+
+    /* ── Filter buttons ────────────────────────────── */
+    document.querySelectorAll('.chart-filter-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const days = parseInt(this.dataset.days, 10);
+            const { labels, success, failed } = filterByDays(days);
+            barChart.data.labels = labels.map(d => d.slice(5));
+            barChart.data.datasets[0].data = success;
+            barChart.data.datasets[1].data = failed;
+            barChart.update();
+        });
+    });
+
+    /* ── Doughnut chart ────────────────────────────── */
+    new Chart(document.getElementById('statusDonutChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Success', 'Failed', 'Pending', 'Running'],
+            datasets: [{
+                data: [{{ successful_runs }}, {{ failed_runs }}, {{ pending_runs }}, {{ running_runs }}],
+                backgroundColor: [
+                    'rgba(63, 185, 80, 0.8)',
+                    'rgba(248, 81, 73, 0.8)',
+                    'rgba(210, 153, 34, 0.8)',
+                    'rgba(47, 129, 247, 0.8)',
+                ],
+                borderColor: [
+                    'rgba(63, 185, 80, 1)',
+                    'rgba(248, 81, 73, 1)',
+                    'rgba(210, 153, 34, 1)',
+                    'rgba(47, 129, 247, 1)',
+                ],
+                borderWidth: 1,
+                hoverOffset: 6,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '68%',
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+                            return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                        }
+                    }
+                },
+            },
+        },
+    });
+})();
+</script>
 {% endblock %}

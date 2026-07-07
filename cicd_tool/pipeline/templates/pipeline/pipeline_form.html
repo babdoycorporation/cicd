@@ -1,32 +1,151 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<div class="container">
-    <h1>{% if pipeline %}Update{% else %}Create{% endif %} Pipeline for {{ project.name }}</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="name">Name:</label>
-            <input type="text" class="form-control" id="name" name="name" value="{% if pipeline %}{{ pipeline.name }}{% endif %}" required>
-        </div>
-        <div class="form-group">
-            <label for="description">Description:</label>
-            <textarea class="form-control" id="description" name="description">{% if pipeline %}{{ pipeline.description }}{% endif %}</textarea>
-        </div>
-        <div class="form-group">
-            <label for="application">Application:</label>
-            <select class="form-control" id="application" name="application" required>
-                <option value="">Select an application</option>
-                {% for application in applications %}
-                    <option value="{{ application.name }}"
-                        {% if application.name in pipeline_application_ids %} selected {% endif %}>
-                        {{ application.name }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Save</button>
-    </form>
-    <a href="{% url 'pipeline_list' project.name %}" class="btn btn-secondary">Back to Pipelines</a>
+<style>
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #7d8590;
+    font-size: 0.82rem;
+    margin-bottom: 1.5rem;
+  }
+  .breadcrumb a { color: #2f81f7; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .form-card {
+    background: var(--card-bg, #161b22);
+    border: 1px solid var(--border-color, #30363d);
+    border-radius: 10px;
+    padding: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .form-card h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary, #e6edf3);
+    margin: 0 0 0.4rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .form-card .subtitle {
+    color: var(--text-secondary, #7d8590);
+    font-size: 0.85rem;
+    margin-bottom: 1.75rem;
+  }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-primary, #c9d1d9);
+    margin-bottom: 0.4rem;
+  }
+  .form-group input[type="text"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: var(--dark-bg, #0d1117);
+    border: 1px solid var(--border-color, #30363d);
+    border-radius: 6px;
+    color: var(--text-primary, #e6edf3);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.88rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-group input[type="text"]:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: #2f81f7;
+    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+  }
+  .form-group select option { background: #161b22; }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-hint { font-size: 0.77rem; color: var(--text-secondary, #7d8590); margin-top: 0.3rem; }
+  .form-actions { display: flex; gap: 0.75rem; margin-top: 1.75rem; align-items: center; }
+  .btn-primary {
+    background: #238636; color: #fff; border: 1px solid #2ea043;
+    border-radius: 6px; padding: 0.5rem 1.25rem; font-size: 0.88rem;
+    font-weight: 500; cursor: pointer; text-decoration: none;
+    transition: background 0.2s; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-primary:hover { background: #2ea043; }
+  .btn-cancel {
+    background: transparent; color: var(--text-primary, #c9d1d9);
+    border: 1px solid var(--border-color, #30363d); border-radius: 6px;
+    padding: 0.5rem 1.25rem; font-size: 0.88rem; font-weight: 500;
+    cursor: pointer; text-decoration: none; transition: background 0.2s;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+  }
+  .btn-cancel:hover { background: #21262d; color: #e6edf3; }
+</style>
+
+<div class="breadcrumb">
+  <a href="{% url 'project_list' %}">Projects</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'project_detail' project.name %}">{{ project.name }}</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'pipeline_list' project.name %}">Pipelines</a>
+  <i class="ph ph-caret-right"></i>
+  <span>{% if pipeline %}Edit{% else %}New Pipeline{% endif %}</span>
+</div>
+
+<div class="form-card">
+  <h2>
+    <i class="ph ph-git-branch" style="color:#2f81f7;"></i>
+    {% if pipeline %}Edit Pipeline{% else %}Create Pipeline{% endif %}
+  </h2>
+  <p class="subtitle">
+    Pipelines define CI/CD steps for an application under
+    <strong style="color:#c9d1d9;">{{ project.name }}</strong>.
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="id_name">Pipeline Name <span style="color:#f85149;">*</span></label>
+      <input type="text" name="name" id="id_name"
+        placeholder="e.g. build-and-deploy"
+        value="{% if pipeline %}{{ pipeline.name }}{% endif %}"
+        required autofocus>
+      <p class="form-hint">Use lowercase letters, numbers and hyphens.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="id_description">Description</label>
+      <textarea name="description" id="id_description"
+        placeholder="What does this pipeline do?">{% if pipeline %}{{ pipeline.description }}{% endif %}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="id_application">Application <span style="color:#f85149;">*</span></label>
+      <select name="application" id="id_application" required>
+        <option value="">— Select an application —</option>
+        {% for application in applications %}
+          <option value="{{ application.name }}"
+            {% if pipeline and application.name in pipeline_application_ids %} selected {% endif %}>
+            {{ application.name }}
+          </option>
+        {% endfor %}
+      </select>
+      <p class="form-hint">The application this pipeline belongs to.</p>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">
+        <i class="ph ph-floppy-disk"></i>
+        {% if pipeline %}Update Pipeline{% else %}Create Pipeline{% endif %}
+      </button>
+      <a href="{% url 'pipeline_list' project.name %}" class="btn-cancel">
+        <i class="ph ph-x"></i> Cancel
+      </a>
+    </div>
+  </form>
 </div>
 {% endblock %}

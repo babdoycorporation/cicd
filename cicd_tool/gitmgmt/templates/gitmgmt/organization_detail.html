@@ -1,208 +1,192 @@
-<!DOCTYPE html>
-<html>
+{% extends 'pipeline/base.html' %}
 
-<head>
-    <title>{{ org.name }} | Release Rocket</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #6e44ff;
-            --dark: #0f0e17;
-            --card: #16161a;
-            --border: #242629;
-            --light: #fffffe;
-        }
+{% block content %}
+<style>
+  .org-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 2rem;
+    align-items: start;
+  }
+  .pcard {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .pcard:last-child { margin-bottom: 0; }
+  .pcard h2 {
+    font-size: 1.1rem; font-weight: 600;
+    margin: 0 0 1.1rem; padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; align-items: center; gap: 0.5rem;
+    justify-content: space-between;
+  }
+  .list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .list-item:last-child { border-bottom: none; }
+  .badge {
+    background: var(--darker-bg);
+    border: 1px solid var(--border-color);
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .btn-primary {
+    background: #238636; color: #fff; border: 1px solid #2ea043;
+    border-radius: 6px; padding: 0.4rem 0.9rem; font-size: 0.82rem;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    transition: background 0.2s; text-decoration: none;
+  }
+  .btn-primary:hover { background: #2ea043; }
+  .btn-outline {
+    background: transparent; color: var(--text-primary);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    padding: 0.4rem 0.9rem; font-size: 0.82rem; font-weight: 500;
+    cursor: pointer; font-family: inherit; width: 100%;
+    display: block; text-align: center; margin-top: 0.5rem;
+    transition: background 0.2s; text-decoration: none;
+  }
+  .btn-outline:hover { background: rgba(255,255,255,0.05); }
+  .form-row { margin-bottom: 0.75rem; }
+  .form-row input, .form-row select {
+    width: 100%; background: var(--dark-bg);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    color: var(--text-primary); padding: 0.45rem 0.75rem;
+    font-size: 0.85rem; font-family: inherit; box-sizing: border-box;
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-row input:focus, .form-row select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+  }
+  .form-row select option { background: var(--card-bg); }
+  .owner-badge {
+    font-size: 0.75rem; font-weight: 600; color: var(--accent-color);
+    background: rgba(47,129,247,0.15); padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+  }
+</style>
 
-        body {
-            margin: 0;
-            background-color: var(--dark);
-            color: var(--light);
-            font-family: 'Inter', sans-serif;
-        }
+<!-- Breadcrumb -->
+<div style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.5rem;">
+  <a href="{% url 'organization_list' %}" style="color:var(--accent-color); text-decoration:none;">Organizations</a>
+  <i class="ph ph-caret-right"></i>
+  <span style="color:var(--text-primary);">{{ org.name }}</span>
+  {% if is_owner %}<span class="owner-badge">Owner</span>{% endif %}
+</div>
 
-        .navbar {
-            padding: 1rem 5%;
-            background: rgba(15, 14, 23, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 2rem;
-        }
-
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .section-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .btn {
-            padding: 0.6rem 1.2rem;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 0.9rem;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border: none;
-        }
-
-        .btn-outline {
-            border: 1px solid var(--border);
-            color: var(--light);
-            background: transparent;
-        }
-
-        .list-item {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .list-item:last-child {
-            border-bottom: none;
-        }
-
-        .badge {
-            background: #242629;
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            color: #a7a9be;
-        }
-
-        input,
-        select {
-            background: #242629;
-            border: 1px solid var(--border);
-            color: white;
-            padding: 0.5rem;
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
-            width: 100%;
-        }
-    </style>
-</head>
-
-<body>
-    <nav class="navbar">
-        <a href="{% url 'repository_list' %}"
-            style="font-size: 1.5rem; font-weight: 800; color: white; text-decoration: none;">Release Rocket</a>
-        <div>
-            <span style="color: #a7a9be; margin-right: 1rem;">{{ request.user.username }}</span>
-            <a href="{% url 'profile' %}" class="btn btn-outline">Profile</a>
-        </div>
-    </nav>
-
-    <div class="container">
-        <div class="main-content">
-            <div class="card">
-                <div class="section-title">
-                    <h1>{{ org.name }}</h1>
-                    {% if is_owner %}
-                    <span class="badge">Owner</span>
-                    {% endif %}
-                </div>
-                <p style="color: #a7a9be;">{{ org.description }}</p>
-            </div>
-
-            <div class="card">
-                <div class="section-title">
-                    <h2>Repositories</h2>
-                    <a href="{% url 'create_repository' %}?org={{ org.id }}" class="btn btn-primary">New Repo</a>
-                </div>
-                {% for repo in repos %}
-                <div class="list-item">
-                    <a href="{% url 'repository_detail' repo.id %}"
-                        style="color: var(--primary); text-decoration: none; font-weight: 600;">{{ repo.name }}</a>
-                    <span class="badge">{{ repo.visibility }}</span>
-                </div>
-                {% empty %}
-                <p style="text-align: center; color: #444; padding: 2rem;">No repositories in this organization.</p>
-                {% endfor %}
-            </div>
-
-            <div class="card">
-                <div class="section-title">
-                    <h2>Teams</h2>
-                </div>
-                {% for team in teams %}
-                <div class="list-item">
-                    <div>
-                        <strong style="display: block;">{{ team.name }}</strong>
-                        <small style="color: #a7a9be;">{{ team.members.count }} members</small>
-                    </div>
-                    <span class="badge">{{ team.description|truncatechars:30 }}</span>
-                </div>
-                {% empty %}
-                <p style="text-align: center; color: #444; padding: 2rem;">No teams defined.</p>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="sidebar">
-            {% if is_owner %}
-            <div class="card">
-                <h3>Add Member</h3>
-                <form action="{% url 'add_org_member' org.id %}" method="post">
-                    {% csrf_token %}
-                    <input type="text" name="username" placeholder="Username" required>
-                    <select name="team_id" required>
-                        <option value="">Select Team</option>
-                        {% for team in teams %}
-                        <option value="{{ team.id }}">{{ team.name }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Invite</button>
-                </form>
-            </div>
-
-            <div class="card">
-                <h3>Create Team</h3>
-                <form action="{% url 'create_team' org.id %}" method="post">
-                    {% csrf_token %}
-                    <input type="text" name="name" placeholder="Team Name" required>
-                    <input type="text" name="description" placeholder="Description">
-                    <button type="submit" class="btn btn-outline" style="width: 100%;">Create</button>
-                </form>
-            </div>
-            {% endif %}
-
-            <div class="card">
-                <h3>Members</h3>
-                {% for member in members %}
-                <div class="list-item" style="padding: 0.5rem 0;">
-                    <span>@{{ member.username }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+<div class="org-layout">
+  <!-- Main Column -->
+  <div>
+    <!-- Overview card -->
+    <div class="pcard">
+      <h2 style="font-size:1.4rem; border:none; padding:0; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="ph ph-buildings"></i> {{ org.name }}</span>
+        {% if my_role == 'owner' or my_role == 'admin' %}
+        <a href="{% url 'organization_settings' org.id %}" class="btn-outline" style="font-size:0.8rem; text-decoration:none;">
+          <i class="ph ph-gear"></i> Settings
+        </a>
+        {% endif %}
+      </h2>
+      {% if org.description %}<p style="color:var(--text-secondary); margin:0;">{{ org.description }}</p>{% endif %}
     </div>
-</body>
 
-</html>
+    <!-- Repositories -->
+    <div class="pcard">
+      <h2>
+        <span><i class="ph ph-book-bookmark"></i> Repositories</span>
+        <a href="{% url 'create_repository' %}?org={{ org.id }}" class="btn-primary"><i class="ph ph-plus"></i> New Repo</a>
+      </h2>
+      {% for repo in repos %}
+      <div class="list-item">
+        <a href="{% url 'repository_detail' repo.name %}" style="color: var(--accent-color); text-decoration: none; font-weight: 600;">
+          {{ repo.name }}
+        </a>
+        <span class="badge">{{ repo.visibility }}</span>
+      </div>
+      {% empty %}
+      <div style="text-align:center; padding:2rem; color:var(--text-secondary);">
+        <i class="ph ph-book" style="font-size:2rem; opacity:0.3; display:block; margin-bottom:0.5rem;"></i>
+        No repositories in this organization.
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Teams -->
+    <div class="pcard">
+      <h2><span><i class="ph ph-users-three"></i> Teams</span></h2>
+      {% for team in teams %}
+      <div class="list-item">
+        <div>
+          <strong style="color:var(--text-primary);">{{ team.name }}</strong>
+          <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.15rem;">{{ team.members.count }} members{% if team.description %} · {{ team.description|truncatechars:40 }}{% endif %}</div>
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align:center; padding:2rem; color:var(--text-secondary);">No teams defined.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div>
+    <!-- Members list -->
+    <div class="pcard">
+      <h2><span><i class="ph ph-user-list"></i> Members</span></h2>
+      {% for member in members %}
+      <div class="list-item" style="padding: 0.5rem 0;">
+        <span style="color:var(--text-primary);">@{{ member.username }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if is_owner %}
+    <!-- Add Member -->
+    <div class="pcard">
+      <h2><span><i class="ph ph-user-plus"></i> Add Member</span></h2>
+      <form action="{% url 'add_org_member' org.id %}" method="post">
+        {% csrf_token %}
+        <div class="form-row">
+          <input type="text" name="username" placeholder="Username" required>
+        </div>
+        <div class="form-row">
+          <select name="team_id" required>
+            <option value="">— Select Team —</option>
+            {% for team in teams %}
+            <option value="{{ team.id }}">{{ team.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+          <i class="ph ph-paper-plane-tilt"></i> Invite
+        </button>
+      </form>
+    </div>
+
+    <!-- Create Team -->
+    <div class="pcard">
+      <h2><span><i class="ph ph-plus-circle"></i> Create Team</span></h2>
+      <form action="{% url 'create_team' org.id %}" method="post">
+        {% csrf_token %}
+        <div class="form-row">
+          <input type="text" name="name" placeholder="Team Name" required>
+        </div>
+        <div class="form-row">
+          <input type="text" name="description" placeholder="Description (optional)">
+        </div>
+        <a href="#" onclick="this.closest('form').submit(); return false;" class="btn-outline">
+          <i class="ph ph-users-three"></i> Create Team
+        </a>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

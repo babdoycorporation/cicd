@@ -1,10 +1,103 @@
-
+{% extends 'pipeline/base.html' %}
 
 {% block content %}
-<h2>Create Pull Request for {{ repository.name }}</h2>
-<form method="post">
+<style>
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.5rem;
+    color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 1.5rem;
+  }
+  .breadcrumb a { color: var(--accent-color); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .form-card {
+    background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 10px; padding: 2rem; max-width: 680px; margin: 0 auto;
+  }
+  .form-card h2 {
+    font-size: 1.2rem; font-weight: 600; color: var(--text-primary);
+    margin: 0 0 0.4rem; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.75rem; }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label {
+    display: block; font-size: 0.82rem; font-weight: 500;
+    color: var(--text-primary); margin-bottom: 0.4rem;
+  }
+  /* Style all Django form widgets inside .form-card */
+  .form-card input[type="text"],
+  .form-card input[type="number"],
+  .form-card select,
+  .form-card textarea {
+    width: 100%; background: var(--dark-bg);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    color: var(--text-primary); padding: 0.5rem 0.75rem;
+    font-size: 0.88rem; font-family: inherit; box-sizing: border-box;
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-card input:focus, .form-card select:focus, .form-card textarea:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+  }
+  .form-card textarea { resize: vertical; min-height: 100px; }
+  .form-card select option { background: var(--card-bg); }
+  .field-error { font-size: 0.78rem; color: #f85149; margin-top: 0.3rem; }
+  .form-hint  { font-size: 0.77rem; color: var(--text-secondary); margin-top: 0.3rem; }
+  .form-actions { display: flex; gap: 0.75rem; margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); }
+  .btn-primary {
+    background: #238636; color: #fff; border: 1px solid #2ea043;
+    border-radius: 6px; padding: 0.5rem 1.25rem; font-size: 0.88rem;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #2ea043; }
+  .btn-cancel {
+    background: transparent; color: var(--text-primary);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    padding: 0.5rem 1.25rem; font-size: 0.88rem; font-weight: 500;
+    cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s;
+  }
+  .btn-cancel:hover { background: rgba(255,255,255,0.05); }
+</style>
+
+<div class="breadcrumb">
+  <a href="{% url 'repository_list' %}">Repositories</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'repository_detail' repository_id=repository.name %}">{{ repository.name }}</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'pull_request_list' repository.name %}">Pull Requests</a>
+  <i class="ph ph-caret-right"></i>
+  <span>New Pull Request</span>
+</div>
+
+<div class="form-card">
+  <h2><i class="ph ph-git-pull-request" style="color:#2f81f7;"></i> Open a Pull Request</h2>
+  <p class="subtitle">Compare branches and propose changes to be merged into <strong style="color:#c9d1d9;">{{ repository.name }}</strong>.</p>
+
+  <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Create Pull Request</button>
-</form>
+    {% for field in form %}
+    <div class="form-group">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<p class="form-hint">{{ field.help_text }}</p>{% endif %}
+      {% for error in field.errors %}<p class="field-error"><i class="ph ph-warning-circle"></i> {{ error }}</p>{% endfor %}
+    </div>
+    {% endfor %}
+
+    {% if form.non_field_errors %}
+    <div style="background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.4); border-radius:6px; padding:0.75rem 1rem; color:#f85149; font-size:0.85rem; margin-bottom:1rem;">
+      {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">
+        <i class="ph ph-git-pull-request"></i> Create Pull Request
+      </button>
+      <a href="{% url 'pull_request_list' repository.name %}" class="btn-cancel">
+        <i class="ph ph-x"></i> Cancel
+      </a>
+    </div>
+  </form>
+</div>
 {% endblock %}

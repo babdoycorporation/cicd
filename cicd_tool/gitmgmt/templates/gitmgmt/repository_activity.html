@@ -1,0 +1,127 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% block repo_content %}
+<style>
+    .feed-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .feed-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 0.9rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.12s;
+    }
+
+    .feed-row:last-child { border-bottom: none; }
+    .feed-row:hover { background: rgba(255,255,255,0.02); }
+
+    .feed-icon {
+        width: 32px; height: 32px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem; flex-shrink: 0; margin-top: 2px;
+    }
+
+    .icon-push         { background: rgba(47,129,247,0.15);  color: #2f81f7; }
+    .icon-pull_request { background: rgba(163,113,247,0.15); color: #a371f7; }
+    .icon-issue        { background: rgba(63,185,80,0.15);   color: #3fb950; }
+    .icon-comment      { background: rgba(210,153,34,0.15);  color: #d29922; }
+    .icon-fork         { background: rgba(47,129,247,0.12);  color: #79c0ff; }
+    .icon-star         { background: rgba(210,153,34,0.12);  color: #e3b341; }
+    .icon-release      { background: rgba(63,185,80,0.12);   color: #56d364; }
+    .icon-branch       { background: rgba(138,148,158,0.12); color: #8b949e; }
+    .icon-merge        { background: rgba(163,113,247,0.15); color: #a371f7; }
+    .icon-pipeline     { background: rgba(47,129,247,0.15);  color: #2f81f7; }
+    .icon-review       { background: rgba(248,81,73,0.12);   color: #f85149; }
+    .icon-milestone    { background: rgba(210,153,34,0.12);  color: #d29922; }
+
+    .feed-avatar {
+        width: 24px; height: 24px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent-color), #b892ff);
+        color: #fff; font-size: 0.65rem; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        text-transform: uppercase; flex-shrink: 0;
+    }
+
+    .feed-body { flex: 1; min-width: 0; }
+
+    .feed-line {
+        font-size: 0.87rem; color: var(--text-primary);
+        line-height: 1.5; display: flex; flex-wrap: wrap;
+        align-items: center; gap: 0.3rem;
+    }
+
+    .feed-user { font-weight: 600; }
+
+    .feed-desc {
+        font-size: 0.82rem; color: var(--text-secondary);
+        margin-top: 0.2rem; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; max-width: 600px;
+    }
+
+    .feed-time {
+        font-size: 0.75rem; color: var(--text-secondary);
+        white-space: nowrap; flex-shrink: 0; margin-top: 3px;
+    }
+
+    .empty-state {
+        padding: 4rem 2rem; text-align: center; color: var(--text-secondary);
+    }
+    .empty-state i { font-size: 2.5rem; opacity: 0.35; display: block; margin-bottom: 0.75rem; }
+    .empty-state h3 { color: var(--text-primary); margin: 0 0 0.4rem; }
+</style>
+
+<h2 style="font-size:1.1rem; font-weight:600; color:var(--text-primary); margin:0 0 1rem; display:flex; align-items:center; gap:0.5rem;">
+    <i class="ph ph-activity" style="color:var(--accent-color);"></i> Repository Activity
+</h2>
+
+<div class="feed-card">
+    {% if events %}
+        {% for event in events %}
+        {% with etype=event.event_type %}
+        <div class="feed-row">
+            <div class="feed-icon icon-{{ etype }}">
+                {% if etype == 'push' %}<i class="ph ph-git-commit"></i>
+                {% elif etype == 'pull_request' %}<i class="ph ph-git-pull-request"></i>
+                {% elif etype == 'issue' %}<i class="ph ph-warning-circle"></i>
+                {% elif etype == 'comment' %}<i class="ph ph-chat-dots"></i>
+                {% elif etype == 'fork' %}<i class="ph ph-git-fork"></i>
+                {% elif etype == 'star' %}<i class="ph ph-star"></i>
+                {% elif etype == 'release' %}<i class="ph ph-tag"></i>
+                {% elif etype == 'branch' %}<i class="ph ph-git-branch"></i>
+                {% elif etype == 'merge' %}<i class="ph ph-git-merge"></i>
+                {% elif etype == 'pipeline' %}<i class="ph ph-rocket-launch"></i>
+                {% elif etype == 'review' %}<i class="ph ph-magnifying-glass"></i>
+                {% elif etype == 'milestone' %}<i class="ph ph-flag"></i>
+                {% else %}<i class="ph ph-bell"></i>{% endif %}
+            </div>
+
+            <div class="feed-avatar">{{ event.user.username|first }}</div>
+
+            <div class="feed-body">
+                <div class="feed-line">
+                    <span class="feed-user">{{ event.user.username }}</span>
+                    <span style="color:var(--text-secondary);">{{ etype|title }}</span>
+                </div>
+                {% if event.description %}
+                <div class="feed-desc">{{ event.description }}</div>
+                {% endif %}
+            </div>
+
+            <div class="feed-time">{{ event.created_at|timesince }} ago</div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="ph ph-activity"></i>
+            <h3>No activity yet</h3>
+            <p>Events in this repository will appear here.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

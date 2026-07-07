@@ -1,96 +1,86 @@
-<!DOCTYPE html>
-<html>
+{% extends 'pipeline/base.html' %}
 
-<head>
-    <title>Create Organization | Release Rocket</title>
-    <style>
-        :root {
-            --primary: #6e44ff;
-            --dark: #0f0e17;
-            --border: #242629;
-            --light: #fffffe;
-        }
+{% block content %}
+<style>
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.5rem;
+    color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 1.5rem;
+  }
+  .breadcrumb a { color: var(--accent-color); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .form-card {
+    background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 10px; padding: 2rem; max-width: 520px; margin: 0 auto;
+  }
+  .form-card h2 {
+    font-size: 1.2rem; font-weight: 600; color: var(--text-primary);
+    margin: 0 0 0.3rem; display: flex; align-items: center; gap: 0.5rem;
+  }
+  .subtitle { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.75rem; }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label {
+    display: block; font-size: 0.82rem; font-weight: 500;
+    color: var(--text-primary); margin-bottom: 0.4rem;
+  }
+  .form-group input[type="text"],
+  .form-group textarea {
+    width: 100%; background: var(--dark-bg);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    color: var(--text-primary); padding: 0.5rem 0.75rem;
+    font-size: 0.88rem; font-family: inherit; box-sizing: border-box;
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-group input:focus, .form-group textarea:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-actions { display: flex; gap: 0.75rem; margin-top: 1.75rem; }
+  .btn-primary {
+    background: #238636; color: #fff; border: 1px solid #2ea043;
+    border-radius: 6px; padding: 0.5rem 1.25rem; font-size: 0.88rem;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #2ea043; }
+  .btn-cancel {
+    background: transparent; color: var(--text-primary);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    padding: 0.5rem 1.25rem; font-size: 0.88rem; font-weight: 500;
+    cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s;
+  }
+  .btn-cancel:hover { background: rgba(255,255,255,0.05); }
+</style>
 
-        body {
-            background-color: var(--dark);
-            color: var(--light);
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
+<div class="breadcrumb">
+  <a href="{% url 'organization_list' %}">Organizations</a>
+  <i class="ph ph-caret-right"></i>
+  <span>New Organization</span>
+</div>
 
-        .card {
-            background: #16161a;
-            padding: 2.5rem;
-            border-radius: 12px;
-            width: 400px;
-            border: 1px solid var(--border);
-        }
+<div class="form-card">
+  <h2><i class="ph ph-buildings" style="color:#2f81f7;"></i> New Organization</h2>
+  <p class="subtitle">Organizations help you collaborate with many people on projects at once.</p>
 
-        h1 {
-            margin-top: 0;
-            font-size: 1.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            color: #a7a9be;
-        }
-
-        input,
-        textarea {
-            width: 100%;
-            background: #242629;
-            border: 2px solid #36383d;
-            border-radius: 8px;
-            padding: 0.8rem;
-            color: white;
-            box-sizing: border-box;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .btn {
-            width: 100%;
-            padding: 1rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="card">
-        <h1>New Organization</h1>
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" name="name" placeholder="e.g. Acme Corp" required>
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <textarea name="description" rows="3" placeholder="What's this org about?"></textarea>
-            </div>
-            <button type="submit" class="btn">Create Organization</button>
-        </form>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="id_name">Organization Name <span style="color:#f85149;">*</span></label>
+      <input type="text" name="name" id="id_name" placeholder="e.g. Acme Corp" required autofocus>
     </div>
-</body>
-
-</html>
+    <div class="form-group">
+      <label for="id_description">Description</label>
+      <textarea name="description" id="id_description" rows="3" placeholder="What's this organization about?"></textarea>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">
+        <i class="ph ph-plus"></i> Create Organization
+      </button>
+      <a href="{% url 'organization_list' %}" class="btn-cancel">
+        <i class="ph ph-x"></i> Cancel
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

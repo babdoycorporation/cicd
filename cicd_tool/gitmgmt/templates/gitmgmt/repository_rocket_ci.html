@@ -57,7 +57,7 @@
             <h2 style="margin: 0; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem;">
                 <i class="fas fa-rocket" style="color: var(--accent-color);"></i> Linked CI/CD Project: {{ project.name }}
             </h2>
-            <a href="{% url 'pipeline_create' project.id %}" class="btn btn-primary" style="text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; background: var(--success-color); color: white; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <a href="{% url 'pipeline_create' project.name %}" class="btn btn-primary" style="text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; background: var(--success-color); color: white; display: inline-flex; align-items: center; gap: 0.5rem;">
                 <i class="fas fa-plus"></i> New Pipeline
             </a>
         </div>
@@ -67,12 +67,12 @@
                 {% for pipeline in pipelines %}
                 <div class="pipeline-card">
                     <div class="pipeline-header">
-                        <a href="{% url 'pipeline_detail' pipeline.id %}" class="pipeline-name">
+                        <a href="{% url 'pipeline_detail' pipeline.name %}" class="pipeline-name">
                             <i class="fas fa-route"></i> {{ pipeline.name }}
                         </a>
                         <div class="pipeline-actions">
-                            <a href="{% url 'run_pipeline' pipeline.id %}" class="btn" style="background: var(--success-color); color: white; padding: 0.25rem 0.75rem; border-radius: 4px; text-decoration: none; font-size: 0.9rem;" title="Run Pipeline">
-                                <i class="fas fa-play"></i> Run
+                            <a href="{% url 'pipeline_detail' pipeline.name %}#runs" class="btn" style="background: var(--success-color); color: white; padding: 0.25rem 0.75rem; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">
+                                <i class="fas fa-list"></i> View Runs
                             </a>
                         </div>
                     </div>
@@ -84,12 +84,56 @@
                 </div>
                 {% endfor %}
             </div>
+
+            <!-- Recent Runs Section -->
+            <div style="margin-top: 3rem;">
+                <h3 style="margin-bottom: 1rem; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                    <i class="fas fa-history"></i> Recent Pipeline Runs
+                </h3>
+                {% if recent_runs %}
+                <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead style="background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border-color);">
+                            <tr>
+                                <th style="padding: 1rem; font-weight: 600; color: var(--text-secondary);">Run ID</th>
+                                <th style="padding: 1rem; font-weight: 600; color: var(--text-secondary);">Pipeline</th>
+                                <th style="padding: 1rem; font-weight: 600; color: var(--text-secondary);">Status</th>
+                                <th style="padding: 1rem; font-weight: 600; color: var(--text-secondary);">Started</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for run in recent_runs %}
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 1rem;">
+                                    <a href="{% url 'pipeline_run_detail' run.run_id %}" style="color: var(--accent-color); text-decoration: none; font-family: monospace;">#{{ run.id }}</a>
+                                </td>
+                                <td style="padding: 1rem;">{{ run.pipeline.name }}</td>
+                                <td style="padding: 1rem;">
+                                    {% if run.status == 'SUCCESS' %}
+                                        <span style="color: var(--success-color);"><i class="fas fa-check-circle"></i> Success</span>
+                                    {% elif run.status == 'FAILED' %}
+                                        <span style="color: #da3633;"><i class="fas fa-times-circle"></i> Failed</span>
+                                    {% else %}
+                                        <span style="color: #d29922;"><i class="fas fa-spinner fa-spin"></i> {{ run.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 1rem; color: var(--text-secondary);">{{ run.started_at|timesince }} ago</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p style="color: var(--text-secondary);">No pipeline runs recorded yet. Push code to trigger the pipeline.</p>
+                {% endif %}
+            </div>
+
         {% else %}
             <div style="text-align: center; padding: 3rem 0; color: var(--text-secondary);">
                 <i class="fas fa-route" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
                 <h3>No Pipelines Found</h3>
                 <p>You have a linked CI/CD project, but no pipelines have been created yet.</p>
-                <a href="{% url 'pipeline_create' project.id %}" class="btn" style="background: var(--success-color); color: white; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; display: inline-block; margin-top: 1rem;">
+                <a href="{% url 'pipeline_create' project.name %}" class="btn" style="background: var(--success-color); color: white; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; display: inline-block; margin-top: 1rem;">
                     <i class="fas fa-plus"></i> Create Your First Pipeline
                 </a>
             </div>
@@ -102,11 +146,14 @@
             <h2 style="color: var(--text-primary); margin-bottom: 1rem;">Rocket CI is Not Initialized</h2>
             <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto; line-height: 1.6;">
                 This repository is not yet linked to a CI/CD Project. 
-                Initialize Rocket CI by creating a Pipeline Project with the exact same name as this repository (<strong>{{ repository.name }}</strong>).
+                Initialize Rocket CI to automatically create a Pipeline Project, link it to this repository, and set up your default pipelines.
             </p>
-            <a href="{% url 'project_create' %}" class="btn btn-primary" style="text-decoration: none; margin-top: 2rem; background: var(--success-color); color: white; padding: 0.5rem 1.25rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.5rem;">
-                <i class="fas fa-power-off"></i> Initialize Rocket CI
-            </a>
+            <form method="POST" action="{% url 'initialize_rocket_ci' repository.name %}" style="margin-top: 2rem;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary" style="background: var(--success-color); border: none; color: white; padding: 0.75rem 1.5rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 1rem;">
+                    <i class="fas fa-power-off"></i> Initialize Rocket CI
+                </button>
+            </form>
         </div>
     {% endif %}
 </div>

@@ -167,14 +167,37 @@
 
     <div id="clonePopup" style="display: none; margin-bottom: 2rem;">
         <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem;">
-            <h4 style="margin-top: 0;">Clone with HTTP</h4>
-            <div class="clone-box">
-                <span id="cloneUrl">http://{{ request.get_host }}/repos/{{ repository.name }}</span>
-                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem;" onclick="copyClone()">Copy</button>
+            <h4 style="margin-top: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-download-simple"></i> Clone Repository
+            </h4>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Clone URL (HTTPS)</label>
+                <div class="clone-box">
+                    <span id="cloneUrl">http://{{ request.get_host }}/repos/{{ repository.name }}</span>
+                    <button class="btn btn-outline" style="padding: 0.25rem 0.5rem;" onclick="copyClone()">Copy</button>
+                </div>
             </div>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem; margin-bottom: 0;">
-                Note: Use your <strong>Personal Access Token</strong> as the password when cloning.
-            </p>
+
+            <div style="background: rgba(47,129,247,0.08); border-left: 3px solid var(--accent-color); padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.85rem;">
+                <p style="margin: 0 0 0.4rem 0;"><strong><i class="ph ph-key"></i> Authentication required</strong></p>
+                <p style="margin: 0 0 0.4rem 0; color: var(--text-secondary);">
+                    When prompted by git, use:
+                </p>
+                <ul style="margin: 0.25rem 0; padding-left: 1.25rem; color: var(--text-secondary);">
+                    <li><strong>Username:</strong> <code>{{ request.user.username }}</code></li>
+                    <li><strong>Password:</strong> your <strong>Personal Access Token</strong> (not your login password)</li>
+                </ul>
+                <p style="margin: 0.5rem 0 0 0;">
+                    <a href="{% url 'profile' %}" style="color: var(--accent-color); text-decoration: none; font-weight: 600;">
+                        <i class="ph ph-arrow-square-out"></i> Generate a PAT → Settings / Profile
+                    </a>
+                </p>
+            </div>
+
+            <div style="margin-top: 1rem; background: var(--darker-bg); border-radius: 6px; padding: 0.75rem; font-family: ui-monospace, monospace; font-size: 0.8rem; color: #b5cea8;">
+                git clone http://{{ request.user.username }}:&lt;YOUR_PAT&gt;@{{ request.get_host }}/repos/{{ repository.name }}
+            </div>
         </div>
     </div>
 

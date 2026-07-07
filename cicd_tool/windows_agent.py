@@ -1,118 +1,153 @@
-import os
-import sys
-import subprocess
-import requests
-import json
-import time
-import atexit
-import logging
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import ssl
-from urllib.parse import urlparse
-import argparse
-import threading
+"""
+windows_agent.py — ReleaseRocket build agent for Windows.
 
-SERVER_URL = 'http://localhost:8000/pipeline'  # Update this to your server URL
+Registers itself with the ReleaseRocket server, then keeps itself alive with
+heartbeats so the pipeline worker can dispatch runs to it.
+
+Usage (PowerShell):
+    python windows_agent.py --hash-key "my-secret-key"
+    python windows_agent.py --server http://127.0.0.1:8001 --hash-key "my-secret-key"
+"""
+
+import argparse
+import atexit
+import json
+import logging
+import os
+import socket
+import subprocess
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+import requests
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s [agent] %(levelname)s %(message)s')
+
+DEFAULT_SERVER = 'http://127.0.0.1:8001'
 AGENT_COMMAND_PORT = 9000
-HEARTBEAT_INTERVAL = 60  # Heartbeat interval in seconds
+HEARTBEAT_INTERVAL = 30  # seconds
+
+SERVER_URL = DEFAULT_SERVER  # set in main()
+
 
 class RequestHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        data = json.loads(post_data.decode('utf-8'))
-        command = data.get('command')
+    def log_message(self, fmt, *args):  # quieter default logging
+        logging.debug(fmt % args)
 
-        if command:
-            if command == 'exit':
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({'result': 'Agent exiting...'}).encode('utf-8'))
-                os._exit(0)
-            else:
-                result = self.execute_command(command)
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({'result': result}).encode('utf-8'))
-        else:
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(json.dumps({'error': 'No command provided.'}).encode('utf-8'))
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        try:
+            data = json.loads(post_data.decode('utf-8'))
+        except (ValueError, UnicodeDecodeError):
+            self._reply(400, {'error': 'Invalid JSON'})
+            return
+
+        command = data.get('command')
+        if not command:
+            self._reply(400, {'error': 'No command provided.'})
+            return
+
+        if command == 'exit':
+            self._reply(200, {'result': 'Agent exiting...'})
+            os._exit(0)
+
+        result = self.execute_command(command)
+        self._reply(200, {'result': result})
+
+    def _reply(self, status, payload):
+        self.send_response(status)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps(payload).encode('utf-8'))
 
     def execute_command(self, command):
         try:
-            process = subprocess.Popen(command.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = process.communicate()
+            # shell=True so built-ins (echo, dir) and .bat/.cmd work on Windows
+            process = subprocess.run(
+                command, shell=True, capture_output=True, timeout=600)
             return {
-                'stdout': stdout.decode('utf-8'),
-                'stderr': stderr.decode('utf-8')
+                'stdout': process.stdout.decode('utf-8', errors='replace'),
+                'stderr': process.stderr.decode('utf-8', errors='replace'),
+                'returncode': process.returncode,
             }
+        except subprocess.TimeoutExpired:
+            return {'stdout': '', 'stderr': 'Command timed out (600s)', 'returncode': 1}
         except Exception as e:
-            return f'Error executing command: {e}'
+            return {'stdout': '', 'stderr': f'Error executing command: {e}', 'returncode': 1}
 
-def register_agent(hash_key):
-    try:
-        hostname = os.environ['COMPUTERNAME']
-        ip_address = get_ip_address()
-
-        response = requests.post(f'{SERVER_URL}/agents/register/', json={
-            'hostname': hostname,
-            'ip_address': ip_address,
-            'hash_key': hash_key,
-            'operating_system': 'Windows'
-        })
-        if response.status_code == 200:
-            logging.info('Agent registered successfully.')
-        else:
-            logging.error('Failed to register agent: %s', response.content.decode('utf-8'))
-    except Exception as e:
-        logging.error('Error during agent registration: %s', e)
 
 def get_ip_address():
-    # Logic to get the IP address of the agent machine goes here
-    return '127.0.0.1'
+    """Best-effort LAN IP; falls back to loopback."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except OSError:
+        return '127.0.0.1'
+
+
+def register_agent(hash_key):
+    hostname = os.environ.get('COMPUTERNAME') or socket.gethostname()
+    payload = {
+        'hostname': hostname,
+        'ip_address': get_ip_address(),
+        'hash_key': hash_key,
+        'operating_system': 'Windows',
+    }
+    try:
+        r = requests.post(f'{SERVER_URL}/ci/agents/register/', json=payload, timeout=10)
+        if r.status_code == 200:
+            logging.info('Registered with server: %s', r.json().get('status'))
+        else:
+            logging.error('Registration failed (%s): %s', r.status_code, r.text[:200])
+    except requests.RequestException as e:
+        logging.error('Cannot reach server %s — %s', SERVER_URL, e)
+
 
 def send_heartbeat(hash_key):
     while True:
         try:
-            response = requests.post(f'{SERVER_URL}/agents/receive-heartbeat/', json={'hash_key': hash_key})
-            if response.status_code == 200:
-                logging.info('Heartbeat sent successfully.')
+            r = requests.post(f'{SERVER_URL}/ci/agents/receive-heartbeat/',
+                              json={'hash_key': hash_key}, timeout=10)
+            if r.status_code == 200:
+                logging.info('Heartbeat OK')
             else:
-                logging.error('Failed to send heartbeat: %s', response.content.decode('utf-8'))
-        except Exception as e:
-            logging.error('Error sending heartbeat: %s', e)
+                logging.warning('Heartbeat rejected (%s): %s', r.status_code, r.text[:200])
+        except requests.RequestException as e:
+            logging.warning('Heartbeat failed: %s', e)
         time.sleep(HEARTBEAT_INTERVAL)
 
-def main(hash_key):
+
+def main(server, hash_key, port):
+    global SERVER_URL, AGENT_COMMAND_PORT
+    SERVER_URL = server.rstrip('/')
+    AGENT_COMMAND_PORT = port
+
     register_agent(hash_key)
-    server_address = ('', AGENT_COMMAND_PORT)
 
-    httpd = HTTPServer(server_address, RequestHandler)
-    logging.info('Agent server running with HTTP...')
-
-    def shutdown():
-        httpd.shutdown()
-        logging.info('Agent server stopped.')
-
-    atexit.register(shutdown)
-
-    # Start the heartbeat thread
     heartbeat_thread = threading.Thread(target=send_heartbeat, args=(hash_key,), daemon=True)
     heartbeat_thread.start()
 
-    # Start the HTTP server
+    httpd = HTTPServer(('', AGENT_COMMAND_PORT), RequestHandler)
+    atexit.register(httpd.shutdown)
+    logging.info('Agent listening on port %s — server %s', AGENT_COMMAND_PORT, SERVER_URL)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        pass
-    finally:
-        shutdown()
+        logging.info('Agent stopped.')
+
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Windows Agent for CI/CD Tool')
-    parser.add_argument('--hash-key', required=True, help='Hash key for agent registration')
+    parser = argparse.ArgumentParser(description='ReleaseRocket Windows build agent')
+    parser.add_argument('--server', default=DEFAULT_SERVER,
+                        help=f'ReleaseRocket server URL (default: {DEFAULT_SERVER})')
+    parser.add_argument('--hash-key', required=True, help='Shared key identifying this agent')
+    parser.add_argument('--port', type=int, default=AGENT_COMMAND_PORT,
+                        help=f'Local command port (default: {AGENT_COMMAND_PORT})')
     args = parser.parse_args()
-    main(args.hash_key)
+    main(args.server, args.hash_key, args.port)

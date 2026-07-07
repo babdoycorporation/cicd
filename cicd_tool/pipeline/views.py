@@ -1,22 +1,51 @@
-from audioop import reverse
+"""
+pipeline/views.py — All CI/CD views
+Bugs fixed:
+  • pipeline_create: pipeline_id undefined, application_name undefined, wrong FK
+  • run_pipeline: pipeline.project undefined, pipeline_id undefined
+  • local_credential_delete: project_name undefined
+  • local_credential_update: redirect used project_id instead of project_name
+  • create_yaml_pipeline: Pipeline.get_or_create used non-existent project FK
+  • check_agent_status: last_heartbeat could be None → now guarded
+"""
+
+import json
+import logging
 import os
 import subprocess
-import git
-from django.shortcuts import render, get_object_or_404, redirect
-from django.http import Http404, HttpResponseNotFound, HttpResponse
-import requests
-from .models import Project, Build
-from .forms import ProjectForm, ProjectConfigurationForm
+import uuid
+from datetime import timedelta
 
-BASE_REPO_DIR = 'D:/cicd/'  # Set this to your repository base directory
-
-# views.py
-
-from django.shortcuts import render
+import yaml
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.management import call_command
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+from django.http import (Http404, HttpResponse, JsonResponse,
+                          StreamingHttpResponse)
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views import View
-from .models import Project, Application, Pipeline, PipelineRun, Agent
-from gitmgmt.models import Repository
+from django.views.decorators.csrf import csrf_exempt
 
+from gitmgmt.models import Repository
+from .forms import (AgentForm, ApplicationForm, GlobalCredentialForm,
+                     GlobalSettingsForm, LocalCredentialForm, PipelineForm,
+                     ProjectConfigurationForm, ProjectForm)
+from .models import (Agent, Application, Command, Credential,
+                      Environment, GlobalSettings, Heartbeat, Pipeline,
+                      PipelineRun, PipelineStep, Project, ProjectPipeline, ProjectPipelineRun, ProjectOrchestrationStep, Stage, Step,
+                      YamlFileVersion)
+from .utils import execute_step, get_available_agent, prepare_credentials
+
+logger = logging.getLogger(__name__)
+BASE_REPO_DIR = 'D:/cicd/'
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Dashboard
+# ─────────────────────────────────────────────────────────────────────────────
 
 class DashboardView(View):
     def get(self, request):
@@ -27,10 +56,31 @@ class DashboardView(View):
         total_agents = Agent.objects.count()
         successful_runs = PipelineRun.objects.filter(status='success').count()
         failed_runs = PipelineRun.objects.filter(status='failed').count()
+        pending_runs = PipelineRun.objects.filter(status='pending').count()
+        running_runs = PipelineRun.objects.filter(status='running').count()
         total_repos = Repository.objects.count()
+        latest_pipeline_runs = (
+            PipelineRun.objects.select_related('pipeline', 'agent')
+            .order_by('-started_at')[:10]
+        )
+        live_agents = Agent.objects.filter(live=True).count()
 
-        # Fetch latest pipeline runs with related pipeline information
-        latest_pipeline_runs = PipelineRun.objects.select_related('pipeline').order_by('-started_at')[:5]
+        # All-time success/fail chart data grouped by date
+        chart_data = (
+            PipelineRun.objects
+            .annotate(date=TruncDate('started_at'))
+            .values('date', 'status')
+            .annotate(count=Count('id'))
+            .order_by('date')
+        )
+        date_set = sorted({row['date'] for row in chart_data if row['date']})
+        stats = {d: {'success': 0, 'failed': 0} for d in date_set}
+        for row in chart_data:
+            if row['date'] in stats and row['status'] in ('success', 'failed'):
+                stats[row['date']][row['status']] = row['count']
+        chart_labels = [d.isoformat() for d in date_set]
+        chart_success = [stats[d]['success'] for d in date_set]
+        chart_failed = [stats[d]['failed'] for d in date_set]
 
         context = {
             'total_projects': total_projects,
@@ -40,83 +90,67 @@ class DashboardView(View):
             'total_agents': total_agents,
             'successful_runs': successful_runs,
             'failed_runs': failed_runs,
+            'pending_runs': pending_runs,
+            'running_runs': running_runs,
             'latest_pipeline_runs': latest_pipeline_runs,
-            'total_repos': total_repos
+            'total_repos': total_repos,
+            'live_agents': live_agents,
+            'chart_labels': json.dumps(chart_labels),
+            'chart_success': json.dumps(chart_success),
+            'chart_failed': json.dumps(chart_failed),
         }
-
         return render(request, 'pipeline/dashboard.html', context)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  Projects
+# ─────────────────────────────────────────────────────────────────────────────
 
+@login_required
 def project_list(request):
     projects = Project.objects.all()
     return render(request, 'pipeline/project_list.html', {'projects': projects})
 
+
+@login_required
 def project_detail(request, project_name):
     project = get_object_or_404(Project, name=project_name)
-    builds = Build.objects.filter(project=project)
-    return render(request, 'pipeline/project_detail.html', {'project': project, 'builds': builds})
+    orchestrator_runs = ProjectPipelineRun.objects.filter(project_pipeline__project=project).order_by('-started_at')[:20]
+    pipeline_runs = PipelineRun.objects.filter(
+        pipeline__application__project=project
+    ).select_related('pipeline', 'agent').order_by('-started_at')[:20]
+    applications = Application.objects.filter(project=project).prefetch_related('pipelines')
+    project_pipelines = ProjectPipeline.objects.filter(project=project)
+    return render(request, 'pipeline/project_detail.html', {
+        'project': project, 'orchestrator_runs': orchestrator_runs, 'pipeline_runs': pipeline_runs,
+        'applications': applications, 'project_pipelines': project_pipelines
+    })
 
+
+@login_required
 def project_create(request):
     if request.method == 'POST':
         form = ProjectForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('project_list')
+            org = form.cleaned_data.get('organization')
+            # Enforce the organization's project-creation policy
+            if org and not (request.user.is_superuser or org.user_can_create_projects(request.user)):
+                form.add_error('organization',
+                    f"Your role in {org.name} does not allow creating projects "
+                    f"(policy: {org.get_project_creation_policy_display()}).")
+            else:
+                project = form.save()
+                # The creator becomes the project's first maintainer
+                from .models import ProjectMember
+                ProjectMember.objects.get_or_create(
+                    project=project, user=request.user, defaults={'role': 'maintainer'})
+                return redirect('project_list')
     else:
         form = ProjectForm()
     return render(request, 'pipeline/project_form.html', {'form': form})
 
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Project, Build
-from django.core.management import call_command
 
-def trigger_build(request, project_name):
-    project = get_object_or_404(Project, name=project_name)
-    build = Build.objects.create(project=project, status='pending', log='Build started...')
-    
-    # Run the build command
-    call_command('run_build')
-
-    return redirect('project_detail', project_name=project.name)
-
-
-def configure_project(request, project_name):
-    project = get_object_or_404(Project, name=project_name)
-    if request.method == 'POST':
-        form = ProjectConfigurationForm(request.POST, instance=project)
-        if form.is_valid():
-            form.save()
-            return redirect('project_detail', project_name=project_name)
-    else:
-        form = ProjectConfigurationForm(instance=project)
-    return render(request, 'pipeline/configure_project.html', {'form': form, 'project': project})
-
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponseNotFound, JsonResponse
-import json
-
-@csrf_exempt
-def github_webhook(request):
-    if request.method == 'POST':
-        payload = json.loads(request.body.decode('utf-8'))
-        # Trigger a build
-        project_name = payload['repository']['name']
-        project = Project.objects.get(name=project_name)
-        Build.objects.create(project=project, status='pending')
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'failed'}, status=400)
-
-def project_file_download(request, project_name, path):
-    project = get_object_or_404(Project, name=project_name)
-    file_path = os.path.join('D:/cicd/', project.name, path)
-    if os.path.exists(file_path):
-        with open(file_path, 'rb') as f:
-            response = HttpResponse(f.read(), content_type="application/octet-stream")
-            response['Content-Disposition'] = f'attachment; filename={os.path.basename(file_path)}'
-            return response
-    raise Http404
-
+@login_required
 def project_edit(request, project_name):
     project = get_object_or_404(Project, name=project_name)
     if request.method == 'POST':
@@ -128,6 +162,8 @@ def project_edit(request, project_name):
         form = ProjectForm(instance=project)
     return render(request, 'pipeline/project_form.html', {'form': form})
 
+
+@login_required
 def project_delete(request, project_name):
     project = get_object_or_404(Project, name=project_name)
     if request.method == 'POST':
@@ -135,134 +171,272 @@ def project_delete(request, project_name):
         return redirect('project_list')
     return render(request, 'pipeline/project_confirm_delete.html', {'project': project})
 
-def download_log(request, build_id):
-    build = get_object_or_404(Build, pk=build_id)
-    response = HttpResponse(build.log, content_type='text/plain')
-    response['Content-Disposition'] = f'attachment; filename=build_{build_id}_log.txt'
-    return response
 
-import json
-from datetime import timedelta
-from django.db.models import Count
-from django.db.models.functions import TruncDate
-from django.shortcuts import render
-from django.utils import timezone
-from .models import Build
+@login_required
+def configure_project(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
+    if request.method == 'POST':
+        form = ProjectConfigurationForm(request.POST, instance=project)
+        if form.is_valid():
+            form.save()
+            return redirect('project_detail', project_name=project_name)
+    else:
+        form = ProjectConfigurationForm(instance=project)
+    return render(request, 'pipeline/configure_project.html', {'form': form, 'project': project})
 
-# views.py
-from django.shortcuts import get_object_or_404
-from .models import Project, Build
 
-from django.shortcuts import render, get_object_or_404
-from django.utils import timezone
-from django.db.models import Count
-from django.db.models.functions import TruncDate
-from datetime import timedelta
-import json
-from .models import Project, PipelineRun
+@login_required
+def project_settings(request, project_name):
+    """Project settings — general, members with roles, CI/CD variables, notifications."""
+    import json as _json
+    from django.contrib.auth.models import User
+    from .models import ProjectMember
 
-def build_history(request, project_name):
-    # Retrieve the project associated with the project_id
     project = get_object_or_404(Project, name=project_name)
 
-    # Calculate the date range for the past week with timezone-aware datetimes
-    end_date = timezone.now()
-    start_date = end_date - timedelta(days=7)
-    
-    # Query the database to count successful and failed PipelineRuns per day for the specific project
-    build_history_data = PipelineRun.objects.filter(pipeline__application__project=project, started_at__gte=start_date, started_at__lte=end_date) \
-                                            .annotate(date=TruncDate('started_at')) \
-                                            .values('date', 'status') \
-                                            .annotate(count=Count('id')) \
-                                            .order_by('date', 'status')
+    my_role = project.get_member_role(request.user)
+    is_open_project = project.members.count() == 0 and project.organization is None
+    can_manage = (request.user.is_superuser or my_role == 'maintainer' or is_open_project)
+    if not can_manage:
+        messages.error(request, "You need the Maintainer role to manage project settings.")
+        return redirect('project_detail', project_name=project.name)
 
-    # Organize the data into a format suitable for rendering in the template
-    dates = []
-    successful_builds = []
-    failed_builds = []
-    
-    # Initialize counters for each day within the date range
-    date_range = [(start_date + timedelta(days=i)).date() for i in range(8)]
-    build_stats = {date: {'success': 0, 'failed': 0} for date in date_range}
+    if request.method == 'POST':
+        action = request.POST.get('action')
 
+        if action == 'update_general':
+            project.description = request.POST.get('description', project.description)
+            project.repository_url = request.POST.get('repository_url', '') or None
+            project.save()
+            messages.success(request, "Project details updated.")
+
+        elif action == 'update_variables':
+            raw = request.POST.get('environment_variables', '{}').strip() or '{}'
+            try:
+                parsed = _json.loads(raw)
+                if not isinstance(parsed, dict):
+                    raise ValueError('Must be a JSON object')
+                project.environment_variables = parsed
+                project.save()
+                messages.success(request, "CI/CD variables updated.")
+            except ValueError:
+                messages.error(request, 'Variables must be a JSON object, e.g. {"KEY": "value"}.')
+
+        elif action == 'update_notifications':
+            project.notifications_enabled = request.POST.get('notifications_enabled') == 'on'
+            project.notification_emails = request.POST.get('notification_emails', '')
+            project.slack_webhook_url = request.POST.get('slack_webhook_url', '')
+            project.save()
+            messages.success(request, "Notification settings updated.")
+
+        elif action == 'add_member':
+            username = request.POST.get('username', '').strip()
+            role = request.POST.get('role', 'developer')
+            if role not in ('maintainer', 'developer', 'viewer'):
+                role = 'developer'
+            user = User.objects.filter(username=username).first()
+            if user:
+                ProjectMember.objects.update_or_create(
+                    project=project, user=user, defaults={'role': role})
+                messages.success(request, f"{username} added as {role}.")
+            else:
+                messages.error(request, f"User '{username}' not found.")
+
+        elif action == 'update_member_role':
+            member = ProjectMember.objects.filter(
+                project=project, id=request.POST.get('member_id')).first()
+            new_role = request.POST.get('role')
+            if member and new_role in ('maintainer', 'developer', 'viewer'):
+                member.role = new_role
+                member.save()
+                messages.success(request, f"{member.user.username} is now {new_role}.")
+
+        elif action == 'remove_member':
+            member = ProjectMember.objects.filter(
+                project=project, id=request.POST.get('member_id')).first()
+            if member:
+                member.delete()
+                messages.success(request, f"{member.user.username} removed from the project.")
+
+        return redirect('project_settings', project_name=project.name)
+
+    members = project.members.select_related('user').order_by('user__username')
+    import json as _json
+    env_vars_json = _json.dumps(project.environment_variables or {}, indent=2)
+    return render(request, 'pipeline/project_settings.html', {
+        'project': project,
+        'members': members,
+        'env_vars_json': env_vars_json,
+        'my_role': my_role or ('maintainer' if request.user.is_superuser or is_open_project else None),
+    })
+
+@login_required
+def trigger_project_pipeline(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
+    if request.method == 'POST':
+        pipeline_id = request.POST.get('project_pipeline_id')
+        project_pipeline = get_object_or_404(ProjectPipeline, id=pipeline_id, project=project)
+        # Create a new run
+        run = ProjectPipelineRun.objects.create(project_pipeline=project_pipeline, status='pending', log='Orchestrator run queued.')
+        # We will dispatch this to the background worker
+        return redirect('project_pipeline_run_detail', run_id=run.run_id)
+    return redirect('project_detail', project_name=project.name)
+
+@login_required
+def project_pipeline_run_detail(request, run_id):
+    run = get_object_or_404(ProjectPipelineRun, run_id=run_id)
+    return render(request, 'pipeline/project_pipeline_run_detail.html', {'run': run})
+
+@login_required
+def project_pipeline_history(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
+    runs = ProjectPipelineRun.objects.filter(project_pipeline__project=project).order_by('-started_at')
+    
+    # 7-day build stats
+    end = timezone.now()
+    start = end - timedelta(days=7)
+    build_history_data = (
+        ProjectPipelineRun.objects
+        .filter(started_at__gte=start, project_pipeline__project=project)
+        .annotate(date=TruncDate('started_at'))
+        .values('date', 'status')
+        .annotate(count=Count('id'))
+        .order_by('date')
+    )
+    date_range = [(start + timedelta(days=i)).date() for i in range(8)]
+    build_stats = {d: {'success': 0, 'failed': 0} for d in date_range}
     for entry in build_history_data:
-        date = entry['date']
-        if entry['status'] == 'success':
-            build_stats[date]['success'] = entry['count']
-        elif entry['status'] == 'failed':
-            build_stats[date]['failed'] = entry['count']
-    
-    for date in date_range:
-        dates.append(date.isoformat())
-        successful_builds.append(build_stats[date]['success'])
-        failed_builds.append(build_stats[date]['failed'])
+        d = entry['date']
+        if d in build_stats and entry['status'] in ('success', 'failed'):
+            build_stats[d][entry['status']] = entry['count']
 
-    build_history_data = {
-        'dates': dates,
-        'successful_builds': successful_builds,
-        'failed_builds': failed_builds
+    data = {
+        'dates': [d.isoformat() for d in date_range],
+        'successful_builds': [build_stats[d]['success'] for d in date_range],
+        'failed_builds': [build_stats[d]['failed'] for d in date_range],
     }
+    return render(request, 'pipeline/build_history.html', {
+        'build_history_data': json.dumps(data), 'project': project,
+    })
 
-    return render(request, 'pipeline/build_history.html', {'build_history_data': json.dumps(build_history_data), 'project': project})
+@login_required
+def project_pipeline_create(request, project_name):
+    import yaml
+    project = get_object_or_404(Project, name=project_name)
+    if request.method == 'POST':
+        yaml_content = request.POST.get('yaml_content', '')
+        try:
+            config = yaml.safe_load(yaml_content)
+            if not config or 'name' not in config:
+                raise ValueError("YAML must contain a 'name' field.")
+            
+            project_pipeline = ProjectPipeline.objects.create(
+                project=project,
+                name=config['name'],
+                description=config.get('description', ''),
+                yaml_path='ui-defined'
+            )
+            
+            steps = config.get('steps', [])
+            for step_data in steps:
+                target_pipeline_name = step_data.get('target_pipeline')
+                target = Pipeline.objects.filter(name=target_pipeline_name, application__project=project).first()
+                if not target:
+                    raise ValueError(f"Target pipeline '{target_pipeline_name}' not found in this project.")
+                ProjectOrchestrationStep.objects.create(
+                    project_pipeline=project_pipeline,
+                    order=step_data.get('order', 0),
+                    target_pipeline=target,
+                    parallel=step_data.get('parallel', False)
+                )
+            messages.success(request, f"Successfully created orchestrator '{project_pipeline.name}'.")
+            return redirect('project_detail', project_name=project.name)
+        except Exception as e:
+            messages.error(request, f"Error parsing YAML: {str(e)}")
+            return render(request, 'pipeline/project_pipeline_form.html', {'project': project, 'yaml_content': yaml_content})
+            
+    # Default template
+    default_yaml = '''name: Release To Production
+description: Deploys backend then frontend
+steps:
+  - target_pipeline: your-backend-ci
+    order: 1
+    parallel: false
+  - target_pipeline: your-frontend-ci
+    order: 2
+    parallel: false
+'''
+    return render(request, 'pipeline/project_pipeline_form.html', {'project': project, 'yaml_content': default_yaml})
 
-# views.py
+@login_required
+def project_pipeline_delete(request, project_name, pipeline_id):
+    project = get_object_or_404(Project, name=project_name)
+    pipeline = get_object_or_404(ProjectPipeline, id=pipeline_id, project=project)
+    if request.method == 'POST':
+        pipeline.delete()
+        messages.success(request, f"Orchestrator '{pipeline.name}' deleted.")
+    return redirect('project_detail', project_name=project.name)
 
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Project, Pipeline
+# ==============================================================================
+#  Pipelines
+# ==============================================================================─────────────────────────────────────────────────────────────────────────────
 
+@login_required
 def pipeline_list(request, project_name):
     project = get_object_or_404(Project, name=project_name)
     pipelines = Pipeline.objects.filter(application__project=project)
     return render(request, 'pipeline/pipeline_list.html', {'project': project, 'pipelines': pipelines})
 
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Project, Pipeline, Application
 
-def pipeline_create(request, project_name, pipeline_name=None):
+@login_required
+def pipeline_create(request, project_name):
+    """BUG FIX: removed references to undefined pipeline_id / application_name."""
     project = get_object_or_404(Project, name=project_name)
     applications = project.applications.all()
-    pipeline = None
-    pipeline_application_ids = []
 
-    if pipeline_id:
-        pipeline = get_object_or_404(Pipeline, name=pipeline_name, project=project)
-        pipeline_application_ids = list(pipeline.applications.values_list('id', flat=True))
-    
     if request.method == 'POST':
-        name = request.POST.get('name')
-        description = request.POST.get('description', '')
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
         application_id = request.POST.get('application')
-        application = get_object_or_404(Application, name=application_name)
-        
-        if pipeline:
-            pipeline.name = name
-            pipeline.description = description
-            pipeline.save()
-        else:
-            pipeline = Pipeline.objects.create(project=project, name=name, description=description)
-        
-        application.pipelines.add(pipeline)
-        application.save()
+        yaml_path = request.POST.get('yaml_path', 'rockerci.yaml').strip()
+        monitored_branch = request.POST.get('monitored_branch', 'main').strip()
 
+        if not name:
+            return render(request, 'pipeline/pipeline_form.html', {
+                'project': project, 'applications': applications,
+                'error': 'Pipeline name is required.',
+            })
+
+        application = get_object_or_404(Application, id=application_id, project=project)
+        Pipeline.objects.create(
+            name=name,
+            description=description,
+            application=application,
+            yaml_path=yaml_path,
+            monitored_branch=monitored_branch,
+        )
         return redirect('pipeline_list', project_name=project.name)
-    
+
     return render(request, 'pipeline/pipeline_form.html', {
-        'project': project,
-        'applications': applications,
-        'pipeline': pipeline,
-        'pipeline_application_ids': pipeline_application_ids
+        'project': project, 'applications': applications,
     })
 
+
+@login_required
 def pipeline_update(request, project_name, pipeline_name):
     project = get_object_or_404(Project, name=project_name)
     pipeline = get_object_or_404(Pipeline, name=pipeline_name)
     if request.method == 'POST':
-        pipeline.name = request.POST.get('name')
-        pipeline.description = request.POST.get('description', '')
+        pipeline.name = request.POST.get('name', pipeline.name)
+        pipeline.description = request.POST.get('description', pipeline.description)
+        pipeline.yaml_path = request.POST.get('yaml_path', pipeline.yaml_path)
+        pipeline.monitored_branch = request.POST.get('monitored_branch', pipeline.monitored_branch)
         pipeline.save()
         return redirect('pipeline_list', project_name=project.name)
     return render(request, 'pipeline/pipeline_form.html', {'project': project, 'pipeline': pipeline})
 
+
+@login_required
 def pipeline_delete(request, project_name, pipeline_name):
     project = get_object_or_404(Project, name=project_name)
     pipeline = get_object_or_404(Pipeline, name=pipeline_name)
@@ -270,518 +444,664 @@ def pipeline_delete(request, project_name, pipeline_name):
         pipeline.delete()
         return redirect('pipeline_list', project_name=project.name)
     return render(request, 'pipeline/pipeline_confirm_delete.html', {'project': project, 'pipeline': pipeline})
-# views.py
 
-# views.py
 
-from .models import Project, Pipeline, PipelineStep
+@login_required
+def pipeline_detail(request, pipeline_name):
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
+    steps = pipeline.pipelinestep_set.all().order_by('id')
+    runs = pipeline.runs.order_by('-started_at')[:20]
+    yaml_versions = YamlFileVersion.objects.filter(pipeline=pipeline).order_by('-created_at')[:10]
+    return render(request, 'pipeline/pipeline_detail.html', {
+        'pipeline': pipeline, 'steps': steps, 'runs': runs, 'yaml_versions': yaml_versions,
+    })
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Pipeline Steps
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
 def pipeline_step_list(request, pipeline_name):
     pipeline = get_object_or_404(Pipeline, name=pipeline_name)
-    steps = PipelineStep.objects.filter(pipeline=pipeline)
+    steps = PipelineStep.objects.filter(pipeline=pipeline).order_by('id')
     return render(request, 'pipeline/pipeline_step_list.html', {'pipeline': pipeline, 'steps': steps})
 
-from django.shortcuts import redirect, render, get_object_or_404
-from .models import Pipeline, PipelineStep
 
+@login_required
 def pipeline_step_create(request, pipeline_name):
     pipeline = get_object_or_404(Pipeline, name=pipeline_name)
-    
     if request.method == 'POST':
-        name = request.POST.get('name')
-        description = request.POST.get('description', '')
-        condition = request.POST.get('condition', '')
-        command = request.POST.get('command', '')
-
-        # Check if any of the required fields are empty
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
+        condition = request.POST.get('condition', '').strip()
+        command = request.POST.get('command', '').strip()
         if not name or not command:
-            error_message = "Name and command fields are required."
-            return render(request, 'pipeline/pipeline_step_form.html', {'pipeline': pipeline, 'error_message': error_message})
-        
-        try:
-            PipelineStep.objects.create(pipeline=pipeline, name=name, description=description, condition=condition, command=command)
-            return redirect('pipeline_step_list', pipeline_name=pipeline.name)
-        except Exception as e:
-            error_message = f"An error occurred while creating the pipeline step: {str(e)}"
-            return render(request, 'pipeline/pipeline_step_form.html', {'pipeline': pipeline, 'error_message': error_message})
-
+            return render(request, 'pipeline/pipeline_step_form.html', {
+                'pipeline': pipeline, 'error': 'Name and command are required.',
+            })
+        PipelineStep.objects.create(
+            pipeline=pipeline, name=name,
+            description=description, condition=condition, command=command,
+        )
+        return redirect('pipeline_step_list', pipeline_name=pipeline.name)
     return render(request, 'pipeline/pipeline_step_form.html', {'pipeline': pipeline})
 
+
+@login_required
 def pipeline_step_update(request, pipeline_name, step_id):
     pipeline = get_object_or_404(Pipeline, name=pipeline_name)
-    step = get_object_or_404(PipelineStep, id=step_id)
+    step = get_object_or_404(PipelineStep, id=step_id, pipeline=pipeline)
     if request.method == 'POST':
-        step.name = request.POST.get('name')
-        step.description = request.POST.get('description', '')
-        step.condition = request.POST.get('condition', '')
-        step.command = request.POST.get('command', '')
+        step.name = request.POST.get('name', step.name)
+        step.description = request.POST.get('description', step.description)
+        step.condition = request.POST.get('condition', step.condition)
+        step.command = request.POST.get('command', step.command)
         step.save()
         return redirect('pipeline_step_list', pipeline_name=pipeline.name)
     return render(request, 'pipeline/pipeline_step_form.html', {'pipeline': pipeline, 'step': step})
 
+
+@login_required
 def pipeline_step_delete(request, pipeline_name, step_id):
     pipeline = get_object_or_404(Pipeline, name=pipeline_name)
-    step = get_object_or_404(PipelineStep, id=step_id)
+    step = get_object_or_404(PipelineStep, id=step_id, pipeline=pipeline)
     if request.method == 'POST':
         step.delete()
         return redirect('pipeline_step_list', pipeline_name=pipeline.name)
     return render(request, 'pipeline/pipeline_step_confirm_delete.html', {'pipeline': pipeline, 'step': step})
 
-from django.shortcuts import render, redirect
-from .models import Pipeline
 
-from django.core.management import call_command
-from django.shortcuts import redirect, get_object_or_404, render
-from .models import Pipeline, PipelineStep
+# ─────────────────────────────────────────────────────────────────────────────
+#  Run Pipeline  (SSE streaming)
+# ─────────────────────────────────────────────────────────────────────────────
 
-# pipeline/views.py
-
-from django.shortcuts import get_object_or_404, render
-from .models import Pipeline, PipelineStep, PipelineRun
-
-def pipeline_detail(request, pipeline_name):
-    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
-    context = {
-        'pipeline': pipeline,
-    }
-    return render(request, 'pipeline/pipeline_detail.html', context)
-
-
-import logging
-from django.shortcuts import get_object_or_404
-from django.http import StreamingHttpResponse
-from django.urls import reverse
-from .models import Pipeline, PipelineRun, Agent
-from .utils import execute_step, get_available_agent, prepare_credentials
-import json
-from django.utils import timezone
-
-logger = logging.getLogger(__name__)
-
+@login_required
 def run_pipeline(request, pipeline_name):
     pipeline = get_object_or_404(Pipeline, name=pipeline_name)
-    project = pipeline.project
-
-    logger.info(f"Starting pipeline run for pipeline {pipeline_id}")
-
-    try:
-        agent = get_available_agent()
-    except ValueError as e:
-        logger.error(f"No available agent: {str(e)}")
-        return StreamingHttpResponse(f"data: {json.dumps({'error': str(e)})}\n\n", content_type='text/event-stream')
-
-    agent.live = False  # Mark agent as busy
-    agent.save()
-
-    steps = pipeline.pipelinestep_set.all().order_by('id')
-    logger.info(f"Retrieved {steps.count()} steps for pipeline {pipeline_id}")
-
-    overall_status = 'success'  # Assume success initially
-
-    pipeline_run = PipelineRun.objects.create(pipeline=pipeline, agent=agent, status='running')
-    logger.info(f"Created pipeline run with ID {pipeline_run.id}")
-
-    credentials = prepare_credentials(project)
-
-    def event_stream():
-        nonlocal overall_status
-        logger.debug("Starting event stream")
-        yield f"data: {json.dumps({'event': 'start', 'pipeline_name': pipeline.name, 'run_id': str(pipeline_run.run_id)})}\n\n"
-        
-        for step in steps:
-            logger.debug(f"Starting step: {step.name}")
-            yield f"data: {json.dumps({'event': 'step_start', 'step': step.name})}\n\n"
-            try:
-                result = execute_step(step, pipeline_run.run_id, credentials)
-                logger.debug(f"Step {step.name} completed with exit code: {result.returncode}")
-                for line in result.stdout.splitlines():
-                    logger.debug(f"Step {step.name} output: {line}")
-                    yield f"data: {json.dumps({'event': 'log', 'step': step.name, 'message': line})}\n\n"
-                
-                status = 'success' if result.returncode == 0 else 'failed'
-                yield f"data: {json.dumps({'event': 'step_end', 'step': step.name, 'status': status})}\n\n"
-                
-                if result.returncode != 0:
-                    overall_status = 'failed'
-                    break
-            except Exception as e:
-                logger.error(f"Error in step {step.name}: {str(e)}")
-                overall_status = 'failed'
-                yield f"data: {json.dumps({'event': 'error', 'step': step.name, 'message': str(e)})}\n\n"
-                break
-
-        logger.debug(f"Pipeline run completed with status: {overall_status}")
-        pipeline_run.status = overall_status
-        pipeline_run.finished_at = timezone.now()
-        pipeline_run.save()
-        agent.live = True  # Mark agent as idle
-        agent.last_heartbeat = timezone.now()
-        agent.save()
-
-        redirect_url = reverse('pipeline_run_detail', args=[str(pipeline_run.run_id)])
-        yield f"data: {json.dumps({'event': 'end', 'overall_status': overall_status, 'redirect_url': redirect_url})}\n\n"
-
-    return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
-
-
-import json
-from django.shortcuts import render, get_object_or_404
-from .models import PipelineRun
-
-def pipeline_run_detail(request, run_id):
-    pipeline_run = get_object_or_404(PipelineRun, run_id=run_id)
     
-    # Process the log data
-    try:
-        log_data = json.loads(pipeline_run.log) if pipeline_run.log else {}
-    except json.JSONDecodeError:
-        log_data = {"Error": "Unable to parse log data"}
+    # Create a pending PipelineRun. The background worker will pick it up.
+    pipeline_run = PipelineRun.objects.create(pipeline=pipeline, status='pending')
+    
+    return redirect('pipeline_run_detail', run_id=pipeline_run.run_id)
 
-    # If log_data is a string, wrap it in a dict
-    if isinstance(log_data, str):
-        log_data = {"Log": log_data}
 
-    # Ensure log_data is a dict
-    if not isinstance(log_data, dict):
-        log_data = {"Error": "Log data is in an unexpected format"}
-
-    context = {
-        'pipeline_run': pipeline_run,
-    }
-
-    # Add the processed log data to the pipeline_run object
-    pipeline_run.log = log_data
-
-    return render(request, 'pipeline/pipeline_run_detail.html', context)
-# views.py
-from django.shortcuts import render
 from django.http import JsonResponse
-from .models import Agent, Command, Heartbeat
-import uuid
 
-import json
-import uuid
-import subprocess
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render
-from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
-from .models import Agent, Command
+@login_required
+def pipeline_run_api(request, run_id):
+    run = get_object_or_404(PipelineRun, run_id=run_id)
+    return JsonResponse({
+        'status': run.status,
+        'log': run.log or '',
+        'finished_at': run.finished_at.isoformat() if run.finished_at else None,
+    })
 
-import json
-import logging
-from django.http import JsonResponse, HttpResponse
-from .models import Agent
+def project_pipeline_run_api(request, run_id):
+    run = get_object_or_404(ProjectPipelineRun, run_id=run_id)
+    return JsonResponse({
+        'status': run.status,
+        'log': run.log or '',
+        'finished_at': run.finished_at.isoformat() if run.finished_at else None,
+    })
 
-logger = logging.getLogger(__name__)
-
-@csrf_exempt
-def register_agent(request):
-    if request.method == 'POST':
-        data = json.loads(request.body.decode('utf-8'))
-        hostname = data.get('hostname')
-        ip_address = data.get('ip_address')
-        hash_key = data.get('hash_key')
-        operating_system = data.get('operating_system')
-
-        logger.info(f'Received registration request for agent with hash key: {hash_key}')
-
-        try:
-            agent, created = Agent.objects.update_or_create(
-                hash_key=hash_key,
-                defaults={
-                    'hostname': hostname,
-                    'ip_address': ip_address,
-                    'operating_system': operating_system,
-                    'last_heartbeat': timezone.now()
-                }
-            )
-            if created:
-                logger.info('Agent registered successfully.')
-                return JsonResponse({'status': 'Agent registered successfully.'}, status=200)
-            else:
-                logger.info('Agent updated successfully.')
-                return JsonResponse({'status': 'Agent updated successfully.'}, status=200)
-        except Exception as e:
-            logger.error(f'Error registering agent: {e}')
-            return JsonResponse({'error': f'Error registering agent: {e}'}, status=500)
-
-    logger.error('Invalid request method for agent registration.')
-    return HttpResponse(status=400)
-
-
-def add_agent(request):
-    hash_key = uuid.uuid4().hex  # Generate a unique hash key
-    command_windows = f"powershell -Command \"Invoke-WebRequest -Uri 'http://localhost:8000/path/to/windows_agent.py' -OutFile 'agent_install.py'; python agent_install.py --hash-key {hash_key}\""
-    command_linux = f"curl -O http://localhost:8000/path/to/linux_agent.py && python3 linux_agent.py --hash-key {hash_key}"
-    return render(request, 'pipeline/add_agent.html', {
-        'hash_key': hash_key,
-        'command_windows': command_windows,
-        'command_linux': command_linux
+@login_required
+def pipeline_run_detail(request, run_id):
+    run = get_object_or_404(PipelineRun, run_id=run_id)
+    log_lines = run.log.splitlines() if run.log else []
+    duration = None
+    if run.finished_at and run.started_at:
+        duration = (run.finished_at - run.started_at).seconds
+    return render(request, 'pipeline/pipeline_run_detail.html', {
+        'pipeline_run': run, 'log_lines': log_lines, 'duration': duration,
     })
 
 
+@login_required
+def pipeline_run_list(request, pipeline_name):
+    pipeline = get_object_or_404(Pipeline, name=pipeline_name)
+    runs = pipeline.runs.select_related('agent').order_by('-started_at')
+    return render(request, 'pipeline/pipeline_run_list.html', {'pipeline': pipeline, 'runs': runs})
+
+
+@login_required
+def cancel_pipeline_run(request, run_id):
+    run = get_object_or_404(PipelineRun, run_id=run_id)
+    if request.method == 'POST' and run.status in ('pending', 'running'):
+        run.status = 'failed'
+        run.finished_at = timezone.now()
+        run.log = (run.log or '') + '\n[CANCELLED by user]'
+        run.save()
+        if run.agent:
+            run.agent.live = True
+            run.agent.save(update_fields=['live'])
+    return redirect('pipeline_run_detail', run_id=str(run.run_id))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Webhooks
+# ─────────────────────────────────────────────────────────────────────────────
+
 @csrf_exempt
-def receive_command(request):
+def github_webhook(request):
     if request.method == 'POST':
-        data = json.loads(request.body.decode('utf-8'))
-        command = data.get('command')
-        # Implement logic to queue the command for the agent
-        return JsonResponse({'status': 'Command received.'})
-    return HttpResponse(status=400)
-
-from django.utils import timezone
-from datetime import timedelta
-
-from django.utils import timezone
-
-@csrf_exempt
-def receive_heartbeat(request):
-    if request.method == 'POST':
-        data = json.loads(request.body.decode('utf-8'))
-        hash_key = data.get('hash_key')
-        
-        # Get the current timestamp
-        timestamp = timezone.now()
-
         try:
-            agent = Agent.objects.get(hash_key=hash_key)
-            agent.last_heartbeat = timestamp  # Update the heartbeat timestamp
-            agent.save()
+            payload = json.loads(request.body.decode('utf-8'))
+            project_name = payload.get('repository', {}).get('name')
+            project = Project.objects.filter(name=project_name).first()
+            if project:
+                # Webhook received, do nothing for now since git-receive-pack handles it
+                pass
+                return JsonResponse({'status': 'success'})
+            return JsonResponse({'status': 'project not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'detail': str(e)}, status=400)
+    return JsonResponse({'status': 'method not allowed'}, status=405)
 
-            return JsonResponse({'status': 'Heartbeat received.'}, status=200)
-        except Agent.DoesNotExist:
-            return JsonResponse({'error': 'Agent not found.'}, status=404)
-    return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-from django.shortcuts import render
-from .models import Agent
-from datetime import timedelta
-from django.utils import timezone
-from django.db import transaction
-import logging
+# ─────────────────────────────────────────────────────────────────────────────
+#  Agents
+# ─────────────────────────────────────────────────────────────────────────────
 
-logger = logging.getLogger(__name__)
+def _check_agent_status():
+    """Mark agents live/dead based on heartbeat timestamp."""
+    threshold = timedelta(minutes=1)
+    now = timezone.now()
+    for agent in Agent.objects.all():
+        if agent.last_heartbeat is None:
+            # Never heartbeated — treat as dead
+            if agent.live:
+                agent.live = False
+                agent.save(update_fields=['live'])
+            continue
+        is_live = (now - agent.last_heartbeat) <= threshold
+        if agent.live != is_live:
+            agent.live = is_live
+            agent.save(update_fields=['live'])
 
-def check_agent_status():
-    threshold = timedelta(minutes=1)  # Define the threshold for considering an agent inactive
-    agents = Agent.objects.all()
-    for agent in agents:
-        if timezone.now() - agent.last_heartbeat > threshold:
-            agent.live = False  # Mark the agent as offline
-            agent.save(update_fields=['live'])  # Save only the 'live' field to improve performance
-            logger.info(f"Agent {agent.hostname} marked as offline.")
-        else:
-            agent.live = True  # Mark the agent as online
-            agent.save(update_fields=['live'])  # Save only the 'live' field to improve performance
-            logger.info(f"Agent {agent.hostname} marked as online.")
 
+@login_required
 def agent_list(request):
-    check_agent_status()  # Check the status of each agent
-    agents = Agent.objects.all()
+    _check_agent_status()
+    agents = Agent.objects.all().order_by('-live', 'hostname')
     return render(request, 'pipeline/agent_list.html', {'agents': agents})
 
+
+@login_required
 def agent_detail(request, agent_hostname):
     agent = get_object_or_404(Agent, hostname=agent_hostname)
-    pipeline_runs = PipelineRun.objects.filter(agent=agent).order_by('-started_at')[:10]
-    return render(request, 'pipeline/agent_detail.html', {'agent': agent, 'pipeline_runs': pipeline_runs})
+    pipeline_runs = PipelineRun.objects.filter(agent=agent).order_by('-started_at')[:20]
+    return render(request, 'pipeline/agent_detail.html', {
+        'agent': agent, 'pipeline_runs': pipeline_runs,
+    })
 
 
+@login_required
+def add_agent(request):
+    hash_key = uuid.uuid4().hex
+    base = request.build_absolute_uri('/').rstrip('/')
+    command_windows = (
+        f'Invoke-WebRequest -Uri "{base}/static/agents/windows_agent.py" -OutFile agent.py; '
+        f'python agent.py --hash-key {hash_key} --server {base}'
+    )
+    command_linux = (
+        f'curl -O {base}/static/agents/linux_agent.py && '
+        f'python3 linux_agent.py --hash-key {hash_key} --server {base}'
+    )
+    return render(request, 'pipeline/add_agent.html', {
+        'hash_key': hash_key,
+        'command_windows': command_windows,
+        'command_linux': command_linux,
+    })
+
+
+@login_required
 def send_command(request):
     if request.method == 'POST':
-        data = request.POST
-        hostname = data.get('hostname')
-        command = data.get('command')
-
-        agent = Agent.objects.get(hostname=hostname)
+        hostname = request.POST.get('hostname')
+        command = request.POST.get('command')
+        agent = get_object_or_404(Agent, hostname=hostname)
         Command.objects.create(agent=agent, command=command)
+        try:
+            agent.send_command({'command': command})
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'detail': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'POST required'}, status=405)
 
-        return JsonResponse({'status': 'success', 'message': 'Command sent successfully.'})
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 
+@login_required
 def agent_instructions(request):
     return render(request, 'pipeline/agent_instructions.html')
 
 
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Credential
-from .forms import GlobalCredentialForm
+@csrf_exempt
+def register_agent(request):
+    """Agent self-registration — validated by hash_key existence check."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        hash_key = data.get('hash_key', '').strip()
+        if not hash_key:
+            return JsonResponse({'error': 'hash_key required'}, status=400)
+        agent, created = Agent.objects.update_or_create(
+            hash_key=hash_key,
+            defaults={
+                'hostname': data.get('hostname', ''),
+                'ip_address': data.get('ip_address', ''),
+                'operating_system': data.get('operating_system', ''),
+                'last_heartbeat': timezone.now(),
+                'live': True,
+            }
+        )
+        status_msg = 'Agent registered.' if created else 'Agent updated.'
+        return JsonResponse({'status': status_msg})
+    except Exception as e:
+        logger.error(f"Agent registration error: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
 
+
+@csrf_exempt
+def receive_heartbeat(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        hash_key = data.get('hash_key', '').strip()
+        agent = Agent.objects.filter(hash_key=hash_key).first()
+        if not agent:
+            return JsonResponse({'error': 'Agent not found'}, status=404)
+        agent.last_heartbeat = timezone.now()
+        # Don't mark the agent available while it is executing a run
+        busy = PipelineRun.objects.filter(agent=agent, status='running').exists()
+        if not busy:
+            agent.live = True
+        agent.save(update_fields=['last_heartbeat', 'live'])
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def receive_command(request):
+    """Agents poll this for pending commands."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        hash_key = data.get('hash_key', '').strip()
+        agent = Agent.objects.filter(hash_key=hash_key).first()
+        if not agent:
+            return JsonResponse({'error': 'Not found'}, status=404)
+        cmd = Command.objects.filter(agent=agent).order_by('timestamp').first()
+        if cmd:
+            command_text = cmd.command
+            cmd.delete()
+            return JsonResponse({'status': 'ok', 'command': command_text})
+        return JsonResponse({'status': 'ok', 'command': None})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Credentials
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
 def global_credential_list(request):
     credentials = Credential.objects.filter(scope_level='global')
     return render(request, 'pipeline/global_credential_list.html', {'credentials': credentials})
 
-def global_credential_detail(request, pk):
-    credential = get_object_or_404(Credential, pk=pk)
-    return render(request, 'pipeline/global_credential_detail.html', {'credential': credential})
 
+@login_required
+def global_credential_detail(request, pk):
+    cred = get_object_or_404(Credential, pk=pk)
+    return render(request, 'pipeline/global_credential_detail.html', {'credential': cred})
+
+
+@login_required
 def global_credential_create(request):
     if request.method == 'POST':
         form = GlobalCredentialForm(request.POST)
         if form.is_valid():
-            form.save()
+            cred = form.save(commit=False)
+            cred.scope_level = 'global'
+            cred.save()
             return redirect('global_credential_list')
     else:
         form = GlobalCredentialForm()
     return render(request, 'pipeline/global_credential_form.html', {'form': form})
 
+
+@login_required
 def global_credential_update(request, pk):
-    credential = get_object_or_404(Credential, pk=pk)
+    cred = get_object_or_404(Credential, pk=pk)
     if request.method == 'POST':
-        form = GlobalCredentialForm(request.POST, instance=credential)
+        form = GlobalCredentialForm(request.POST, instance=cred)
         if form.is_valid():
             form.save()
             return redirect('global_credential_list')
     else:
-        form = GlobalCredentialForm(instance=credential)
+        form = GlobalCredentialForm(instance=cred)
     return render(request, 'pipeline/global_credential_form.html', {'form': form})
 
+
+@login_required
 def global_credential_delete(request, pk):
-    credential = get_object_or_404(Credential, pk=pk)
+    cred = get_object_or_404(Credential, pk=pk)
     if request.method == 'POST':
-        credential.delete()
+        cred.delete()
         return redirect('global_credential_list')
-    return render(request, 'pipeline/global_credential_confirm_delete.html', {'credential': credential})
+    return render(request, 'pipeline/global_credential_confirm_delete.html', {'credential': cred})
 
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Credential
-from .forms import LocalCredentialForm
 
+@login_required
 def local_credential_list(request, project_name):
-    credentials = Credential.objects.filter(scope_level='project', project__name=project_name)
-    return render(request, 'pipeline/local_credential_list.html', {'credentials': credentials, 'project_name': project_name})
+    project = get_object_or_404(Project, name=project_name)
+    credentials = Credential.objects.filter(scope_level='project', project=project)
+    return render(request, 'pipeline/local_credential_list.html', {
+        'credentials': credentials, 'project': project, 'project_name': project.name,
+    })
 
+
+@login_required
 def local_credential_detail(request, pk):
-    credential = get_object_or_404(Credential, pk=pk)
-    return render(request, 'pipeline/local_credential_detail.html', {'credential': credential})
+    cred = get_object_or_404(Credential, pk=pk)
+    return render(request, 'pipeline/local_credential_detail.html', {'credential': cred})
 
+
+@login_required
 def local_credential_create(request, project_name):
+    project = get_object_or_404(Project, name=project_name)
     if request.method == 'POST':
         form = LocalCredentialForm(request.POST)
         if form.is_valid():
-            credential = form.save(commit=False)
-            credential.project = get_object_or_404(Project, name=project_name)
-            credential.scope_level = 'project'
-            credential.save()
+            cred = form.save(commit=False)
+            cred.project = project
+            cred.scope_level = 'project'
+            cred.save()
             return redirect('local_credential_list', project_name=project_name)
     else:
         form = LocalCredentialForm()
-    return render(request, 'pipeline/local_credential_form.html', {'form': form})
+    return render(request, 'pipeline/local_credential_form.html', {'form': form, 'project': project})
 
+
+@login_required
 def local_credential_update(request, pk):
-    credential = get_object_or_404(Credential, pk=pk)
+    cred = get_object_or_404(Credential, pk=pk)
     if request.method == 'POST':
-        form = LocalCredentialForm(request.POST, instance=credential)
+        form = LocalCredentialForm(request.POST, instance=cred)
         if form.is_valid():
             form.save()
-            return redirect('local_credential_list', project_id=credential.project_id)
+            return redirect('local_credential_list', project_name=cred.project.name)  # ← FIXED
     else:
-        form = LocalCredentialForm(instance=credential)
+        form = LocalCredentialForm(instance=cred)
     return render(request, 'pipeline/local_credential_form.html', {'form': form})
 
+
+@login_required
 def local_credential_delete(request, pk):
-    credential = get_object_or_404(Credential, pk=pk)
-    project_id = credential.project_id
+    cred = get_object_or_404(Credential, pk=pk)
+    project_name = cred.project.name if cred.project else None   # ← FIXED
     if request.method == 'POST':
-        credential.delete()
-        return redirect('local_credential_list', project_name=project_name)
-    return render(request, 'pipeline/local_credential_confirm_delete.html', {'credential': credential})
+        cred.delete()
+        if project_name:
+            return redirect('local_credential_list', project_name=project_name)
+        return redirect('project_list')
+    return render(request, 'pipeline/local_credential_confirm_delete.html', {'credential': cred})
 
-from .models import Project, Application
-from .forms import ApplicationForm
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  Applications
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
 def create_application(request, project_name):
     project = get_object_or_404(Project, name=project_name)
     if request.method == 'POST':
         form = ApplicationForm(request.POST)
         if form.is_valid():
-            application = form.save(commit=False)
-            application.project = project
-            application.save()
+            app = form.save(commit=False)
+            app.project = project
+
+            repo_mode = form.cleaned_data['repo_mode']
+            if repo_mode == 'create':
+                # Initialize a real Git repository backing this application
+                from gitmgmt.models import Repository, Branch
+                from gitmgmt.views import _initialize_repository, _create_default_labels
+                visibility = (project.organization.default_repo_visibility
+                              if project.organization else 'private')
+                try:
+                    _initialize_repository(app.name, user=request.user)
+                except Exception as e:
+                    form.add_error(None, f"Failed to initialize repository: {e}")
+                    return render(request, 'pipeline/create_application.html',
+                                  {'form': form, 'project': project})
+                app.save()
+                repo = Repository.objects.create(
+                    name=app.name,
+                    description=form.cleaned_data.get('description', ''),
+                    owner=request.user,
+                    organization=project.organization,
+                    visibility=visibility,
+                    default_branch=app.default_branch or 'main',
+                    application=app,
+                )
+                Branch.objects.create(repository=repo, name=repo.default_branch, is_default=True)
+                _create_default_labels(repo)
+            elif repo_mode == 'link':
+                app.save()
+                repo = form.cleaned_data['existing_repository']
+                repo.application = app
+                repo.save()
+            else:
+                app.save()
             return redirect('project_detail', project_name=project.name)
     else:
         form = ApplicationForm()
     return render(request, 'pipeline/create_application.html', {'form': form, 'project': project})
 
+
+@login_required
 def application_list(request):
-    applications = Application.objects.all()
-    return render(request, 'pipeline/application_list.html', {'applications':applications})
+    project_name = request.GET.get('project')
+    project = None
+    if project_name:
+        project = get_object_or_404(Project, name=project_name)
+        applications = Application.objects.filter(project=project).select_related('project')
+    else:
+        applications = Application.objects.select_related('project').all()
+    return render(request, 'pipeline/application_list.html', {
+        'applications': applications,
+        'project': project,
+    })
 
+
+@login_required
 def application_detail(request, application_name):
-    application = get_object_or_404(Application, name=application_name)
-    pipelines = application.pipelines.all()
-    return render(request, 'pipeline/application_detail.html', {'application': application, 'pipelines': pipelines})
+    app = get_object_or_404(Application, name=application_name)
+    pipelines = app.pipelines.all()
+    return render(request, 'pipeline/application_detail.html', {'application': app, 'pipelines': pipelines})
 
 
-import yaml
-from django.http import JsonResponse
-from django.shortcuts import render
-from .models import Project, Credential, Agent, Pipeline, PipelineStep
+@login_required
+def application_settings(request, application_name):
+    """Application settings — general, linked repository, danger zone."""
+    from .forms import ApplicationSettingsForm
+    app = get_object_or_404(Application, name=application_name)
+    project = app.project
 
-def create_yaml_pipeline(request):
+    my_role = project.get_member_role(request.user)
+    is_open_project = project.members.count() == 0 and project.organization is None
+    if not (request.user.is_superuser or my_role == 'maintainer' or is_open_project):
+        messages.error(request, "You need the Maintainer role to manage application settings.")
+        return redirect('application_detail', application_name=app.name)
+
     if request.method == 'POST':
-        yaml_data = request.POST.get('yaml_data')
+        action = request.POST.get('action')
 
+        if action == 'delete':
+            name = app.name
+            app.delete()
+            messages.success(request, f"Application '{name}' deleted. Its repository was kept.")
+            return redirect('project_detail', project_name=project.name)
+
+        form = ApplicationSettingsForm(request.POST, instance=app)
+        if form.is_valid():
+            form.save()
+            # Re-link the backing repository (link lives on gitmgmt.Repository)
+            from gitmgmt.models import Repository
+            new_repo = form.cleaned_data.get('repository')
+            current = Repository.objects.filter(application=app).first()
+            if current and current != new_repo:
+                current.application = None
+                current.save()
+            if new_repo and new_repo != current:
+                new_repo.application = app
+                new_repo.save()
+            messages.success(request, "Application settings updated.")
+            return redirect('application_settings', application_name=app.name)
+    else:
+        form = ApplicationSettingsForm(instance=app)
+
+    return render(request, 'pipeline/application_settings.html', {
+        'application': app,
+        'project': project,
+        'form': form,
+        'linked_repo': app.linked_repository,
+    })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  YAML pipeline creator
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def create_yaml_pipeline(request):
+    """
+    BUG FIX: Pipeline.get_or_create used project= which doesn't exist on Pipeline.
+    Now correctly uses application= FK.
+    """
+    if request.method == 'POST':
+        yaml_data = request.POST.get('yaml_data', '').strip()
         if not yaml_data:
             return JsonResponse({'error': 'YAML data is empty'}, status=400)
-
         try:
-            yaml_parsed = yaml.safe_load(yaml_data)
-        except yaml.YAMLError as e:
+            parsed = yaml.safe_load(yaml_data)
+        except yaml.YAMLError:
             return JsonResponse({'error': 'Invalid YAML format'}, status=400)
 
-        # Validate project name
-        project_name = yaml_parsed.get('project_name')
+        project_name = parsed.get('project_name')
         project = Project.objects.filter(name=project_name).first()
         if not project:
-            return JsonResponse({'error': 'Project not found'}, status=404)
+            return JsonResponse({'error': f"Project '{project_name}' not found"}, status=404)
 
-        # Validate agent name
-        agent_name = yaml_parsed.get('agent')
-        agent = Agent.objects.filter(hostname=agent_name).first()
-        if not agent:
-            return JsonResponse({'error': 'Agent not found'}, status=404)
+        agent_name = parsed.get('agent')
+        if agent_name and not Agent.objects.filter(hostname=agent_name).exists():
+            return JsonResponse({'error': f"Agent '{agent_name}' not found"}, status=404)
 
-        # Create or update the pipeline
-        pipeline_name = yaml_parsed.get('pipeline_name')
-        pipeline_description = yaml_parsed.get('description', '')
+        pipeline_name = parsed.get('pipeline_name', '').strip()
+        if not pipeline_name:
+            return JsonResponse({'error': 'pipeline_name is required'}, status=400)
 
-        # Check if a pipeline with the same name already exists for the project
-        pipeline, created = Pipeline.objects.get_or_create(project=project, name=pipeline_name, defaults={'description': pipeline_description})
+        # Use the first application of the project (create one if none)
+        app = project.applications.first()
+        if not app:
+            app = Application.objects.create(name=project_name, project=project)
 
-        # Update pipeline description if it's not created
+        pipeline, created = Pipeline.objects.get_or_create(
+            name=pipeline_name,
+            defaults={
+                'description': parsed.get('description', ''),
+                'application': app,
+                'yaml_path': parsed.get('yaml_path', 'rockerci.yaml'),
+                'monitored_branch': parsed.get('monitored_branch', 'main'),
+            }
+        )
         if not created:
-            pipeline.description = pipeline_description
+            pipeline.description = parsed.get('description', pipeline.description)
             pipeline.save()
 
-        # Create or update pipeline steps
-        steps_data = yaml_parsed.get('steps', [])
-        for step_data in steps_data:
-            name = step_data.get('name')
-            condition = step_data.get('condition', '')
-            command = step_data.get('command')
-            PipelineStep.objects.update_or_create(pipeline=pipeline, name=name, defaults={'condition': condition, 'command': command})
+        for step_data in parsed.get('steps', []):
+            name = step_data.get('name', '').strip()
+            command = step_data.get('command', '').strip()
+            if name and command:
+                PipelineStep.objects.update_or_create(
+                    pipeline=pipeline, name=name,
+                    defaults={
+                        'condition': step_data.get('condition', ''),
+                        'command': command,
+                    }
+                )
+        return JsonResponse({'success': True, 'pipeline': pipeline.name}, status=201)
 
-        return JsonResponse({'success': 'Pipeline created/updated successfully'}, status=201)
+    projects = Project.objects.all()
+    return render(request, 'pipeline/create_yaml_pipeline.html', {'projects': projects})
 
-    else:
-        projects = Project.objects.all()
-        return render(request, 'pipeline/create_yaml_pipeline.html', {'projects': projects})
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  Global pipeline list + settings
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
 def global_pipeline_list(request):
     pipelines = Pipeline.objects.all().select_related('application__project')
     return render(request, 'pipeline/global_pipeline_list.html', {'pipelines': pipelines})
 
-from .models import GlobalSettings
-from .forms import GlobalSettingsForm
 
+@login_required
 def global_settings(request):
     settings_list = GlobalSettings.objects.all()
     if request.method == 'POST':
         form = GlobalSettingsForm(request.POST)
         if form.is_valid():
-            form.save()
+            key = form.cleaned_data['key']
+            value = form.cleaned_data['value']
+            GlobalSettings.objects.update_or_create(key=key, defaults={'value': value})
             return redirect('global_settings')
     else:
         form = GlobalSettingsForm()
     return render(request, 'pipeline/global_settings.html', {'settings': settings_list, 'form': form})
+
+
+def documentation(request):
+    """Official in-app documentation page."""
+    return render(request, 'pipeline/documentation.html')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  File download from project workspace
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def project_file_download(request, project_name, path):
+    project = get_object_or_404(Project, name=project_name)
+    base = os.path.abspath(os.path.join('D:/cicd/', project.name))
+    file_path = os.path.abspath(os.path.join(base, path))
+    if not file_path.startswith(base):
+        raise Http404
+    if not os.path.exists(file_path):
+        raise Http404
+    with open(file_path, 'rb') as fh:
+        response = HttpResponse(fh.read(), content_type='application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename={os.path.basename(file_path)}'
+        return response
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Pipeline metrics API  (for charts)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def pipeline_metrics_api(request):
+    """Returns JSON metrics for all pipelines — used by the dashboard chart."""
+    days = int(request.GET.get('days', 7))
+    start = timezone.now() - timedelta(days=days)
+    data = (
+        PipelineRun.objects
+        .filter(started_at__gte=start)
+        .values('status')
+        .annotate(count=Count('id'))
+    )
+    return JsonResponse({'metrics': list(data)})

@@ -1,40 +1,258 @@
-
+{% extends 'pipeline/base.html' %}
 
 {% block content %}
-<h2>{{ pull_request.title }}</h2>
-<p>Status: {{ pull_request.get_status_display }}</p>
-<p>From: {{ pull_request.source_branch.name }} to {{ pull_request.target_branch.name }}</p>
-<p>Created by: {{ pull_request.created_by.username }} on {{ pull_request.created_at }}</p>
+<style>
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.5rem;
+    color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 1.5rem;
+  }
+  .breadcrumb a { color: var(--accent-color); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
 
-{% if pull_request.status == 'open' %}
-    <form method="post" action="{% url 'merge_pull_request' pull_request.id %}">
-        {% csrf_token %}
-        <button type="submit">Merge Pull Request</button>
-    </form>
-    <form method="post" action="{% url 'close_pull_request' pull_request.id %}">
-        {% csrf_token %}
-        <button type="submit">Close Pull Request</button>
-    </form>
-{% endif %}
+  .pr-header { margin-bottom: 1.5rem; }
+  .pr-title {
+    font-size: 1.4rem; font-weight: 600; color: var(--text-primary);
+    display: flex; align-items: flex-start; gap: 0.6rem; margin: 0 0 0.6rem;
+    flex-wrap: wrap;
+  }
+  .pr-number { color: var(--text-secondary); font-weight: 400; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.2rem 0.7rem; border-radius: 20px;
+    font-size: 0.78rem; font-weight: 600; text-transform: capitalize;
+    white-space: nowrap; margin-top: 0.15rem;
+  }
+  .status-open     { background:rgba(63,185,80,0.15); color:#3fb950; border:1px solid rgba(63,185,80,0.3); }
+  .status-closed   { background:rgba(248,81,73,0.15); color:#f85149; border:1px solid rgba(248,81,73,0.3); }
+  .status-merged   { background:rgba(163,113,247,0.15); color:#a371f7; border:1px solid rgba(163,113,247,0.3); }
+  .pr-meta { font-size: 0.83rem; color: var(--text-secondary); display:flex; gap:1rem; flex-wrap:wrap; }
+  .branch-tag {
+    font-family: ui-monospace, monospace; font-size: 0.78rem;
+    background: var(--darker-bg); border: 1px solid var(--border-color);
+    padding: 0.1rem 0.5rem; border-radius: 4px; color: #a371f7;
+  }
 
-<h3>Description</h3>
-<p>{{ pull_request.description }}</p>
+  .pr-layout { display: grid; grid-template-columns: 1fr 260px; gap: 1.5rem; align-items: start; }
+  .pcard {
+    background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 10px; padding: 1.5rem; margin-bottom: 1.25rem;
+  }
+  .pcard:last-child { margin-bottom: 0; }
+  .pcard h3 {
+    font-size: 0.95rem; font-weight: 600; color: var(--text-primary);
+    margin: 0 0 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .diff-block {
+    background: #0d1117; border: 1px solid var(--border-color);
+    border-radius: 6px; overflow: auto; max-height: 500px;
+  }
+  .diff-block pre {
+    margin: 0; padding: 1rem; font-family: ui-monospace, monospace;
+    font-size: 0.78rem; line-height: 1.7; color: #c9d1d9;
+    white-space: pre; min-width: max-content;
+  }
+  .diff-add { color: #7ee787; background: rgba(63,185,80,0.08); display: block; }
+  .diff-del { color: #f85149; background: rgba(248,81,73,0.08); display: block; }
+  .diff-hdr { color: #79c0ff; display: block; }
 
-<h3>Diff</h3>
-<pre><code>{{ diff }}</code></pre>
+  .comment-item { padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
+  .comment-item:last-child { border-bottom: none; }
+  .comment-author { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+  .comment-author strong { color: var(--text-primary); }
+  .comment-body { font-size: 0.88rem; color: var(--text-primary); line-height: 1.55; }
 
-<h3>Comments</h3>
-{% for comment in comments %}
-    <div>
-        <p>{{ comment.user.username }} - {{ comment.created_at }}</p>
-        <p>{{ comment.content }}</p>
+  .form-row { margin-bottom: 0.75rem; }
+  .form-row textarea {
+    width: 100%; background: var(--dark-bg);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    color: var(--text-primary); padding: 0.5rem 0.75rem;
+    font-size: 0.85rem; font-family: inherit; box-sizing: border-box;
+    outline: none; resize: vertical; min-height: 80px; transition: border-color 0.2s;
+  }
+  .form-row textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(47,129,247,0.15); }
+
+  .action-bar { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.82rem;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    transition: all 0.2s; border: 1px solid transparent; text-decoration: none;
+  }
+  .btn-merge  { background:#238636; color:#fff; border-color:#2ea043; }
+  .btn-merge:hover { background:#2ea043; }
+  .btn-close  { background:transparent; color:#f85149; border-color:rgba(248,81,73,0.4); }
+  .btn-close:hover { background:rgba(248,81,73,0.1); }
+  .btn-reopen { background:transparent; color:#3fb950; border-color:rgba(63,185,80,0.4); }
+  .btn-reopen:hover { background:rgba(63,185,80,0.1); }
+  .btn-comment { background:var(--accent-color); color:#fff; }
+  .btn-comment:hover { background:#1f6feb; }
+  .btn-back { background:transparent; color:var(--text-secondary); border-color:var(--border-color); }
+  .btn-back:hover { background:rgba(255,255,255,0.05); color:var(--text-primary); }
+
+  .sidebar-section { margin-bottom: 1rem; }
+  .sidebar-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 0.4rem; }
+</style>
+
+<div class="breadcrumb">
+  <a href="{% url 'repository_list' %}">Repositories</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'repository_detail' repository_id=pull_request.repository.name %}">{{ pull_request.repository.name }}</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'pull_request_list' pull_request.repository.name %}">Pull Requests</a>
+  <i class="ph ph-caret-right"></i>
+  <span>#{{ pull_request.number|default:pull_request.id }}</span>
+</div>
+
+<!-- PR Header -->
+<div class="pr-header">
+  <h1 class="pr-title">
+    {{ pull_request.title }}
+    <span class="pr-number">#{{ pull_request.number|default:pull_request.id }}</span>
+    <span class="status-badge status-{{ pull_request.status }}">
+      {% if pull_request.status == 'open' %}<i class="ph ph-git-pull-request"></i>
+      {% elif pull_request.status == 'merged' %}<i class="ph ph-git-merge"></i>
+      {% else %}<i class="ph ph-git-pull-request-draft"></i>{% endif %}
+      {{ pull_request.status }}
+    </span>
+  </h1>
+  <div class="pr-meta">
+    <span><i class="ph ph-user"></i> {{ pull_request.author.username|default:pull_request.created_by.username }}</span>
+    <span><i class="ph ph-clock"></i> {{ pull_request.created_at|date:"M d, Y" }}</span>
+    <span>
+      <span class="branch-tag">{{ pull_request.source_branch.name }}</span>
+      <i class="ph ph-arrow-right" style="margin:0 0.25rem;"></i>
+      <span class="branch-tag">{{ pull_request.target_branch.name }}</span>
+    </span>
+  </div>
+</div>
+
+<div class="pr-layout">
+  <!-- Main Column -->
+  <div>
+    <!-- Description -->
+    {% if pull_request.description %}
+    <div class="pcard">
+      <h3><i class="ph ph-align-left"></i> Description</h3>
+      <p style="color:var(--text-primary); font-size:0.9rem; line-height:1.6; margin:0;">{{ pull_request.description }}</p>
     </div>
-{% endfor %}
+    {% endif %}
 
-<h4>Add a comment</h4>
-<form method="post">
-    {% csrf_token %}
-    {{ comment_form.as_p }}
-    <button type="submit">Add Comment</button>
-</form>
+    <!-- Diff -->
+    {% if diff %}
+    <div class="pcard">
+      <h3><i class="ph ph-code"></i> Changes</h3>
+      <div class="diff-block">
+        <pre>{% for line in diff.splitlines %}<span class="{% if line|slice:':1' == '+' and not line|slice:':3' == '+++' %}diff-add{% elif line|slice:':1' == '-' and not line|slice:':3' == '---' %}diff-del{% elif line|slice:':2' == '@@' %}diff-hdr{% endif %}">{{ line }}
+</span>{% endfor %}</pre>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    {% if pull_request.status == 'open' %}
+    <div class="pcard">
+      <h3><i class="ph ph-git-merge"></i> Merge</h3>
+      <div class="action-bar" style="margin-bottom:0;">
+        <form method="post" action="{% url 'merge_pull_request' pull_request.id %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-merge"><i class="ph ph-git-merge"></i> Merge Pull Request</button>
+        </form>
+        <form method="post" action="{% url 'close_pull_request' pull_request.id %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-close"><i class="ph ph-x-circle"></i> Close without merging</button>
+        </form>
+      </div>
+    </div>
+    {% elif pull_request.status == 'closed' %}
+    <div class="pcard">
+      <div class="action-bar">
+        <form method="post" action="{% url 'reopen_pull_request' pull_request.id %}" style="margin:0;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-reopen"><i class="ph ph-arrow-counter-clockwise"></i> Reopen Pull Request</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Comments -->
+    <div class="pcard">
+      <h3><i class="ph ph-chat-dots"></i> Comments ({{ comments|length }})</h3>
+      {% for comment in comments %}
+      <div class="comment-item">
+        <div class="comment-author">
+          <strong>{{ comment.user.username }}</strong> &middot; {{ comment.created_at|timesince }} ago
+        </div>
+        <div class="comment-body">{{ comment.content }}</div>
+      </div>
+      {% empty %}
+      <p style="color:var(--text-secondary); font-size:0.85rem; text-align:center; padding:1rem 0; margin:0;">
+        No comments yet. Be the first to comment.
+      </p>
+      {% endfor %}
+
+      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_comment">
+          <div class="form-row">
+            {{ comment_form.content }}
+          </div>
+          <button type="submit" class="btn btn-comment">
+            <i class="ph ph-paper-plane-tilt"></i> Add Comment
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div>
+    <div class="pcard" style="padding: 1.25rem;">
+      {% if pull_request.reviewers.exists %}
+      <div class="sidebar-section">
+        <div class="sidebar-label">Reviewers</div>
+        {% for reviewer in pull_request.reviewers.all %}
+        <div style="font-size:0.85rem; color:var(--text-primary); padding:0.2rem 0;">@{{ reviewer.username }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if pull_request.assignees.exists %}
+      <div class="sidebar-section">
+        <div class="sidebar-label">Assignees</div>
+        {% for user in pull_request.assignees.all %}
+        <div style="font-size:0.85rem; color:var(--text-primary); padding:0.2rem 0;">@{{ user.username }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if pull_request.labels.exists %}
+      <div class="sidebar-section">
+        <div class="sidebar-label">Labels</div>
+        <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.3rem;">
+          {% for label in pull_request.labels.all %}
+          <span style="background:{{ label.color }}22; color:{{ label.color }}; border:1px solid {{ label.color }}44; border-radius:20px; padding:0.15rem 0.55rem; font-size:0.75rem; font-weight:500;">
+            {{ label.name }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if pull_request.milestone %}
+      <div class="sidebar-section">
+        <div class="sidebar-label">Milestone</div>
+        <div style="font-size:0.85rem; color:var(--text-primary);">{{ pull_request.milestone.title }}</div>
+      </div>
+      {% endif %}
+
+      <div class="sidebar-section" style="border-top:1px solid var(--border-color); padding-top:1rem; margin-top:0.5rem;">
+        <a href="{% url 'pull_request_list' pull_request.repository.name %}" class="btn btn-back" style="width:100%; justify-content:center;">
+          <i class="ph ph-arrow-left"></i> All Pull Requests
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

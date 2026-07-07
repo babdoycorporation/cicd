@@ -52,72 +52,6 @@
             flex-direction: column;
         }
 
-        .sidebar-footer {
-            margin-top: auto;
-            padding: 1rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-color), #b892ff);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: white;
-            flex-shrink: 0;
-            text-transform: uppercase;
-        }
-
-        .user-info {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            flex-grow: 1;
-        }
-
-        .user-name {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .user-role {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .logout-btn {
-            color: var(--text-secondary);
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.25rem;
-            display: flex;
-            transition: var(--transition);
-        }
-
-        .logout-btn:hover {
-            color: var(--danger-color);
-        }
-
-        .sidebar.collapsed .sidebar-footer {
-            flex-direction: column;
-            padding: 1rem 0;
-        }
-        
-        .sidebar.collapsed .user-info, .sidebar.collapsed .logout-btn {
-            display: none;
-        }
 
         .sidebar.collapsed {
             width: var(--sidebar-collapsed-width);
@@ -201,11 +135,122 @@
             background-color: var(--dark-bg);
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 0 2rem;
             position: sticky;
             top: 0;
             z-index: 999;
         }
+
+        /* User dropdown in topbar */
+        .topbar-user {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .topbar-user-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            background: none;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            padding: 0.35rem 0.6rem;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .topbar-user-btn:hover {
+            background: var(--card-bg);
+            border-color: var(--border-color);
+        }
+
+        .topbar-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-color), #b892ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #fff;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .topbar-chevron {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            transition: transform 0.2s;
+        }
+
+        .topbar-user-btn[aria-expanded="true"] .topbar-chevron {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 200px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            overflow: hidden;
+            z-index: 1100;
+        }
+
+        .user-dropdown.open { display: block; }
+
+        .dropdown-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .dropdown-header strong {
+            display: block;
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            margin-bottom: 0.1rem;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: background 0.12s, color 0.12s;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+        }
+
+        .dropdown-item i { font-size: 1rem; width: 16px; text-align: center; }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 0.25rem 0;
+        }
+
+        .dropdown-item.danger { color: var(--danger-color); }
+        .dropdown-item.danger:hover { background: rgba(248,81,73,0.08); color: var(--danger-color); }
 
         .sidebar-toggler {
             border: none;
@@ -288,6 +333,10 @@
                     <i class="ph ph-rocket-launch icon"></i>
                     <span class="text">Pipelines</span>
                 </a>
+                <a href="{% url 'application_list' %}?project={{ project.name }}">
+                    <i class="ph ph-cube icon"></i>
+                    <span class="text">Applications</span>
+                </a>
                 <a href="#">
                     <i class="ph ph-cloud-check icon"></i>
                     <span class="text">Environments</span>
@@ -305,6 +354,10 @@
                     <i class="ph ph-buildings icon"></i>
                     <span class="text">Organizations</span>
                 </a>
+                <a href="{% url 'application_list' %}">
+                    <i class="ph ph-cube icon"></i>
+                    <span class="text">Applications</span>
+                </a>
                 <a href="{% url 'agent_list' %}">
                     <i class="ph ph-users icon"></i>
                     <span class="text">Agents</span>
@@ -319,18 +372,13 @@
                 </a>
             {% endif %}
         </div>
-        <div class="sidebar-footer">
-            <div class="user-avatar">
-                {{ request.user.username|make_list|first|default:"U" }}
-            </div>
-            <div class="user-info">
-                <span class="user-name">{{ request.user.username|default:"Guest" }}</span>
-                <span class="user-role">{% if request.user.is_superuser %}Admin{% else %}Developer{% endif %}</span>
-            </div>
-            <a href="{% url 'logout' %}" class="logout-btn" title="Logout">
-                <i class="ph ph-sign-out" style="font-size: 1.2rem;"></i>
-            </a>
-        </div>
+        <a href="{% url 'documentation' %}" class="nav-link" title="Documentation"
+           style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 1.25rem; color:var(--text-secondary); text-decoration:none; font-size:0.875rem; transition:color 0.15s, background 0.15s; border-radius:0; margin-bottom:0.25rem;"
+           onmouseover="this.style.color='var(--text-primary)'; this.style.background='rgba(255,255,255,0.04)'"
+           onmouseout="this.style.color='var(--text-secondary)'; this.style.background=''">
+            <i class="ph ph-book-open icon"></i>
+            <span class="text">Documentation</span>
+        </a>
     </div>
 
     <!-- Main Wrapper -->
@@ -339,6 +387,39 @@
             <button class="sidebar-toggler" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
                 <i class="ph ph-list"></i>
             </button>
+
+            <!-- User dropdown -->
+            <div class="topbar-user" id="topbarUser">
+                <button class="topbar-user-btn" onclick="toggleUserDropdown()" aria-expanded="false" id="userDropdownBtn">
+                    <div class="topbar-avatar">{{ request.user.username|make_list|first|default:"U" }}</div>
+                    <span>{{ request.user.username|default:"Guest" }}</span>
+                    <i class="ph ph-caret-down topbar-chevron"></i>
+                </button>
+
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-header">
+                        <strong>{{ request.user.username }}</strong>
+                        {% if request.user.is_superuser %}Admin{% else %}Developer{% endif %}
+                    </div>
+                    <a href="{% url 'profile' %}" class="dropdown-item">
+                        <i class="ph ph-user-circle"></i> My Profile
+                    </a>
+                    <a href="{% url 'repository_list' %}" class="dropdown-item">
+                        <i class="ph ph-git-branch"></i> My Repositories
+                    </a>
+                    <a href="{% url 'activity_feed' %}" class="dropdown-item">
+                        <i class="ph ph-activity"></i> Activity
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'global_settings' %}" class="dropdown-item">
+                        <i class="ph ph-gear"></i> Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'logout' %}" class="dropdown-item danger">
+                        <i class="ph ph-sign-out"></i> Sign Out
+                    </a>
+                </div>
+            </div>
         </header>
 
         <main class="content">
@@ -350,7 +431,6 @@
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const wrapper = document.getElementById('mainWrapper');
-            
             if (window.innerWidth <= 768) {
                 sidebar.classList.toggle('show');
             } else {
@@ -358,6 +438,22 @@
                 wrapper.classList.toggle('collapsed');
             }
         }
+
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('userDropdown');
+            const btn = document.getElementById('userDropdownBtn');
+            const isOpen = dropdown.classList.toggle('open');
+            btn.setAttribute('aria-expanded', isOpen);
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+            const container = document.getElementById('topbarUser');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('userDropdown').classList.remove('open');
+                document.getElementById('userDropdownBtn').setAttribute('aria-expanded', 'false');
+            }
+        });
     </script>
 </body>
 </html>

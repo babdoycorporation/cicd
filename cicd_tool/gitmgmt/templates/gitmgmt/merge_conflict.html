@@ -1,9 +1,42 @@
-
+{% extends 'pipeline/base.html' %}
 
 {% block content %}
-<h2>Merge Conflict</h2>
-<p>There was a merge conflict when trying to merge the pull request:</p>
-<pre><code>{{ error }}</code></pre>
-<p>Please resolve the conflicts manually and try again.</p>
-<a href="{% url 'pull_request_detail' pull_request.id %}">Back to Pull Request</a>
+<style>
+  .conflict-card {
+    background: var(--card-bg); border: 1px solid rgba(248,81,73,0.4);
+    border-radius: 10px; padding: 2rem; max-width: 680px; margin: 0 auto;
+  }
+  .conflict-title {
+    font-size: 1.2rem; font-weight: 600;
+    display: flex; align-items: center; gap: 0.5rem;
+    color: #f85149; margin: 0 0 1rem;
+  }
+  .conflict-body { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.25rem; }
+  pre {
+    background: #0d1117; border: 1px solid var(--border-color);
+    border-radius: 6px; padding: 1rem; color: #f85149;
+    font-family: ui-monospace, monospace; font-size: 0.82rem;
+    overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+    margin-bottom: 1.5rem;
+  }
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    color: var(--text-secondary); text-decoration: none;
+    border: 1px solid var(--border-color); border-radius: 6px;
+    padding: 0.45rem 1rem; font-size: 0.85rem; transition: all 0.2s;
+  }
+  .btn-back:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+</style>
+
+<div class="conflict-card">
+  <h2 class="conflict-title"><i class="ph ph-warning-octagon"></i> Merge Conflict</h2>
+  <p class="conflict-body">
+    There was a merge conflict when trying to merge this pull request.
+    Please resolve the conflicts manually in your local clone and push the resolved changes.
+  </p>
+  <pre>{{ error }}</pre>
+  <a href="{% url 'pull_request_detail' pull_request.id %}" class="btn-back">
+    <i class="ph ph-arrow-left"></i> Back to Pull Request
+  </a>
+</div>
 {% endblock %}

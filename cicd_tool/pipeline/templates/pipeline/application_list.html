@@ -21,43 +21,45 @@
     .page-title i { color: var(--accent-color); }
     .app-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1.25rem;
     }
     .app-card {
         background-color: var(--card-bg);
         border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 2rem 1.5rem;
-        transition: var(--transition);
+        border-radius: 10px;
+        padding: 1.5rem 1.25rem;
+        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
         text-decoration: none;
+        cursor: pointer;
     }
     .app-card:hover {
         border-color: var(--accent-color);
-        transform: translateY(-4px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     }
     .app-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 12px;
-        background-color: rgba(47, 129, 247, 0.1);
-        color: var(--accent-color);
+        width: 60px;
+        height: 60px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.75rem;
-        margin-bottom: 1rem;
+        font-size: 1.9rem;
+        margin-bottom: 0.9rem;
+        flex-shrink: 0;
+        color: white;
     }
     .app-name {
-        font-size: 1.1rem;
+        font-size: 0.95rem;
         font-weight: 600;
         color: var(--text-primary);
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.4rem;
+        word-break: break-word;
     }
     .empty-state {
         text-align: center;
@@ -67,31 +69,121 @@
         border-radius: 8px;
         color: var(--text-secondary);
     }
+    .project-tag {
+        font-size: 0.75rem;
+        background: rgba(47,129,247,0.12);
+        color: var(--accent-color);
+        border: 1px solid rgba(47,129,247,0.25);
+        padding: 0.15rem 0.55rem;
+        border-radius: 20px;
+        margin-bottom: 0.5rem;
+    }
+    .btn-primary {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        background: #238636; color: #fff; border: 1px solid #2ea043;
+        border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem;
+        font-weight: 500; cursor: pointer; text-decoration: none; transition: background 0.2s;
+    }
+    .btn-primary:hover { background: #2ea043; }
 </style>
 
 <div>
     <div class="page-header">
-        <h1 class="page-title"><i class="ph ph-cube"></i> Applications</h1>
+        <h1 class="page-title">
+            <i class="ph ph-cube"></i>
+            {% if project %}
+                Applications — {{ project.name }}
+            {% else %}
+                All Applications
+            {% endif %}
+        </h1>
+        {% if project %}
+        <a href="{% url 'create_application' project_name=project.name %}" class="btn-primary">
+            <i class="ph ph-plus"></i> New Application
+        </a>
+        {% endif %}
     </div>
+
+    {% if project %}
+    <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.5rem;">
+        <a href="{% url 'project_list' %}" style="color:var(--accent-color); text-decoration:none;">Projects</a>
+        <i class="ph ph-caret-right"></i>
+        <a href="{% url 'project_detail' project.name %}" style="color:var(--accent-color); text-decoration:none;">{{ project.name }}</a>
+        <i class="ph ph-caret-right"></i>
+        <span>Applications</span>
+    </div>
+    {% endif %}
 
     {% if applications %}
     <div class="app-grid">
         {% for application in applications %}
         <a href="{% url 'application_detail' application.name %}" class="app-card">
-            <div class="app-icon"><i class="ph ph-layers"></i></div>
+            <div class="app-icon" data-appname="{{ application.name }}"></div>
             <div class="app-name">{{ application.name }}</div>
-            <div style="font-size: 0.85rem; color: var(--text-secondary);">
-                <i class="ph ph-projector-screen"></i> {{ application.project.name }}
+            {% if not project %}
+            <div class="project-tag"><i class="ph ph-folder"></i> {{ application.project.name }}</div>
+            {% endif %}
+            <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top:0.25rem;">
+                <i class="ph ph-git-merge"></i> {{ application.pipelines.count }} pipeline{{ application.pipelines.count|pluralize }}
             </div>
         </a>
         {% endfor %}
     </div>
     {% else %}
     <div class="empty-state">
-        <i class="ph ph-package" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
-        <h3>No applications found</h3>
-        <p>There are no applications registered in this project.</p>
+        <i class="ph ph-cube" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem; display:block;"></i>
+        <h3>No applications yet</h3>
+        <p>{% if project %}Create your first application for {{ project.name }}.{% else %}No applications exist across any project.{% endif %}</p>
+        {% if project %}
+        <a href="{% url 'create_application' project_name=project.name %}" class="btn-primary" style="margin-top:1rem;">
+            <i class="ph ph-plus"></i> Create Application
+        </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
+
+<script>
+// Deterministic icon + gradient per app name — scales to any number of repos
+const ICONS = [
+  'ph-rocket-launch', 'ph-cloud', 'ph-database', 'ph-cpu',
+  'ph-code', 'ph-terminal', 'ph-globe', 'ph-shield',
+  'ph-gear-six', 'ph-lightning', 'ph-cube', 'ph-tree-structure',
+  'ph-graph', 'ph-package', 'ph-hard-drives', 'ph-wifi-high',
+  'ph-lock', 'ph-browsers', 'ph-stack', 'ph-wave-sine',
+  'ph-robot', 'ph-flask', 'ph-anchor', 'ph-fire',
+];
+const GRADIENTS = [
+  ['#2f81f7','#a371f7'],  // blue → purple
+  ['#3fb950','#2f81f7'],  // green → blue
+  ['#f78166','#f0883e'],  // red → orange
+  ['#a371f7','#f78166'],  // purple → red
+  ['#58a6ff','#3fb950'],  // sky → green
+  ['#d29922','#f78166'],  // yellow → red
+  ['#f0883e','#a371f7'],  // orange → purple
+  ['#39d353','#58a6ff'],  // bright green → sky
+  ['#ff7b72','#ffa657'],  // coral → peach
+  ['#79c0ff','#a5f3a5'],  // light blue → mint
+  ['#d2a8ff','#79c0ff'],  // lavender → light blue
+  ['#ffa657','#d2a8ff'],  // peach → lavender
+];
+
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+  }
+  return Math.abs(h);
+}
+
+document.querySelectorAll('.app-icon[data-appname]').forEach(el => {
+  const name = el.dataset.appname;
+  const h = hashStr(name);
+  const icon = ICONS[h % ICONS.length];
+  const grad = GRADIENTS[(h >> 4) % GRADIENTS.length];
+  el.style.background = `linear-gradient(135deg, ${grad[0]}, ${grad[1]})`;
+  el.style.boxShadow = `0 4px 14px ${grad[0]}55`;
+  el.innerHTML = `<i class="ph ${icon}"></i>`;
+});
+</script>
 {% endblock %}

@@ -192,9 +192,9 @@
             <a href="{% url 'pipeline_step_create' pipeline.name %}" class="btn btn-secondary">
                 <i class="ph ph-plus"></i> Add Step
             </a>
-            <button id="run-pipeline-btn" class="btn btn-primary">
+            <a href="{% url 'run_pipeline' pipeline.name %}" class="btn btn-primary">
                 <i class="ph ph-play"></i> Run Pipeline
-            </button>
+            </a>
         </div>
     </div>
 
@@ -260,57 +260,4 @@
     </div>
 </div>
 
-<script>
-document.getElementById('run-pipeline-btn').addEventListener('click', function() {
-    const pipelineId = {{ pipeline.name }};
-    const liveRunContainer = document.getElementById('live-run-container');
-    const liveRunContent = document.getElementById('live-run-content');
-    liveRunContainer.style.display = 'block';
-    liveRunContent.innerHTML = '<div style="color: var(--success-color);">[System] Starting pipeline run...</div>';
-
-    const eventSource = new EventSource(`/pipeline/pipeline/${pipelineId}/run/`);
-
-    eventSource.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        handleEvent(data);
-    };
-
-    eventSource.onerror = function(error) {
-        eventSource.close();
-        liveRunContent.innerHTML += '<div style="color: #da3633;">[Error] Pipeline run ended or encountered an error.</div>';
-    };
-
-    function handleEvent(data) {
-        switch(data.event) {
-            case 'start':
-                liveRunContent.innerHTML += `<div style="color: #c9d1d9;">[System] Run ID: ${data.run_id}</div>`;
-                break;
-            case 'step_start':
-                liveRunContent.innerHTML += `<div style="color: var(--accent-color); margin-top: 1rem;">>>> Step: ${data.step}</div><pre id="step-${data.step}"></pre>`;
-                break;
-            case 'log':
-                const stepPre = document.getElementById(`step-${data.step}`);
-                if (stepPre) {
-                    stepPre.textContent += data.message + '\n';
-                }
-                break;
-            case 'step_end':
-                let color = data.status.toLowerCase() === 'success' ? 'var(--success-color)' : '#da3633';
-                liveRunContent.innerHTML += `<div style="color: ${color};"><<< Step ${data.step} ended with status: ${data.status}</div>`;
-                break;
-            case 'error':
-                liveRunContent.innerHTML += `<div style="color: #da3633;">[Error in step ${data.step}]: ${data.message}</div>`;
-                break;
-            case 'end':
-                liveRunContent.innerHTML += `<div style="color: var(--success-color); margin-top: 1rem;">[System] Pipeline run ended. Overall status: ${data.overall_status}</div>`;
-                eventSource.close();
-                setTimeout(() => {
-                    window.location.href = data.redirect_url;
-                }, 3000);
-                break;
-        }
-        liveRunContent.scrollTop = liveRunContent.scrollHeight;
-    }
-});
-</script>
 {% endblock %}

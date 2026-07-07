@@ -1,103 +1,153 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Run Pipeline: {{ pipeline.name }}</title>
-    <style>
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #2d2d2d;
-            color: #cccccc;
-            margin: 0;
-            padding: 20px;
-        }
+<style>
+  .run-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .run-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .status-success { background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid rgba(63,185,80,0.3); }
+  .status-failed  { background: rgba(248,81,73,0.15);  color: #f85149; border: 1px solid rgba(248,81,73,0.3); }
+  .status-running { background: rgba(210,153,34,0.15); color: #d29922; border: 1px solid rgba(210,153,34,0.3); }
+  .status-pending { background: rgba(139,148,158,0.15);color: #8b949e; border: 1px solid rgba(139,148,158,0.3);}
+  .meta-row {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+  }
+  .step-block {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    user-select: none;
+  }
+  .step-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .step-log {
+    padding: 0;
+    margin: 0;
+  }
+  .step-log pre {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    padding: 1rem;
+    margin: 0;
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+</style>
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #1e1e1e;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        }
-
-        h1, h2, p {
-            color: #ffffff;
-        }
-
-        .step-log {
-            background-color: #2e2e2e;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            padding: 10px;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-        }
-
-        .step-log h3 {
-            margin-top: 0;
-            color: #81a1c1;
-        }
-
-        pre {
-            background-color: #1e1e1e;
-            border-radius: 4px;
-            padding: 10px;
-            color: #d8dee9;
-            overflow-x: auto;
-        }
-
-        a {
-            color: #81a1c1;
-            text-decoration: none;
-            border: 1px solid #81a1c1;
-            border-radius: 4px;
-            padding: 5px 10px;
-            display: inline-block;
-            margin-top: 10px;
-        }
-
-        a:hover {
-            background-color: #81a1c1;
-            color: #2d2d2d;
-        }
-
-        .status {
-            font-weight: bold;
-            color: #88c0d0;
-        }
-
-        .status.success {
-            color: #a3be8c;
-        }
-
-        .status.failed {
-            color: #bf616a;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Run Pipeline: {{ pipeline.name }}</h1>
-        <p>Description: {{ pipeline.description }}</p>
-
-        <h2>Step Logs:</h2>
-        {% for step, log in logs.items %}
-        <div class="step-log">
-            <h3>Step: {{ step }}</h3>
-            <pre>{{ log }}</pre>
-        </div>
-        {% endfor %}
-
-        <h2>Build Status:</h2>
-        <p>Status: <span class="status {{ pipeline_run.status|lower }}">{{ pipeline_run.status }}</span></p>
-        <p>Started at: {{ pipeline_run.created_at }}</p>
-        <p>Finished at: {{ pipeline_run.finished_at }}</p>
-
-        <a href="{% url 'pipeline_detail' pipeline.name %}">Back to Pipeline</a>
+<div class="run-header">
+  <div>
+    <h1 class="run-title">
+      <i class="ph ph-rocket-launch" style="color:var(--accent-color);"></i>
+      {{ pipeline.name }}
+    </h1>
+    <div class="meta-row">
+      <span><i class="ph ph-clock"></i> Started: {{ pipeline_run.created_at|default:"—" }}</span>
+      <span><i class="ph ph-flag-checkered"></i> Finished: {{ pipeline_run.finished_at|default:"running…" }}</span>
     </div>
-</body>
-</html>
+  </div>
+  <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.75rem;">
+    <span class="status-badge status-{{ pipeline_run.status|lower|default:'pending' }}">
+      {% if pipeline_run.status == 'success' %}<i class="ph ph-check-circle"></i>
+      {% elif pipeline_run.status == 'failed' %}<i class="ph ph-x-circle"></i>
+      {% elif pipeline_run.status == 'running' %}<i class="ph ph-spinner"></i>
+      {% else %}<i class="ph ph-clock"></i>{% endif %}
+      {{ pipeline_run.status|default:"pending" }}
+    </span>
+    <a href="{% url 'pipeline_detail' pipeline.name %}" class="back-btn">
+      <i class="ph ph-arrow-left"></i> Back to Pipeline
+    </a>
+  </div>
+</div>
+
+{% if pipeline.description %}
+<p style="color:var(--text-secondary); margin-bottom: 1.5rem;">{{ pipeline.description }}</p>
+{% endif %}
+
+<h3 style="font-size:1rem; font-weight:600; margin:0 0 1rem; color:var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+  <i class="ph ph-terminal"></i> Step Logs
+</h3>
+
+{% if logs %}
+  {% for step, log in logs.items %}
+  <div class="step-block">
+    <div class="step-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+      <span class="step-name"><i class="ph ph-code"></i> {{ step }}</span>
+      <i class="ph ph-caret-down" style="color:var(--text-secondary); font-size:0.9rem;"></i>
+    </div>
+    <div class="step-log">
+      <pre>{{ log }}</pre>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div style="text-align:center; padding:3rem; color:var(--text-secondary); background:var(--card-bg); border:1px dashed var(--border-color); border-radius:8px;">
+    <i class="ph ph-terminal" style="font-size:2rem; opacity:0.3; display:block; margin-bottom:0.75rem;"></i>
+    No logs available yet.
+  </div>
+{% endif %}
 {% endblock %}

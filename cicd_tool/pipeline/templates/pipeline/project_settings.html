@@ -1,0 +1,272 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+    .settings-layout { display: grid; grid-template-columns: 200px 1fr; gap: 2rem; align-items: start; max-width: 1000px; }
+    @media (max-width: 900px) { .settings-layout { grid-template-columns: 1fr; } }
+
+    .settings-tabs { position: sticky; top: 1.5rem; display: flex; flex-direction: column; gap: 2px; }
+    .settings-tab {
+        display: flex; align-items: center; gap: 0.6rem;
+        padding: 0.55rem 0.9rem; border-radius: 6px;
+        color: var(--text-secondary); font-size: 0.85rem;
+        cursor: pointer; border: none; background: none; text-align: left;
+        font-family: inherit; transition: var(--transition); width: 100%;
+    }
+    .settings-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+    .settings-tab.active { color: var(--text-primary); background: var(--card-bg); font-weight: 500; }
+    .settings-tab.active i { color: var(--accent-color); }
+
+    .settings-panel { display: none; }
+    .settings-panel.active { display: block; }
+
+    .panel-card {
+        background: var(--card-bg); border: 1px solid var(--border-color);
+        border-radius: 10px; padding: 1.5rem; margin-bottom: 1.25rem;
+    }
+    .panel-card h3 { font-size: 1rem; font-weight: 600; margin: 0 0 0.35rem; display: flex; align-items: center; gap: 0.5rem; }
+    .panel-card .panel-sub { color: var(--text-secondary); font-size: 0.82rem; margin: 0 0 1.25rem; }
+
+    .f-group { margin-bottom: 1.1rem; }
+    .f-group label { display: block; font-size: 0.82rem; font-weight: 500; margin-bottom: 0.35rem; color: var(--text-primary); }
+    .f-group input[type="text"], .f-group input[type="url"], .f-group select, .f-group textarea {
+        width: 100%; box-sizing: border-box;
+        background: var(--dark-bg); border: 1px solid var(--border-color);
+        border-radius: 6px; color: var(--text-primary);
+        padding: 0.5rem 0.75rem; font-size: 0.86rem; font-family: inherit; outline: none;
+        transition: border-color 0.2s;
+    }
+    .f-group textarea.mono { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.8rem; }
+    .f-group input:focus, .f-group select:focus, .f-group textarea:focus {
+        border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+    }
+    .f-hint { font-size: 0.76rem; color: var(--text-secondary); margin-top: 0.3rem; }
+
+    .btn-save {
+        background: #238636; color: #fff; border: 1px solid #2ea043; border-radius: 6px;
+        padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit;
+    }
+    .btn-save:hover { background: #2ea043; }
+    .btn-sm {
+        background: transparent; border: 1px solid var(--border-color); border-radius: 6px;
+        color: var(--text-primary); padding: 0.3rem 0.7rem; font-size: 0.78rem;
+        cursor: pointer; font-family: inherit;
+    }
+    .btn-sm:hover { border-color: var(--text-secondary); }
+    .btn-sm.danger { color: var(--danger-color); }
+    .btn-sm.danger:hover { border-color: var(--danger-color); background: rgba(248,81,73,0.08); }
+
+    .member-row { display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 0; border-bottom: 1px solid var(--border-color); }
+    .member-row:last-child { border-bottom: none; }
+    .member-avatar {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent-color), #b892ff);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 600; color: white; text-transform: uppercase; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .role-chip {
+        font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+        padding: 0.12rem 0.5rem; border-radius: 20px; border: 1px solid;
+    }
+    .role-maintainer { color: #d2a8ff; border-color: rgba(163,113,247,0.4); background: rgba(163,113,247,0.1); }
+    .role-developer  { color: var(--accent-color); border-color: rgba(47,129,247,0.4); background: rgba(47,129,247,0.1); }
+    .role-viewer     { color: var(--text-secondary); border-color: var(--border-color); background: rgba(125,133,144,0.08); }
+
+    .breadcrumb { display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: var(--accent-color); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    .toggle-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.1rem; }
+    .toggle-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-color); }
+</style>
+
+<div class="breadcrumb">
+    <a href="{% url 'project_list' %}">Projects</a>
+    <i class="ph ph-caret-right"></i>
+    <a href="{% url 'project_detail' project.name %}">{{ project.name }}</a>
+    <i class="ph ph-caret-right"></i>
+    <span>Settings</span>
+</div>
+
+<h1 style="font-size:1.4rem; font-weight:600; margin:0 0 1.5rem; display:flex; align-items:center; gap:0.6rem;">
+    <i class="ph ph-gear" style="color:var(--accent-color);"></i> Project Settings
+    <span style="font-size:0.85rem; color:var(--text-secondary); font-weight:400;">— {{ project.name }}</span>
+</h1>
+
+{% if messages %}
+    {% for message in messages %}
+    <div style="background:{% if message.tags == 'error' %}rgba(248,81,73,0.1){% else %}rgba(63,185,80,0.1){% endif %}; border:1px solid {% if message.tags == 'error' %}rgba(248,81,73,0.4){% else %}rgba(63,185,80,0.4){% endif %}; color:{% if message.tags == 'error' %}var(--danger-color){% else %}var(--success-color){% endif %}; border-radius:6px; padding:0.6rem 1rem; margin-bottom:1rem; font-size:0.85rem;">
+        {{ message }}
+    </div>
+    {% endfor %}
+{% endif %}
+
+<div class="settings-layout">
+
+    <nav class="settings-tabs">
+        <button class="settings-tab active" onclick="showTab(event,'general')"><i class="ph ph-info"></i> General</button>
+        <button class="settings-tab" onclick="showTab(event,'members')"><i class="ph ph-users"></i> Members</button>
+        <button class="settings-tab" onclick="showTab(event,'cicd')"><i class="ph ph-git-merge"></i> CI/CD Variables</button>
+        <button class="settings-tab" onclick="showTab(event,'notifications')"><i class="ph ph-bell"></i> Notifications</button>
+    </nav>
+
+    <div>
+        <!-- GENERAL -->
+        <div class="settings-panel active" id="panel-general">
+            <div class="panel-card">
+                <h3><i class="ph ph-info"></i> General</h3>
+                <p class="panel-sub">Basic information about this project.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_general">
+                    <div class="f-group">
+                        <label>Project name</label>
+                        <input type="text" value="{{ project.name }}" disabled style="opacity:0.6;">
+                        <p class="f-hint">Names are permanent — they are referenced by pipelines and build history.</p>
+                    </div>
+                    <div class="f-group">
+                        <label>Organization</label>
+                        <input type="text" value="{{ project.organization.name|default:'— none —' }}" disabled style="opacity:0.6;">
+                    </div>
+                    <div class="f-group">
+                        <label for="id_description">Description</label>
+                        <textarea name="description" id="id_description" rows="3" placeholder="What is this project?">{{ project.description }}</textarea>
+                    </div>
+                    <div class="f-group">
+                        <label for="id_repo_url">External repository URL <span style="color:var(--text-secondary); font-weight:400;">(optional)</span></label>
+                        <input type="url" name="repository_url" id="id_repo_url" value="{{ project.repository_url|default:'' }}" placeholder="https://github.com/org/repo">
+                        <p class="f-hint">Only needed when this project builds code hosted outside ReleaseRocket.</p>
+                    </div>
+                    <button type="submit" class="btn-save">Save changes</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- MEMBERS -->
+        <div class="settings-panel" id="panel-members">
+            <div class="panel-card">
+                <h3><i class="ph ph-user-plus"></i> Add member</h3>
+                <p class="panel-sub">Grant a user access to this project with a specific role.</p>
+                <form method="post" style="display:flex; gap:0.6rem; align-items:flex-end; flex-wrap:wrap;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_member">
+                    <div class="f-group" style="flex:1; min-width:180px; margin:0;">
+                        <label>Username</label>
+                        <input type="text" name="username" placeholder="username" required>
+                    </div>
+                    <div class="f-group" style="width:170px; margin:0;">
+                        <label>Role</label>
+                        <select name="role">
+                            <option value="developer">Developer</option>
+                            <option value="maintainer">Maintainer</option>
+                            <option value="viewer">Viewer</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-save">Add</button>
+                </form>
+            </div>
+
+            <div class="panel-card">
+                <h3><i class="ph ph-users"></i> Members</h3>
+                <p class="panel-sub">
+                    <strong style="color:var(--text-primary);">Maintainer</strong> — manage settings, members, pipelines ·
+                    <strong style="color:var(--text-primary);">Developer</strong> — trigger builds, manage pipelines ·
+                    <strong style="color:var(--text-primary);">Viewer</strong> — read-only access
+                </p>
+                {% for m in members %}
+                <div class="member-row">
+                    <div class="member-avatar">{{ m.user.username|first }}</div>
+                    <div style="flex:1;">
+                        <div style="font-size:0.88rem; font-weight:500;">{{ m.user.username }}</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">Added {{ m.added_at|date:"M d, Y" }}</div>
+                    </div>
+                    <span class="role-chip role-{{ m.role }}">{{ m.get_role_display }}</span>
+                    <form method="post" style="display:flex; gap:0.4rem; align-items:center;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_member_role">
+                        <input type="hidden" name="member_id" value="{{ m.id }}">
+                        <select name="role" class="btn-sm" style="padding:0.3rem 0.5rem;">
+                            <option value="maintainer" {% if m.role == 'maintainer' %}selected{% endif %}>Maintainer</option>
+                            <option value="developer" {% if m.role == 'developer' %}selected{% endif %}>Developer</option>
+                            <option value="viewer" {% if m.role == 'viewer' %}selected{% endif %}>Viewer</option>
+                        </select>
+                        <button type="submit" class="btn-sm" title="Update role"><i class="ph ph-check"></i></button>
+                    </form>
+                    <form method="post" onsubmit="return confirm('Remove {{ m.user.username }} from {{ project.name }}?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="remove_member">
+                        <input type="hidden" name="member_id" value="{{ m.id }}">
+                        <button type="submit" class="btn-sm danger" title="Remove member"><i class="ph ph-trash"></i></button>
+                    </form>
+                </div>
+                {% empty %}
+                <p style="color:var(--text-secondary); font-size:0.84rem; padding:0.5rem 0;">
+                    No project members yet. Organization owners and admins automatically have Maintainer access.
+                </p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- CI/CD VARIABLES -->
+        <div class="settings-panel" id="panel-cicd">
+            <div class="panel-card">
+                <h3><i class="ph ph-brackets-curly"></i> CI/CD Variables</h3>
+                <p class="panel-sub">Injected as environment variables into every pipeline step of this project. Stored as a JSON object.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_variables">
+                    <div class="f-group">
+                        <textarea name="environment_variables" class="mono" rows="10" spellcheck="false">{{ env_vars_json }}</textarea>
+                        <p class="f-hint">Example: {"NODE_ENV": "production", "API_URL": "https://api.example.com"}</p>
+                    </div>
+                    <button type="submit" class="btn-save">Save variables</button>
+                </form>
+            </div>
+            <div class="panel-card">
+                <h3><i class="ph ph-key"></i> Credentials</h3>
+                <p class="panel-sub">Secrets (passwords, tokens) are managed separately with scoped access.</p>
+                <a href="{% url 'local_credential_list' project_name=project.name %}" class="btn-sm" style="text-decoration:none;">
+                    <i class="ph ph-arrow-right"></i> Manage project credentials
+                </a>
+            </div>
+        </div>
+
+        <!-- NOTIFICATIONS -->
+        <div class="settings-panel" id="panel-notifications">
+            <div class="panel-card">
+                <h3><i class="ph ph-bell"></i> Notifications</h3>
+                <p class="panel-sub">Alert your team when pipeline runs succeed or fail.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_notifications">
+                    <div class="toggle-row">
+                        <input type="checkbox" name="notifications_enabled" id="id_notif" {% if project.notifications_enabled %}checked{% endif %}>
+                        <label for="id_notif" style="margin:0; cursor:pointer;">Enable build notifications</label>
+                    </div>
+                    <div class="f-group">
+                        <label for="id_emails">Notification emails</label>
+                        <input type="text" name="notification_emails" id="id_emails"
+                               value="{{ project.notification_emails }}" placeholder="dev-team@example.com, ops@example.com">
+                        <p class="f-hint">Comma-separated list.</p>
+                    </div>
+                    <div class="f-group">
+                        <label for="id_slack">Slack webhook URL</label>
+                        <input type="url" name="slack_webhook_url" id="id_slack"
+                               value="{{ project.slack_webhook_url }}" placeholder="https://hooks.slack.com/services/...">
+                    </div>
+                    <button type="submit" class="btn-save">Save notifications</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(ev, name) {
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    ev.currentTarget.classList.add('active');
+}
+</script>
+{% endblock %}

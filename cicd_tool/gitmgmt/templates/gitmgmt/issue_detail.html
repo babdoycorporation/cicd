@@ -1,0 +1,367 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<style>
+    .breadcrumb {
+        display: flex; align-items: center; gap: 0.5rem;
+        color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 1.5rem;
+    }
+    .breadcrumb a { color: var(--accent-color); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    .issue-title {
+        font-size: 1.4rem; font-weight: 600; color: var(--text-primary);
+        display: flex; align-items: flex-start; gap: 0.6rem;
+        flex-wrap: wrap; margin: 0 0 0.6rem;
+    }
+
+    .issue-number { color: var(--text-secondary); font-weight: 400; }
+
+    .status-badge {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.25rem 0.75rem; border-radius: 20px;
+        font-size: 0.78rem; font-weight: 600;
+        white-space: nowrap; margin-top: 0.15rem;
+    }
+
+    .status-open   { background:rgba(63,185,80,0.15); color:#3fb950; border:1px solid rgba(63,185,80,0.3); }
+    .status-closed { background:rgba(138,148,158,0.15); color:#8b949e; border:1px solid rgba(138,148,158,0.3); }
+
+    .issue-meta {
+        font-size: 0.83rem; color: var(--text-secondary);
+        display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+
+    .issue-layout {
+        display: grid;
+        grid-template-columns: 1fr 260px;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    @media (max-width: 768px) {
+        .issue-layout { grid-template-columns: 1fr; }
+    }
+
+    .icard {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .icard:last-child { margin-bottom: 0; }
+
+    .icard h3 {
+        font-size: 0.95rem; font-weight: 600; color: var(--text-primary);
+        margin: 0 0 1rem; padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+
+    .issue-body {
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        line-height: 1.7;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .comment-item {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 1rem;
+        background: rgba(255,255,255,0.02);
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+    }
+
+    .comment-header strong { color: var(--text-primary); }
+
+    .comment-body {
+        padding: 0.9rem 1rem;
+        font-size: 0.88rem;
+        color: var(--text-primary);
+        line-height: 1.65;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .comment-form-area {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+
+    .comment-form-header {
+        padding: 0.6rem 1rem;
+        background: rgba(255,255,255,0.02);
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .comment-form-body { padding: 0.75rem; }
+
+    .comment-textarea {
+        width: 100%;
+        background: var(--darker-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-primary);
+        padding: 0.6rem 0.75rem;
+        font-size: 0.87rem;
+        font-family: inherit;
+        box-sizing: border-box;
+        outline: none;
+        resize: vertical;
+        min-height: 90px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        line-height: 1.6;
+    }
+
+    .comment-textarea:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+    }
+
+    .comment-textarea::placeholder { color: var(--text-secondary); }
+
+    .btn {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.82rem;
+        font-weight: 600; cursor: pointer; font-family: inherit;
+        transition: all 0.2s; border: 1px solid transparent; text-decoration: none;
+    }
+
+    .btn-comment { background: var(--accent-color); color: #fff; }
+    .btn-comment:hover { background: #1f6feb; }
+
+    .btn-close  { background: transparent; color: #f85149; border-color: rgba(248,81,73,0.4); }
+    .btn-close:hover  { background: rgba(248,81,73,0.08); }
+
+    .btn-reopen { background: transparent; color: #3fb950; border-color: rgba(63,185,80,0.4); }
+    .btn-reopen:hover { background: rgba(63,185,80,0.08); }
+
+    .btn-edit { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+    .btn-edit:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+
+    .btn-back { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
+    .btn-back:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+
+    .sidebar-section { margin-bottom: 1rem; }
+    .sidebar-section:last-child { margin-bottom: 0; }
+
+    .sidebar-label {
+        font-size: 0.72rem; font-weight: 600;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        color: var(--text-secondary); margin-bottom: 0.4rem;
+    }
+
+    .issue-label {
+        display: inline-flex; align-items: center;
+        padding: 0.15rem 0.55rem; border-radius: 20px;
+        font-size: 0.75rem; font-weight: 600;
+        margin: 0.15rem 0.15rem 0 0;
+    }
+
+    .assignee-row {
+        display: flex; align-items: center; gap: 0.5rem;
+        font-size: 0.85rem; color: var(--text-primary); padding: 0.2rem 0;
+    }
+
+    .avatar-mini {
+        width: 20px; height: 20px; border-radius: 50%;
+        background: var(--accent-color); color: #fff;
+        font-size: 0.65rem; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        text-transform: uppercase; flex-shrink: 0;
+    }
+
+    .milestone-progress {
+        height: 5px; background: var(--border-color); border-radius: 3px;
+        overflow: hidden; margin-top: 0.4rem;
+    }
+
+    .milestone-bar {
+        height: 100%; background: var(--success-color); border-radius: 3px;
+        transition: width 0.3s;
+    }
+
+    .empty-comment {
+        text-align: center; padding: 1.5rem 0;
+        color: var(--text-secondary); font-size: 0.85rem;
+    }
+</style>
+
+<div class="breadcrumb">
+    <a href="{% url 'repository_list' %}">Repositories</a>
+    <i class="ph ph-caret-right"></i>
+    <a href="{% url 'repository_detail' repository.name %}">{{ repository.name }}</a>
+    <i class="ph ph-caret-right"></i>
+    <a href="{% url 'repository_issues' repository.name %}">Issues</a>
+    <i class="ph ph-caret-right"></i>
+    <span>#{{ issue.number }}</span>
+</div>
+
+<!-- Issue Header -->
+<div>
+    <h1 class="issue-title">
+        {{ issue.title }}
+        <span class="issue-number">#{{ issue.number }}</span>
+        <span class="status-badge status-{{ issue.state }}">
+            {% if issue.state == 'open' %}
+                <i class="ph ph-dot-outline"></i> Open
+            {% else %}
+                <i class="ph ph-check-circle"></i> Closed
+            {% endif %}
+        </span>
+    </h1>
+    <div class="issue-meta">
+        <span><i class="ph ph-user"></i> <strong style="color:var(--text-primary);">{{ issue.author.username }}</strong> opened this {{ issue.created_at|timesince }} ago</span>
+        <span><i class="ph ph-chat-dots"></i> {{ comments|length }} comment{{ comments|length|pluralize }}</span>
+        {% if issue.state == 'closed' and issue.closed_by %}
+        <span><i class="ph ph-lock"></i> Closed by {{ issue.closed_by.username }} {{ issue.closed_at|timesince }} ago</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="issue-layout">
+    <!-- Main column -->
+    <div>
+        <!-- Issue body -->
+        <div class="icard">
+            <h3><i class="ph ph-align-left"></i> Description</h3>
+            {% if issue.body %}
+                <div class="issue-body">{{ issue.body }}</div>
+            {% else %}
+                <p style="color:var(--text-secondary); font-style:italic; margin:0;">No description provided.</p>
+            {% endif %}
+
+            {% if request.user == issue.author or request.user.is_staff %}
+            <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border-color); display:flex; gap:0.5rem;">
+                <a href="{% url 'edit_issue' repository.name issue.number %}" class="btn btn-edit">
+                    <i class="ph ph-pencil"></i> Edit
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Comments -->
+        <div class="icard">
+            <h3><i class="ph ph-chat-dots"></i> Comments ({{ comments|length }})</h3>
+
+            {% for comment in comments %}
+            <div class="comment-item">
+                <div class="comment-header">
+                    <span><strong>{{ comment.author.username }}</strong> commented {{ comment.created_at|timesince }} ago</span>
+                </div>
+                <div class="comment-body">{{ comment.body }}</div>
+            </div>
+            {% empty %}
+            <div class="empty-comment">
+                <i class="ph ph-chat-dots" style="font-size:1.8rem; opacity:0.35; display:block; margin-bottom:0.5rem;"></i>
+                No comments yet. Be the first to comment below.
+            </div>
+            {% endfor %}
+
+            <!-- Add comment form -->
+            <div class="comment-form-area">
+                <div class="comment-form-header">
+                    <i class="ph ph-user-circle"></i> {{ request.user.username }}
+                </div>
+                <div class="comment-form-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_comment">
+                        <textarea
+                            class="comment-textarea"
+                            name="{{ form.body.html_name }}"
+                            placeholder="Write a comment…"
+                        ></textarea>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.6rem; flex-wrap:wrap; gap:0.5rem;">
+                            <div style="display:flex; gap:0.5rem;">
+                                {% if issue.state == 'open' %}
+                                <button type="submit" name="action" value="close" class="btn btn-close" onclick="this.form.querySelector('[name=action]').value='close';">
+                                    <i class="ph ph-lock"></i> Close Issue
+                                </button>
+                                {% else %}
+                                <button type="submit" name="action" value="reopen" class="btn btn-reopen" onclick="this.form.querySelector('[name=action]').value='reopen';">
+                                    <i class="ph ph-arrow-counter-clockwise"></i> Reopen Issue
+                                </button>
+                                {% endif %}
+                            </div>
+                            <button type="submit" class="btn btn-comment">
+                                <i class="ph ph-paper-plane-tilt"></i> Add Comment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+        <div class="icard" style="padding:1.1rem;">
+            {% if issue.labels.exists %}
+            <div class="sidebar-section">
+                <div class="sidebar-label">Labels</div>
+                <div>
+                    {% for label in issue.labels.all %}
+                    <span class="issue-label" style="background:{{ label.color }}22; color:{{ label.color }}; border:1px solid {{ label.color }}44;">
+                        {{ label.name }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if issue.assignees.exists %}
+            <div class="sidebar-section">
+                <div class="sidebar-label">Assignees</div>
+                {% for user in issue.assignees.all %}
+                <div class="assignee-row">
+                    <div class="avatar-mini">{{ user.username|first }}</div>
+                    @{{ user.username }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if issue.milestone %}
+            <div class="sidebar-section">
+                <div class="sidebar-label">Milestone</div>
+                <div style="font-size:0.85rem; color:var(--text-primary); margin-bottom:0.3rem;">
+                    <i class="ph ph-flag" style="color:var(--text-secondary);"></i>
+                    {{ issue.milestone.title }}
+                </div>
+                <div style="font-size:0.75rem; color:var(--text-secondary);">
+                    {{ issue.milestone.progress_pct }}% complete
+                </div>
+                <div class="milestone-progress">
+                    <div class="milestone-bar" style="width:{{ issue.milestone.progress_pct }}%;"></div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="sidebar-section" style="border-top:1px solid var(--border-color); padding-top:1rem; margin-top:{% if issue.labels.exists or issue.assignees.exists or issue.milestone %}0.75rem{% else %}0{% endif %};">
+                <a href="{% url 'repository_issues' repository.name %}" class="btn btn-back" style="width:100%; justify-content:center;">
+                    <i class="ph ph-arrow-left"></i> All Issues
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

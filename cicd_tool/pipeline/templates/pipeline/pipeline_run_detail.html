@@ -137,12 +137,12 @@
             <p style="color: var(--text-secondary); margin: 0;">Run for pipeline: <strong>{{ pipeline_run.pipeline.name }}</strong></p>
         </div>
         <div>
-            {% if pipeline_run.status == 'SUCCESS' %}
-                <span class="badge badge-success"><i class="fas fa-check"></i> {{ pipeline_run.status }}</span>
-            {% elif pipeline_run.status == 'FAILED' %}
-                <span class="badge badge-danger"><i class="fas fa-xmark"></i> {{ pipeline_run.status }}</span>
+            {% if pipeline_run.status|lower == 'success' %}
+                <span class="badge badge-success"><i class="fas fa-check"></i> {{ pipeline_run.status|title }}</span>
+            {% elif pipeline_run.status|lower == 'failed' %}
+                <span class="badge badge-danger"><i class="fas fa-xmark"></i> {{ pipeline_run.status|title }}</span>
             {% else %}
-                <span class="badge badge-warning"><i class="fas fa-spinner fa-spin"></i> {{ pipeline_run.status }}</span>
+                <span class="badge badge-warning"><i class="fas fa-spinner fa-spin"></i> {{ pipeline_run.status|title }}</span>
             {% endif %}
         </div>
     </div>
@@ -168,30 +168,51 @@
         <div class="terminal-header">
             <div><i class="fas fa-terminal"></i> Execution Logs</div>
             <div>
-                <a href="{% url 'download_log' pipeline_run.id %}" style="color: inherit; text-decoration: none; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border-radius: 4px;">
+                <a href="#" style="color: inherit; text-decoration: none; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border-radius: 4px;">
                     <i class="fas fa-download"></i> Download
                 </a>
             </div>
         </div>
         <div class="terminal-body">
-            {% if pipeline_run.log %}
-                {% for step_name, step_data in pipeline_run.log.items %}
-                    <div class="step-log">
-                        <div class="step-title">
-                            >>> Step: {{ step_name }}
-                            {% if step_data.status == 'SUCCESS' %}
-                                <span style="color: var(--success-color); font-size: 0.8rem;">[SUCCESS]</span>
-                            {% elif step_data.status == 'FAILED' %}
-                                <span style="color: #da3633; font-size: 0.8rem;">[FAILED]</span>
-                            {% endif %}
-                        </div>
-                        <pre>{{ step_data.output }}</pre>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div style="color: var(--text-secondary); text-align: center; padding: 2rem 0;">No log data available.</div>
-            {% endif %}
+            <div class="step-log">
+                <pre id="log-pre-block">{% if pipeline_run.log %}{{ pipeline_run.log }}{% else %}Waiting for logs...{% endif %}</pre>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const runStatus = "{{ pipeline_run.status|upper }}";
+    const terminalBody = document.getElementById('log-pre-block');
+    const apiUrl = "{% url 'pipeline_run_api' pipeline_run.run_id %}";
+    
+    // Check if we need to poll
+    if (['PENDING', 'RUNNING'].includes(runStatus)) {
+        const intervalId = setInterval(async () => {
+            try {
+                const response = await fetch(apiUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update log content
+                    if (terminalBody) {
+                        terminalBody.textContent = data.log || 'Waiting for logs...';
+                        terminalBody.parentElement.parentElement.scrollTop = terminalBody.parentElement.parentElement.scrollHeight;
+                    }
+                    
+                    // Stop polling if done
+                    const currentStatus = data.status.toUpperCase();
+                    if (['SUCCESS', 'FAILED'].includes(currentStatus)) {
+                        clearInterval(intervalId);
+                        window.location.reload(); // Reload to update badges/UI
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch log updates", err);
+            }
+        }, 2000);
+    }
+});
+</script>
 {% endblock %}

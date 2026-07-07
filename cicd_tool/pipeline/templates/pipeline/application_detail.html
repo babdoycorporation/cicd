@@ -90,15 +90,43 @@
         <h1 class="page-title">
             <i class="ph ph-cube"></i> {{ application.name }}
         </h1>
-        <a href="{% url 'application_list' %}" class="btn-secondary">
-            <i class="ph ph-arrow-left"></i> Back to Applications
-        </a>
+        <div style="display:flex; gap:0.75rem;">
+            <a href="{% url 'application_settings' application.name %}" class="btn-secondary">
+                <i class="ph ph-gear"></i> Settings
+            </a>
+            <a href="{% url 'application_list' %}" class="btn-secondary">
+                <i class="ph ph-arrow-left"></i> Back to Applications
+            </a>
+        </div>
     </div>
 
     <div class="detail-card">
         <div class="detail-item">
-            <strong>Project:</strong> 
-            <i class="ph ph-projector-screen" style="color: var(--text-secondary); margin-right: 0.5rem;"></i> {{ application.project }}
+            <strong>Project:</strong>
+            <i class="ph ph-projector-screen" style="color: var(--text-secondary); margin-right: 0.5rem;"></i>
+            <a href="{% url 'project_detail' application.project.name %}" style="color: var(--accent-color); text-decoration: none;">{{ application.project.name }}</a>
+        </div>
+        {% if application.description %}
+        <div class="detail-item">
+            <strong>Description:</strong> {{ application.description }}
+        </div>
+        {% endif %}
+        <div class="detail-item">
+            <strong>Repository:</strong>
+            {% if application.linked_repository %}
+            <i class="ph ph-git-branch" style="color: var(--accent-color); margin-right: 0.5rem;"></i>
+            <a href="{% url 'repository_detail' application.linked_repository.name %}" style="color: var(--accent-color); text-decoration: none;">{{ application.linked_repository.name }}</a>
+            <span style="margin-left: 0.75rem; font-size: 0.78rem; color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 20px; padding: 0.1rem 0.55rem;">{{ application.linked_repository.visibility }}</span>
+            {% else %}
+            <span style="color: var(--warning-color); display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="ph ph-warning"></i> Not linked —
+                <a href="{% url 'application_settings' application.name %}" style="color: var(--accent-color);">link one in Settings</a>
+            </span>
+            {% endif %}
+        </div>
+        <div class="detail-item">
+            <strong>Default branch:</strong>
+            <code style="background: var(--darker-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.1rem 0.5rem; font-size: 0.82rem;">{{ application.default_branch }}</code>
         </div>
     </div>
 

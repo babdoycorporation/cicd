@@ -67,9 +67,64 @@ class LocalCredentialForm(forms.ModelForm):
         fields = ['service_name', 'username', 'password', 'token']
 
 class ApplicationForm(forms.ModelForm):
+    REPO_MODE_CHOICES = (
+        ('create', 'Initialize a new repository (recommended)'),
+        ('link', 'Link an existing repository'),
+        ('none', 'No repository for now'),
+    )
+    repo_mode = forms.ChoiceField(
+        choices=REPO_MODE_CHOICES, initial='create',
+        widget=forms.RadioSelect, label='Source repository')
+    existing_repository = forms.ModelChoiceField(
+        queryset=None, required=False, label='Existing repository')
+
     class Meta:
         model = Application
-        fields = ['name']
+        fields = ['name', 'description', 'default_branch']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from gitmgmt.models import Repository
+        self.fields['existing_repository'].queryset = Repository.objects.all().order_by('name')
+
+    def clean(self):
+        cleaned = super().clean()
+        mode = cleaned.get('repo_mode')
+        if mode == 'link':
+            repo = cleaned.get('existing_repository')
+            if not repo:
+                self.add_error('existing_repository', 'Select the repository to link.')
+            elif repo.application_id:
+                self.add_error('existing_repository',
+                    f"'{repo.name}' already backs another application.")
+        if mode == 'create' and cleaned.get('name'):
+            from gitmgmt.models import Repository
+            if Repository.objects.filter(name=cleaned['name']).exists():
+                self.add_error('name',
+                    f"A repository named '{cleaned['name']}' already exists. "
+                    "Choose another application name or link the existing repository.")
+        return cleaned
+
+
+class ApplicationSettingsForm(forms.ModelForm):
+    repository = forms.ModelChoiceField(queryset=None, required=False, label='Linked repository')
+
+    class Meta:
+        model = Application
+        fields = ['description', 'default_branch']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from gitmgmt.models import Repository
+        self.fields['repository'].queryset = Repository.objects.all().order_by('name')
+        if self.instance.pk:
+            self.initial['repository'] = Repository.objects.filter(application=self.instance).first()
+
+    def clean_repository(self):
+        repo = self.cleaned_data.get('repository')
+        if repo and repo.application_id and repo.application_id != self.instance.pk:
+            raise forms.ValidationError(f"'{repo.name}' already backs another application.")
+        return repo
 
 class GlobalSettingsForm(forms.ModelForm):
     class Meta:

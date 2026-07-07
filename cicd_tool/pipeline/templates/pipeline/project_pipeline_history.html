@@ -1,0 +1,69 @@
+<!-- templates/pipeline/build_history.html -->
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<div style="max-width: 1000px; margin: auto;">
+    <h1>Orchestrator History</h1>
+    <canvas id="buildHistoryChart" style="width: 100%; max-height: 400px;"></canvas>
+</div>
+
+<!-- Include Chart.js and the date-fns adapter -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const buildHistoryData = JSON.parse('{{ build_history_data|escapejs }}');
+        const dates = buildHistoryData.dates;
+        const successfulBuilds = buildHistoryData.successful_builds;
+        const failedBuilds = buildHistoryData.failed_builds;
+
+        const ctx = document.getElementById('buildHistoryChart').getContext('2d');
+        const buildHistoryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Successful Runs',
+                    data: successfulBuilds,
+                    borderColor: 'green',
+                    fill: false
+                }, {
+                    label: 'Failed Runs',
+                    data: failedBuilds,
+                    borderColor: 'red',
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Orchestrator History'
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            tooltipFormat: 'PP' // Use a predefined format or define your own
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Runs'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

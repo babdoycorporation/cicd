@@ -127,10 +127,11 @@
                 {% for file in files %}
                 <li class="file-item">
                     <i class="fas fa-file-code" style="color: var(--text-secondary);"></i>
-                    <a href="{% url 'edit_and_save_file' repository.name file %}">{{ file }}</a>
+                    <a href="{% url 'edit_and_save_file' repository.name file.path %}">{{ file.path }}</a>
                 </li>
                 {% endfor %}
             </ul>
+
         </div>
 
         {% if readme_content %}

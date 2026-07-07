@@ -28,9 +28,10 @@ class GlobalSettings(models.Model):
 
 class Project(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
     # Link to gitmgmt.Organization
     organization = models.ForeignKey('gitmgmt.Organization', on_delete=models.CASCADE, related_name='projects', null=True, blank=True)
-    
+
     repository_url = models.URLField(blank=True, null=True)
     environment_variables = models.JSONField(default=dict, blank=True)
     build_triggers = models.JSONField(default=dict, blank=True)
@@ -44,12 +45,60 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+    def get_member_role(self, user):
+        """Project role, falling back to org role for org admins/owners."""
+        m = self.members.filter(user=user).first()
+        if m:
+            return m.role
+        if self.organization:
+            org_role = self.organization.get_member_role(user)
+            if org_role in ('owner', 'admin'):
+                return 'maintainer'
+        return None
+
+
+class ProjectMember(models.Model):
+    """Role-based membership of a user in a project.
+
+    Maintainer — manage settings, members, pipelines, trigger builds
+    Developer  — trigger builds, manage pipelines
+    Viewer     — read-only access to builds and logs
+    """
+    ROLE_CHOICES = (
+        ('maintainer', 'Maintainer'),
+        ('developer', 'Developer'),
+        ('viewer', 'Viewer'),
+    )
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='members')
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='project_memberships')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='developer')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('project', 'user')
+
+    def __str__(self):
+        return f"{self.user.username} @ {self.project.name} ({self.role})"
+
+
 class Application(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='applications')
-    
+    default_branch = models.CharField(max_length=100, default='main')
+
+    # NOTE: the backing Git repository is linked from the other side —
+    # gitmgmt.Repository.application (OneToOne, related_name='repository').
+    # Access it via `app.linked_repository` (safe) or `app.repository` (may raise).
+
     def __str__(self):
         return f"{self.project.name} / {self.name}"
+
+    @property
+    def linked_repository(self):
+        """The backing Repository, or None. Safe accessor for the reverse OneToOne."""
+        from gitmgmt.models import Repository
+        return Repository.objects.filter(application=self).first()
 
 class Credential(models.Model):
     service_name = models.CharField(max_length=100)
@@ -157,12 +206,40 @@ class PipelineRun(models.Model):
                 self.run_id = uuid.uuid4()
         super().save(*args, **kwargs)
 
-class Build(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('running', 'Running'), ('success', 'Success'), ('failed', 'Failed')])
-    log = models.TextField()
+import uuid
+
+class ProjectPipeline(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_pipelines')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    yaml_path = models.CharField(max_length=255, blank=True, help_text="Path to orchestration YAML if repository-driven")
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.project.name} / {self.name}"
+
+class ProjectOrchestrationStep(models.Model):
+    project_pipeline = models.ForeignKey(ProjectPipeline, on_delete=models.CASCADE, related_name='steps')
+    order = models.IntegerField(default=0)
+    target_pipeline = models.ForeignKey(Pipeline, on_delete=models.CASCADE)
+    parallel = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['order', 'id']
+        
+    def __str__(self):
+        return f"Step {self.order} -> {self.target_pipeline.name}"
+
+class ProjectPipelineRun(models.Model):
+    run_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    project_pipeline = models.ForeignKey(ProjectPipeline, on_delete=models.CASCADE, related_name='runs')
+    status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('running', 'Running'), ('success', 'Success'), ('failed', 'Failed')], default='pending')
+    log = models.TextField(blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.project_pipeline.name} #{self.run_id}"
 
 class Command(models.Model):
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
