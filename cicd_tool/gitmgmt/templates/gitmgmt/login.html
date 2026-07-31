@@ -1,257 +1,446 @@
-<!DOCTYPE html>
-<html>
+{% load static %}
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Release Rocket - Your Code, Your Rhythm</title>
-    <style>
-        :root {
-            --primary: #6e44ff;
-            --secondary: #b892ff;
-            --dark: #0f0e17;
-            --light: #fffffe;
-            --accent: #ff8906;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--dark);
-            color: var(--light);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        .hero-section {
-            flex: 1;
-            background: linear-gradient(135deg, var(--dark) 0%, #1a1a2e 100%);
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .hero-section::before {
-            content: "";
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(110, 68, 255, 0.1) 0%, transparent 70%);
-            animation: pulse 15s infinite alternate;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            100% { transform: scale(1.2); opacity: 0.8; }
-        }
-        
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            max-width: 600px;
-        }
-        
-        .logo {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 2rem;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            display: inline-block;
-        }
-        
-        .tagline {
-            font-size: 3.5rem;
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(to right, var(--light), #a7a9be);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        
-        .subtag {
-            font-size: 1.2rem;
-            color: #a7a9be;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-        
-        .features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        
-        .feature-chip {
-            background: rgba(255, 137, 6, 0.1);
-            color: var(--accent);
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        
-        .login-section {
-            width: 400px;
-            background: #16161a;
-            padding: 3rem 2rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            box-shadow: -5px 0 30px rgba(0, 0, 0, 0.3);
-            z-index: 10;
-        }
-        
-        .login-header {
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-        
-        .login-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        
-        .login-subtitle {
-            color: #a7a9be;
-            font-size: 0.9rem;
-        }
-        
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-        
-        .form-group label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #a7a9be;
-        }
-        
-        .form-group input {
-            background: #242629;
-            border: 2px solid #36383d;
-            border-radius: 8px;
-            padding: 0.8rem 1rem;
-            color: var(--light);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(110, 68, 255, 0.2);
-        }
-        
-        .login-button {
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: white;
-            border: none;
-            padding: 1rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 1rem;
-        }
-        
-        .login-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(110, 68, 255, 0.3);
-        }
-        
-        .error-message {
-            color: #ff3860;
-            background: rgba(255, 56, 96, 0.1);
-            padding: 0.8rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 2rem;
-            font-size: 0.8rem;
-        }
-        
-        .footer-links a {
-            color: #a7a9be;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-        
-        .footer-links a:hover {
-            color: var(--primary);
-        }
-    </style>
+  <meta charset="utf-8" />
+  <title>Sign In – CogFocus One™ CI/CD</title>
+  <link rel="icon" href="{% static 'gitmgmt/images/logo/cogfocus_favicon_180x180.png' %}" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --brand:     #059669;
+      --brand-hover: #047857;
+      --brand-bg:  #f8fafc;
+      --brand-nav: #0f172a;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+      background: var(--brand-bg);
+      min-height: 100vh;
+      width: 100vw;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    .login-container {
+      display: flex;
+      width: 100vw;
+      min-height: 100vh;
+    }
+
+    /* ── Left hero panel ────────────────────────── */
+    .hero {
+      flex: 1;
+      background: var(--brand-nav);
+      padding: 4rem;
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center;
+      color: #ffffff; 
+      position: relative; 
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; right: -80px; bottom: -80px;
+      width: 380px; height: 380px; border-radius: 50%;
+      background: color-mix(in srgb, var(--brand) 22%, transparent);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; left: -60px; top: -60px;
+      width: 260px; height: 260px; border-radius: 50%;
+      background: color-mix(in srgb, var(--brand) 12%, transparent);
+      pointer-events: none;
+    }
+
+    .hero-brand, .form-brand {
+      display: flex; 
+      align-items: center; 
+      gap: 0.75rem;
+      margin-bottom: 2.5rem; 
+      position: relative; 
+      z-index: 1;
+    }
+    .brand-icon {
+      width: 36px; 
+      height: 36px; 
+      object-fit: contain; 
+      flex-shrink: 0;
+    }
+    .brand-text-col {
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center;
+    }
+    .brand-title-light {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem; 
+      font-weight: 700; 
+      color: #ffffff; 
+      letter-spacing: -0.01em; 
+      line-height: 1.15;
+    }
+    .brand-title-dark {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem; 
+      font-weight: 700; 
+      color: #0f172a; 
+      letter-spacing: -0.01em; 
+      line-height: 1.15;
+    }
+    .brand-subtitle-light {
+      font-size: 0.6rem; 
+      font-weight: 700; 
+      color: #34d399; 
+      text-transform: uppercase; 
+      letter-spacing: 0.12em; 
+      margin-top: 2px; 
+      line-height: 1;
+    }
+    .brand-subtitle-green {
+      font-size: 0.6rem; 
+      font-weight: 700; 
+      color: #059669; 
+      text-transform: uppercase; 
+      letter-spacing: 0.12em; 
+      margin-top: 2px; 
+      line-height: 1;
+    }
+
+    .hero h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.6rem; 
+      font-weight: 800;
+      color: #ffffff; 
+      margin: 0 0 1rem;
+      letter-spacing: -0.03em; 
+      line-height: 1.15;
+      position: relative; 
+      z-index: 1;
+    }
+    .hero p { 
+      font-size: 1.05rem; 
+      color: rgba(255,255,255,0.7); 
+      margin: 0 0 2.5rem; 
+      position: relative; 
+      z-index: 1;
+      max-width: 520px;
+      line-height: 1.6;
+    }
+
+    .hero-features { 
+      list-style: none; 
+      padding: 0; 
+      margin: 0 0 3rem; 
+      position: relative; 
+      z-index: 1; 
+    }
+    .hero-features li {
+      display: flex; 
+      align-items: center; 
+      gap: 0.85rem;
+      font-size: 0.95rem; 
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 1rem; 
+      font-weight: 500;
+    }
+    .hero-features li span.dot {
+      width: 24px; 
+      height: 24px; 
+      border-radius: 50%;
+      background: var(--brand);
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-size: 0.75rem; 
+      color: #fff; 
+      font-weight: 800; 
+      flex-shrink: 0;
+    }
+
+    .hero-footer {
+      position: relative;
+      z-index: 1;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.45);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hero-footer a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      margin-left: 1rem;
+      transition: color 0.2s ease;
+    }
+    .hero-footer a:hover {
+      color: #34d399;
+    }
+
+    /* ── Right login panel (Fixed Width 540px) ── */
+    .login-panel {
+      width: 540px;
+      flex-shrink: 0;
+      background: #ffffff;
+      padding: 4rem 3.5rem;
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center;
+      box-shadow: -4px 0 30px rgba(0,0,0,0.06);
+    }
+
+    .form-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.75rem; 
+      font-weight: 800; 
+      color: #0f172a;
+      margin: 0 0 0.35rem; 
+      letter-spacing: -0.025em;
+    }
+    .form-sub { 
+      font-size: 0.9rem; 
+      color: #64748b; 
+      margin: 0 0 2.25rem; 
+    }
+
+    /* Alerts */
+    .alert-error {
+      background: #fef2f2; 
+      border: 1px solid #fecaca; 
+      border-radius: 10px;
+      padding: 0.85rem 1rem; 
+      color: #991b1b; 
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Form fields */
+    .field-group { 
+      margin-bottom: 1.35rem; 
+    }
+    .field-label {
+      display: block; 
+      font-weight: 600; 
+      color: #334155;
+      font-size: 0.85rem; 
+      margin-bottom: 0.45rem;
+    }
+    .field-input {
+      width: 100%; 
+      padding: 0.85rem 1rem;
+      border: 1.5px solid #e2e8f0; 
+      border-radius: 10px;
+      font-size: 0.95rem; 
+      font-family: inherit;
+      background: #f8fafc; 
+      color: #0f172a;
+      outline: none; 
+      transition: all 0.18s ease;
+    }
+    .field-input:focus {
+      border-color: var(--brand);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%; 
+      padding: 0.95rem 1.5rem;
+      background: var(--brand); 
+      color: #ffffff;
+      font-family: inherit; 
+      font-weight: 700; 
+      font-size: 1rem;
+      border: none; 
+      border-radius: 11px; 
+      cursor: pointer;
+      transition: all 0.18s ease; 
+      margin-top: 0.5rem;
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 35%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .submit-btn:hover { 
+      background: var(--brand-hover);
+      transform: translateY(-1px); 
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 45%, transparent);
+    }
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Divider & Extra Links */
+    .divider {
+      display: flex; 
+      align-items: center; 
+      text-align: center;
+      margin: 1.75rem 0 1.25rem; 
+      color: #94a3b8; 
+      font-size: 0.75rem;
+      font-weight: 600; 
+      text-transform: uppercase; 
+      letter-spacing: 0.05em;
+    }
+    .divider::before, .divider::after {
+      content: ''; 
+      flex: 1; 
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .divider:not(:empty)::before { margin-right: 0.75rem; }
+    .divider:not(:empty)::after { margin-left: 0.75rem; }
+
+    .sso-btn {
+      width: 100%; 
+      padding: 0.85rem 1.25rem;
+      background: #ffffff; 
+      color: #334155;
+      font-family: inherit; 
+      font-weight: 600; 
+      font-size: 0.9rem;
+      border: 1.5px solid #e2e8f0; 
+      border-radius: 11px; 
+      cursor: pointer;
+      transition: all 0.18s ease; 
+      display: flex; 
+      align-items: center;
+      justify-content: center; 
+      gap: 0.6rem; 
+      text-decoration: none;
+    }
+    .sso-btn:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+      background: #f8fafc;
+    }
+
+    .footer-note { 
+      margin-top: 2.25rem; 
+      text-align: center; 
+      color: #94a3b8; 
+      font-size: 0.82rem; 
+    }
+    .footer-note span { 
+      color: #64748b; 
+      font-weight: 600; 
+    }
+
+    @media (max-width: 900px) {
+      .hero { display: none; }
+      .login-panel { width: 100%; max-width: 540px; margin: 0 auto; box-shadow: none; padding: 3rem 2rem; }
+    }
+  </style>
 </head>
 <body>
-    <div class="hero-section">
-        <div class="hero-content">
-            <div class="logo">Release Rocket</div>
-            <h1 class="tagline">Sync. Ship. Slay.</h1>
-            <p class="subtag">The SCM platform that vibes with your workflow. Collaborate like never before with real-time magic, AI-powered workflows, and metrics that actually matter.</p>
-            
-            <div class="features">
-                <div class="feature-chip">🚀 Blazing Fast</div>
-                <div class="feature-chip">🤖 AI Co-Pilot</div>
-                <div class="feature-chip">🔒 Secure AF</div>
-                <div class="feature-chip">💎 No BS</div>
-               
-            </div>
+  <div class="login-container">
+
+    <!-- ── Left Hero panel ────────────────────────── -->
+    <div class="hero">
+      <div class="hero-brand">
+        <img src="{% static 'images/logo/cogfocus_favicon_180x180.png' %}" onerror="this.onerror=null; this.src='{% static 'gitmgmt/images/logo/cogfocus_favicon_180x180.png' %}';" alt="CogFocus" class="brand-icon">
+        <div class="brand-text-col">
+          <span class="brand-title-light">CogFocus One™</span>
+          <span class="brand-subtitle-light">CI/CD &amp; DEVOPS</span>
         </div>
-    </div>
-    
-    <div class="login-section">
-        <div class="login-header">
-            <h2 class="login-title">Welcome Back!</h2>
-            <p class="login-subtitle">Get back to building dope stuff</p>
+      </div>
+
+      <h1>Enterprise Git Hosting &amp; CI/CD Pipelines</h1>
+      <p>Your organization's dedicated self-hosted code management platform — built for speed, real-time log streaming, and automated pipeline execution.</p>
+
+      <ul class="hero-features">
+        <li><span class="dot">✓</span> Self-hosted Git repositories &amp; Smart HTTP protocol</li>
+        <li><span class="dot">✓</span> Real-time pipeline log streaming via SSE</li>
+        <li><span class="dot">✓</span> AI-powered build failure prediction</li>
+        <li><span class="dot">✓</span> HMAC-SHA256 authenticated build runners</li>
+      </ul>
+
+      <div class="hero-footer">
+        <span>&copy; {% now "Y" %} CogFocus Technologies</span>
+        <div>
+          <a href="#">Privacy</a>
+          <a href="#">Docs</a>
+          <a href="#">Status</a>
         </div>
-        
-        {% if form.errors %}
-            <div class="error-message">
-                <p>Oops! Invalid credentials. Try again?</p>
-            </div>
-        {% endif %}
-        
-        <form method="post" class="login-form">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="username">Username or Email</label>
-                <input type="text" id="username" name="username" placeholder="Enter your username or email" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter your password" required>
-            </div>
-            
-            <button type="submit" class="login-button">Let Me In →</button>
-        </form>
+      </div>
     </div>
+
+    <!-- ── Right Login form panel (Fixed 540px width) ───────────────────── -->
+    <div class="login-panel">
+
+      <!-- Brand logo in form panel -->
+      <div class="form-brand">
+        <img src="{% static 'images/logo/cogfocus_favicon_180x180.png' %}" onerror="this.onerror=null; this.src='{% static 'gitmgmt/images/logo/cogfocus_favicon_180x180.png' %}';" alt="CogFocus" class="brand-icon">
+        <div class="brand-text-col">
+          <span class="brand-title-dark">CogFocus One™</span>
+          <span class="brand-subtitle-green">CI/CD</span>
+        </div>
+      </div>
+
+      <h2 class="form-heading">Sign in</h2>
+      <p class="form-sub">Access your CogFocus One™ CI/CD workspace</p>
+
+      {% if form.errors %}
+        <div class="alert-error">
+          <i class="ph-bold ph-warning-circle"></i>
+          <span>Invalid username or password. Please try again.</span>
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="field-group">
+          <label class="field-label" for="login-username">Username or Email</label>
+          <input id="login-username" class="field-input" type="text" name="username"
+                 placeholder="Enter your username" autocomplete="username" required autofocus>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="login-pass">Password</label>
+          <input id="login-pass" class="field-input" type="password" name="password"
+                 placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="submit-btn">
+          <span>Sign in</span>
+          <i class="ph-bold ph-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="divider">or</div>
+
+      <a href="#" class="sso-btn">
+        <i class="ph-bold ph-shield-check"></i>
+        <span>Single Sign-On (SSO) →</span>
+      </a>
+
+      <p class="footer-note">
+        &copy; {% now "Y" %} <span>CogFocus™ Executive Suite</span>
+      </p>
+    </div>
+
+  </div>
 </body>
 </html>

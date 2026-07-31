@@ -355,13 +355,20 @@
                 <label>From Address</label>
                 <input type="text" name="smtp_from" class="form-control"
                        value="{{ integrations.email.config.smtp_from|default:'' }}"
-                       placeholder="ReleaseRocket <noreply@yourcompany.com>">
+                       placeholder="CogFocus One <noreply@yourcompany.com>">
             </div>
             <div class="form-group" style="display:flex; align-items:center; gap:0.6rem;">
                 <input type="checkbox" name="use_tls" id="use_tls" value="1"
                        {% if integrations.email.config.use_tls or not integrations.email %}checked{% endif %}
                        style="width:auto; margin:0; accent-color:var(--accent-color);">
                 <label for="use_tls" style="margin:0; font-size:0.85rem; color:var(--text-primary);">Use STARTTLS (recommended)</label>
+            </div>
+            <div class="form-group" style="margin-top:0.75rem; border-top:1px solid var(--border-color); padding-top:0.75rem;">
+                <label>Test Recipient Email (Optional)</label>
+                <input type="email" name="test_recipient" class="form-control"
+                       value="{{ request.user.email|default:'' }}"
+                       placeholder="your.email@company.com (leave blank to test connection only)">
+                <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:0.2rem;">Enter your email to receive a test message when testing connection.</div>
             </div>
             <div id="testResult" class="test-result"></div>
             <div class="modal-actions">

@@ -251,6 +251,8 @@
         <div class="docs-nav-label">Administration</div>
         <a href="#agents">Build Agents</a>
         <a href="#deploy-targets">Deployment Targets</a>
+        <a href="#artifacts">Build Artifacts</a>
+        <a href="#notifications">Notifications</a>
         <a href="#deployment">Server Deployment</a>
 
         <div class="docs-nav-label">Reference</div>
@@ -262,13 +264,13 @@
 
         <div class="docs-header">
             <h1><i class="ph ph-book-open"></i> Documentation</h1>
-            <p>Everything you need to use and operate ReleaseRocket — from your first repository to production deployment.</p>
+            <p>Everything you need to use and operate CogFocus One™ — from your first repository to production deployment.</p>
         </div>
 
         <!-- OVERVIEW -->
         <section id="overview">
             <h2><i class="ph ph-info"></i> Overview</h2>
-            <p>ReleaseRocket is a self-hosted DevOps platform that combines Git hosting and CI/CD automation in a single application. Your team can host repositories, review code through pull requests, track work with issues, and ship through automated pipelines — entirely on your own infrastructure.</p>
+            <p>CogFocus One™ is a self-hosted DevOps platform that combines Git hosting and CI/CD automation in a single application. Your team can host repositories, review code through pull requests, track work with issues, and ship through automated pipelines — entirely on your own infrastructure.</p>
             <div class="docs-table-wrap">
                 <table class="docs-table">
                     <tr><th>Capability</th><th>Description</th></tr>
@@ -617,6 +619,93 @@ DEPLOY_&lt;SERVICE_NAME&gt;_&lt;EXTRA_KEY&gt;</code></pre>
                 <i class="ph ph-warning"></i>
                 <p>The build agent must have the required CLI installed (<code>kubectl</code>, <code>aws</code>, <code>az</code>, <code>gcloud</code>, <code>docker</code>, <code>ssh</code>) and available on its <code>PATH</code>. ReleaseRocket generates the command — it does not bundle the SDKs.</p>
             </div>
+        </section>
+
+        <!-- BUILD ARTIFACTS -->
+        <section id="artifacts">
+            <h2><i class="ph ph-archive-box"></i> Build Artifacts</h2>
+            <p>Build Artifacts let a pipeline step capture output files — compiled binaries, test reports, coverage HTML, release zips — and store them in ReleaseRocket so they can be downloaded from the run detail page without SSH-ing into the agent.</p>
+
+            <h3>Saving an artifact</h3>
+            <p>Add a step whose command begins with <code>artifact:</code> followed by a glob pattern relative to the repository working directory:</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-file-code"></i> rockerci.yaml</div>
+                <pre><code>stages:
+  - name: Build
+    steps:
+      - name: Compile
+        command: npm run build
+
+      - name: Save release bundle
+        command: artifact:dist/*.zip
+
+      - name: Save coverage report
+        command: artifact:coverage/lcov-report/**</code></pre>
+            </div>
+            <p>The worker expands the glob in the checked-out workspace, copies every matched file to persistent artifact storage, and logs which files were stored. The step always exits 0 even if no files matched — it will log <em>no files matched</em> instead of failing the build.</p>
+
+            <h3>Downloading artifacts</h3>
+            <p>Open the pipeline run detail page (<strong>Pipelines → &lt;pipeline&gt; → &lt;run&gt;</strong>). An <strong>Build Artifacts</strong> card appears above the logs, listing every stored file with its size and a <strong>Download</strong> button. Files are served directly from the server with the correct MIME type.</p>
+
+            <h3>Artifact storage location</h3>
+            <p>Artifacts are written to <code>CI_ARTIFACTS_DIR</code> (default <code>D:/cicd/artifacts</code>), organised by run UUID. Set this environment variable in the server's environment to move storage to a larger volume or network share.</p>
+
+            <div class="docs-note">
+                <i class="ph ph-info"></i>
+                <p>Artifact files are kept indefinitely. Clean up old run directories under <code>CI_ARTIFACTS_DIR</code> manually or with a cron job if disk space is a concern.</p>
+            </div>
+        </section>
+
+        <!-- NOTIFICATIONS -->
+        <section id="notifications">
+            <h2><i class="ph ph-bell"></i> Notifications</h2>
+            <p>ReleaseRocket can send email notifications for pipeline and repository events. Each user independently controls which events they receive, and the email transport is configured once by an admin in Global Settings.</p>
+
+            <h3>Configuring email (admin)</h3>
+            <ol>
+                <li>Go to <strong>Global Settings → Integrations</strong>.</li>
+                <li>Click <strong>Configure</strong> on the Email card.</li>
+                <li>Enter your SMTP details:</li>
+            </ol>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Field</th><th>Example</th></tr>
+                    <tr><td>SMTP Host</td><td><code>smtp.gmail.com</code> or your corporate relay</td></tr>
+                    <tr><td>Port</td><td><code>587</code> (STARTTLS) · <code>465</code> (SSL) · <code>25</code> (plain)</td></tr>
+                    <tr><td>Username</td><td>SMTP account username or email address</td></tr>
+                    <tr><td>Password</td><td>SMTP password or app-specific password</td></tr>
+                    <tr><td>From Address</td><td><code>noreply@yourcompany.com</code></td></tr>
+                    <tr><td>Use TLS</td><td>Check for STARTTLS on port 587 (recommended)</td></tr>
+                </table>
+            </div>
+            <p>Use <strong>Test Connection</strong> to verify the settings before saving. The card shows a green <em>Connected</em> badge once an active integration is saved. Leaving the password field blank on edit keeps the existing password.</p>
+
+            <div class="docs-note">
+                <i class="ph ph-info"></i>
+                <p>Slack and Microsoft Teams integrations are coming soon. Their cards are visible in Global Settings; click <em>Coming Soon</em> to see the planned feature.</p>
+            </div>
+
+            <h3>Setting notification preferences (per user)</h3>
+            <p>Every user controls their own notification preferences. Open the user menu (top right) → <strong>Notifications</strong>. Toggle each event type on or off:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Event</th><th>Triggered when</th></tr>
+                    <tr><td>Pipeline success</td><td>A pipeline run completes with all steps passing</td></tr>
+                    <tr><td>Pipeline failure</td><td>A pipeline run fails on any step</td></tr>
+                    <tr><td>PR assigned</td><td>You are added as a reviewer on a pull request</td></tr>
+                    <tr><td>PR merged</td><td>A pull request you authored is merged</td></tr>
+                    <tr><td>Issue assigned</td><td>An issue is assigned to you</td></tr>
+                    <tr><td>Issue commented</td><td>A comment is added to an issue you created</td></tr>
+                </table>
+            </div>
+
+            <div class="docs-note warn">
+                <i class="ph ph-warning"></i>
+                <p>Email notifications require your account to have a <strong>verified email address</strong> set on your Profile. Users without an email address never receive notifications, even if their toggles are on.</p>
+            </div>
+
+            <h3>How notifications are delivered</h3>
+            <p>Pipeline notifications are sent at the end of each run to all project members who have the relevant toggle enabled. PR and issue notifications are sent to the directly affected user (reviewer or assignee). All delivery happens in the background — a failed SMTP send never blocks a build or page load, and the server logs a warning instead.</p>
         </section>
 
         <!-- DEPLOYMENT -->

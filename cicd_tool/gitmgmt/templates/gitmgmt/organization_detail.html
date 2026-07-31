@@ -4,81 +4,85 @@
 <style>
   .org-layout {
     display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 2rem;
+    grid-template-columns: 1fr 240px;
+    gap: 1rem;
     align-items: start;
   }
   .pcard {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
   }
   .pcard:last-child { margin-bottom: 0; }
   .pcard h2 {
-    font-size: 1.1rem; font-weight: 600;
-    margin: 0 0 1.1rem; padding-bottom: 0.75rem;
+    font-size: 0.95rem; font-weight: 700;
+    margin: 0 0 0.85rem; padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--border-color);
-    display: flex; align-items: center; gap: 0.5rem;
+    display: flex; align-items: center; gap: 0.4rem;
     justify-content: space-between;
   }
   .list-item {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 0.75rem 0;
+    padding: 0.55rem 0;
     border-bottom: 1px solid var(--border-color);
+    font-size: 0.78rem;
   }
   .list-item:last-child { border-bottom: none; }
   .badge {
-    background: var(--darker-bg);
-    border: 1px solid var(--border-color);
-    padding: 0.15rem 0.6rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+    background: var(--accent-light);
+    border: 1px solid rgba(5, 150, 105, 0.2);
+    padding: 0.12rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--brand);
   }
   .btn-primary {
-    background: #238636; color: #fff; border: 1px solid #2ea043;
-    border-radius: 6px; padding: 0.4rem 0.9rem; font-size: 0.82rem;
-    font-weight: 500; cursor: pointer; font-family: inherit;
-    display: inline-flex; align-items: center; gap: 0.35rem;
-    transition: background 0.2s; text-decoration: none;
+    background: var(--brand); color: #fff; border: 1px solid var(--brand);
+    border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.78rem;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    transition: var(--transition); text-decoration: none;
+    box-shadow: var(--shadow-sm);
   }
-  .btn-primary:hover { background: #2ea043; }
+  .btn-primary:hover { background: var(--brand-hover); }
   .btn-outline {
-    background: transparent; color: var(--text-primary);
+    background: #ffffff; color: var(--text-primary);
     border: 1px solid var(--border-color); border-radius: 6px;
-    padding: 0.4rem 0.9rem; font-size: 0.82rem; font-weight: 500;
+    padding: 0.35rem 0.75rem; font-size: 0.78rem; font-weight: 600;
     cursor: pointer; font-family: inherit; width: 100%;
-    display: block; text-align: center; margin-top: 0.5rem;
-    transition: background 0.2s; text-decoration: none;
+    display: block; text-align: center; margin-top: 0.4rem;
+    transition: var(--transition); text-decoration: none;
   }
-  .btn-outline:hover { background: rgba(255,255,255,0.05); }
-  .form-row { margin-bottom: 0.75rem; }
+  .btn-outline:hover { background: var(--canvas-bg); border-color: var(--brand); color: var(--brand); }
+  .form-row { margin-bottom: 0.6rem; }
   .form-row input, .form-row select {
-    width: 100%; background: var(--dark-bg);
+    width: 100%; background: #ffffff;
     border: 1px solid var(--border-color); border-radius: 6px;
-    color: var(--text-primary); padding: 0.45rem 0.75rem;
-    font-size: 0.85rem; font-family: inherit; box-sizing: border-box;
-    outline: none; transition: border-color 0.2s;
+    color: var(--text-primary); padding: 0.4rem 0.6rem;
+    font-size: 0.78rem; font-family: inherit; box-sizing: border-box;
+    outline: none; transition: border-color 0.15s;
   }
   .form-row input:focus, .form-row select:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(5,150,105,0.12);
   }
-  .form-row select option { background: var(--card-bg); }
+  .form-row select option { background: #ffffff; color: var(--text-primary); }
   .owner-badge {
-    font-size: 0.75rem; font-weight: 600; color: var(--accent-color);
-    background: rgba(47,129,247,0.15); padding: 0.15rem 0.5rem;
-    border-radius: 4px;
+    font-size: 0.65rem; font-weight: 700; color: var(--brand);
+    background: var(--accent-light); padding: 0.12rem 0.45rem;
+    border-radius: 4px; border: 1px solid rgba(5,150,105,0.2);
   }
 </style>
 
 <!-- Breadcrumb -->
-<div style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.5rem;">
-  <a href="{% url 'organization_list' %}" style="color:var(--accent-color); text-decoration:none;">Organizations</a>
+<div style="display:flex; align-items:center; gap:0.35rem; font-size:0.78rem; color:var(--text-muted); margin-bottom:1rem;">
+  <a href="{% url 'organization_list' %}" style="color:var(--brand); text-decoration:none; font-weight:600;">Organizations</a>
   <i class="ph ph-caret-right"></i>
-  <span style="color:var(--text-primary);">{{ org.name }}</span>
+  <span style="color:var(--text-primary); font-weight:700;">{{ org.name }}</span>
   {% if is_owner %}<span class="owner-badge">Owner</span>{% endif %}
 </div>
 
@@ -87,106 +91,101 @@
   <div>
     <!-- Overview card -->
     <div class="pcard">
-      <h2 style="font-size:1.4rem; border:none; padding:0; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
-        <span><i class="ph ph-buildings"></i> {{ org.name }}</span>
+      <h2 style="font-size:1.15rem; font-family:'Outfit', sans-serif; border:none; padding:0; margin-bottom:0.4rem; display:flex; justify-content:space-between; align-items:center;">
+        <span><i class="ph ph-buildings" style="color:var(--brand);"></i> {{ org.name }}</span>
         {% if my_role == 'owner' or my_role == 'admin' %}
-        <a href="{% url 'organization_settings' org.id %}" class="btn-outline" style="font-size:0.8rem; text-decoration:none;">
+        <a href="{% url 'organization_settings' org.id %}" class="btn-outline" style="font-size:0.75rem; text-decoration:none; width:auto; margin:0;">
           <i class="ph ph-gear"></i> Settings
         </a>
         {% endif %}
       </h2>
-      {% if org.description %}<p style="color:var(--text-secondary); margin:0;">{{ org.description }}</p>{% endif %}
+      {% if org.description %}<p style="color:var(--text-secondary); margin:0; font-size:0.8rem;">{{ org.description }}</p>{% endif %}
     </div>
 
     <!-- Repositories -->
     <div class="pcard">
       <h2>
-        <span><i class="ph ph-book-bookmark"></i> Repositories</span>
-        <a href="{% url 'create_repository' %}?org={{ org.id }}" class="btn-primary"><i class="ph ph-plus"></i> New Repo</a>
+        <span><i class="ph ph-git-branch" style="color:var(--brand);"></i> Repositories ({{ repositories|length }})</span>
       </h2>
-      {% for repo in repos %}
-      <div class="list-item">
-        <a href="{% url 'repository_detail' repo.name %}" style="color: var(--accent-color); text-decoration: none; font-weight: 600;">
-          {{ repo.name }}
-        </a>
-        <span class="badge">{{ repo.visibility }}</span>
-      </div>
-      {% empty %}
-      <div style="text-align:center; padding:2rem; color:var(--text-secondary);">
-        <i class="ph ph-book" style="font-size:2rem; opacity:0.3; display:block; margin-bottom:0.5rem;"></i>
-        No repositories in this organization.
-      </div>
-      {% endfor %}
+      {% if repositories %}
+        {% for r in repositories %}
+          <div class="list-item">
+            <div>
+              <a href="{% url 'repository_detail' r.name %}" style="color:var(--brand); font-weight:700; text-decoration:none;">
+                {{ r.name }}
+              </a>
+              {% if r.description %}
+              <p style="color:var(--text-muted); font-size:0.72rem; margin:0.15rem 0 0;">{{ r.description|truncatewords:15 }}</p>
+              {% endif %}
+            </div>
+            <span class="badge">{{ r.visibility|upper }}</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:var(--text-muted); margin:0; font-size:0.78rem;">No repositories in this organization yet.</p>
+      {% endif %}
     </div>
 
     <!-- Teams -->
     <div class="pcard">
-      <h2><span><i class="ph ph-users-three"></i> Teams</span></h2>
-      {% for team in teams %}
-      <div class="list-item">
-        <div>
-          <strong style="color:var(--text-primary);">{{ team.name }}</strong>
-          <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.15rem;">{{ team.members.count }} members{% if team.description %} · {{ team.description|truncatechars:40 }}{% endif %}</div>
-        </div>
-      </div>
-      {% empty %}
-      <div style="text-align:center; padding:2rem; color:var(--text-secondary);">No teams defined.</div>
-      {% endfor %}
+      <h2>
+        <span><i class="ph ph-users-three" style="color:var(--brand);"></i> Teams ({{ teams|length }})</span>
+      </h2>
+      {% if teams %}
+        {% for t in teams %}
+          <div class="list-item">
+            <div>
+              <strong style="color:var(--text-primary);">{{ t.name }}</strong>
+              {% if t.description %}
+              <p style="color:var(--text-muted); font-size:0.72rem; margin:0.15rem 0 0;">{{ t.description }}</p>
+              {% endif %}
+            </div>
+            <span style="font-size:0.72rem; color:var(--text-muted);">{{ t.members.count }} members</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:var(--text-muted); margin:0; font-size:0.78rem;">No teams configured.</p>
+      {% endif %}
     </div>
   </div>
 
-  <!-- Sidebar -->
+  <!-- Sidebar Column -->
   <div>
-    <!-- Members list -->
+    <!-- Members Card -->
     <div class="pcard">
-      <h2><span><i class="ph ph-user-list"></i> Members</span></h2>
-      {% for member in members %}
-      <div class="list-item" style="padding: 0.5rem 0;">
-        <span style="color:var(--text-primary);">@{{ member.username }}</span>
-      </div>
+      <h2>
+        <span><i class="ph ph-user-list" style="color:var(--brand);"></i> Members ({{ members|length }})</span>
+      </h2>
+      {% for m in members %}
+        <div class="list-item">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <strong style="font-size:0.78rem;">{{ m.user.username }}</strong>
+          </div>
+          <span class="badge">{{ m.get_role_display }}</span>
+        </div>
       {% endfor %}
-    </div>
 
-    {% if is_owner %}
-    <!-- Add Member -->
-    <div class="pcard">
-      <h2><span><i class="ph ph-user-plus"></i> Add Member</span></h2>
-      <form action="{% url 'add_org_member' org.id %}" method="post">
-        {% csrf_token %}
-        <div class="form-row">
-          <input type="text" name="username" placeholder="Username" required>
-        </div>
-        <div class="form-row">
-          <select name="team_id" required>
-            <option value="">— Select Team —</option>
-            {% for team in teams %}
-            <option value="{{ team.id }}">{{ team.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
-          <i class="ph ph-paper-plane-tilt"></i> Invite
-        </button>
-      </form>
+      {% if my_role == 'owner' or my_role == 'admin' %}
+      <div style="margin-top:1rem; border-top:1px solid var(--border-color); padding-top:0.75rem;">
+        <h4 style="margin:0 0 0.4rem; font-size:0.75rem; color:var(--text-secondary);">Add Member</h4>
+        <form method="post" action="{% url 'organization_detail' org.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_member">
+          <div class="form-row">
+            <input type="text" name="username" placeholder="Username" required>
+          </div>
+          <div class="form-row">
+            <select name="role">
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Add Member</button>
+        </form>
+      </div>
+      {% endif %}
     </div>
-
-    <!-- Create Team -->
-    <div class="pcard">
-      <h2><span><i class="ph ph-plus-circle"></i> Create Team</span></h2>
-      <form action="{% url 'create_team' org.id %}" method="post">
-        {% csrf_token %}
-        <div class="form-row">
-          <input type="text" name="name" placeholder="Team Name" required>
-        </div>
-        <div class="form-row">
-          <input type="text" name="description" placeholder="Description (optional)">
-        </div>
-        <a href="#" onclick="this.closest('form').submit(); return false;" class="btn-outline">
-          <i class="ph ph-users-three"></i> Create Team
-        </a>
-      </form>
-    </div>
-    {% endif %}
   </div>
 </div>
 {% endblock %}

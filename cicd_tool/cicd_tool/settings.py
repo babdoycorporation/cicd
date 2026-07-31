@@ -82,6 +82,9 @@ USE_TZ = True
 
 # ── Static / Media files ──────────────────────────────────────────────────────
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
@@ -94,9 +97,13 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
 
-# ── Git / CI paths ────────────────────────────────────────────────────────────
-REPO_BASE_PATH = os.environ.get('REPO_BASE_PATH', 'D:/repos')
-CI_RUNS_DIR = os.environ.get('CI_RUNS_DIR', 'D:/cicd/runs')
+# ── Git / CI paths (Multi-Environment & Backup-Safe) ──────────────────────────
+REPO_BASE_PATH = os.environ.get('REPO_BASE_PATH', str(BASE_DIR / 'repos'))
+CI_RUNS_DIR = os.environ.get('CI_RUNS_DIR', str(BASE_DIR / 'runs'))
+
+# Ensure paths exist
+os.makedirs(REPO_BASE_PATH, exist_ok=True)
+os.makedirs(CI_RUNS_DIR, exist_ok=True)
 
 # ── Email (configure for real notifications) ──────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

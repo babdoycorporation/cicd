@@ -1,114 +1,201 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReleaseRocket - Pipeline Dashboard</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%232f81f7'%3E%3Cpath d='M152,224a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,224ZM128,112a12,12,0,1,0-12-12A12,12,0,0,0,128,112Zm95.62,43.83-12.36,55.63a16,16,0,0,1-25.51,9.11L158.51,200h-61L70.25,220.57a16,16,0,0,1-25.51-9.11L32.38,155.83a16.09,16.09,0,0,1,3.32-13.71l28.56-34.26a123.07,123.07,0,0,1,8.57-36.67c12.9-32.34,36-52.63,45.37-59.85a16,16,0,0,1,19.6,0c9.34,7.22,32.47,27.51,45.37,59.85a123.07,123.07,0,0,1,8.57,36.67l28.56,34.26A16.09,16.09,0,0,1,223.62,155.83ZM99.43,184h57.14c21.12-37.54,25.07-73.48,11.74-106.88C156.55,47.64,134.49,29,128,24c-6.51,5-28.57,23.64-40.33,53.12C74.36,110.52,78.31,146.46,99.43,184Zm-15,5.85Q68.28,160.5,64.83,132.16L48,152.36,60.36,208l.18-.13ZM208,152.36l-16.83-20.2q-3.42,28.28-19.56,57.69l23.85,18,.18.13Z'/%3E%3C/svg%3E">
+    <title>{% block title %}CogFocus One™ CI/CD Executive Suite{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'images/logo/cogfocus_favicon_180x180.png' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>.fa-spin { animation: spin 2s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }</style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --dark-bg: #0d1117;
-            --darker-bg: #010409;
-            --card-bg: #161b22;
-            --border-color: #30363d;
-            --text-primary: #e6edf3;
-            --text-secondary: #7d8590;
-            --accent-color: #2f81f7;
-            --success-color: #3fb950;
-            --danger-color: #f85149;
-            --warning-color: #d29922;
-            --transition: all 0.25s cubic-bezier(0.645, 0.045, 0.355, 1);
-            --sidebar-width: 210px;
-            --sidebar-collapsed-width: 64px;
+            --brand: #059669;
+            --brand-hover: #047857;
+            --canvas-bg: #f8fafc;
+            --sidebar-bg: rgba(255, 255, 255, 0.97);
+            --topbar-bg: rgba(255, 255, 255, 0.97);
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --border-hover: #cbd5e1;
+            
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            
+            --accent-color: #059669;
+            --accent-light: #ecfdf5;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            
+            --transition: all 0.15s ease;
+            --sidebar-width: 195px;
+            --sidebar-collapsed-width: 50px;
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 3px 6px -1px rgba(15, 23, 42, 0.04);
+            --shadow-lg: 0 8px 20px -8px rgba(15, 23, 42, 0.05);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 13px;
-            letter-spacing: 0.2px;
+            font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--canvas-bg);
             color: var(--text-primary);
-            background-color: var(--dark-bg);
             margin: 0;
             padding: 0;
+            font-size: 12px;
+            line-height: 1.45;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Sidebar Styles */
+        /* Sidebar Styling */
         .sidebar {
-            height: 100vh;
             width: var(--sidebar-width);
+            height: 100vh;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
             position: fixed;
             top: 0;
             left: 0;
-            background-color: var(--darker-bg);
-            border-right: 1px solid var(--border-color);
-            padding-top: 1rem;
-            overflow-x: hidden;
-            transition: width 0.3s;
-            z-index: 1000;
             display: flex;
             flex-direction: column;
+            transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease;
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
-
 
         .sidebar.collapsed {
             width: var(--sidebar-collapsed-width);
         }
 
-        .sidebar-brand {
-            padding: 1rem 1.5rem;
+        .sidebar-header {
+            height: 48px;
             display: flex;
             align-items: center;
-            color: var(--text-primary);
-            font-size: 1.15rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
+            padding: 0 0.85rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
             text-decoration: none;
+            color: var(--text-primary);
         }
 
-        .sidebar-brand i {
-            color: var(--accent-color);
-            margin-right: 0.75rem;
-            font-size: 1.5rem;
+        .brand-icon-wrapper {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            background: rgba(5, 150, 105, 0.1);
+            border: 1px solid rgba(5, 150, 105, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
-        .sidebar.collapsed .sidebar-brand .text {
+        .brand-icon-wrapper img {
+            width: 17px;
+            height: 17px;
+            object-fit: contain;
+        }
+
+        .brand-text-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+
+        .brand-subtitle {
+            font-size: 0.58rem;
+            font-weight: 800;
+            color: var(--brand);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 1px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .brand-subtitle-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: var(--brand);
+            display: inline-block;
+        }
+
+        .sidebar.collapsed .brand-text-block {
             display: none;
-        }
-
-        .sidebar.collapsed .sidebar-brand i {
-            margin-right: 0;
         }
 
         .sidebar-menu {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
-            padding: 0 0.5rem;
+            gap: 0.15rem;
+            padding: 0.35rem 0.4rem;
+            flex-grow: 1;
+        }
+
+        .sidebar-section-label {
+            padding: 0.45rem 0.55rem 0.25rem;
+            font-size: 0.62rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .sidebar.collapsed .sidebar-section-label {
+            display: none;
         }
 
         .sidebar a {
-            padding: 0.6rem 1rem;
+            padding: 0.42rem 0.6rem;
             text-decoration: none;
             color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.82rem;
             display: flex;
             align-items: center;
             border-radius: 6px;
             transition: var(--transition);
+            border: 1px solid transparent;
         }
 
         .sidebar a .icon {
-            margin-right: 1rem;
-            font-size: 1.1rem;
-            min-width: 20px;
+            margin-right: 0.55rem;
+            font-size: 1.05rem;
+            min-width: 18px;
             text-align: center;
+            color: var(--text-muted);
+            transition: color 0.15s ease;
         }
 
         .sidebar.collapsed a {
             justify-content: center;
-            padding: 0.75rem 0;
+            padding: 0.45rem 0;
         }
 
         .sidebar.collapsed a .text {
@@ -119,30 +206,73 @@
             margin-right: 0;
         }
 
-        .sidebar a:hover, .sidebar a.active {
-            background-color: var(--card-bg);
+        .sidebar a:hover {
+            background-color: rgba(241, 245, 249, 0.9);
             color: var(--text-primary);
+            border-color: var(--border-color);
         }
 
-        .sidebar a:hover .icon, .sidebar a.active .icon {
-            color: var(--accent-color);
+        .sidebar a:hover .icon {
+            color: var(--brand);
         }
 
-        /* Topbar & Toggler */
+        .sidebar a.active {
+            background-color: var(--accent-light);
+            color: var(--brand);
+            border-color: rgba(5, 150, 105, 0.25);
+            font-weight: 700;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar a.active .icon {
+            color: var(--brand);
+        }
+
+        .sidebar-footer {
+            padding: 0.35rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Topbar & Header */
         .topbar {
-            height: 60px;
+            height: 44px;
             border-bottom: 1px solid var(--border-color);
-            background-color: var(--dark-bg);
+            background-color: var(--topbar-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 2rem;
+            padding: 0 1.25rem;
             position: sticky;
             top: 0;
             z-index: 999;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
         }
 
-        /* User dropdown in topbar */
+        .sidebar-toggler {
+            border: 1px solid var(--border-color);
+            background: #ffffff;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-toggler:hover {
+            color: var(--brand);
+            border-color: var(--brand);
+            background-color: var(--accent-light);
+        }
+
+        /* Topbar User Menu */
         .topbar-user {
             position: relative;
             display: flex;
@@ -152,42 +282,43 @@
         .topbar-user-btn {
             display: flex;
             align-items: center;
-            gap: 0.55rem;
-            background: none;
-            border: 1px solid transparent;
-            border-radius: 8px;
-            padding: 0.35rem 0.6rem;
+            gap: 0.45rem;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.2rem 0.5rem 0.2rem 0.3rem;
             cursor: pointer;
             color: var(--text-primary);
             font-family: inherit;
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: background 0.15s, border-color 0.15s;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
         }
 
         .topbar-user-btn:hover {
-            background: var(--card-bg);
-            border-color: var(--border-color);
+            border-color: var(--brand);
+            background: var(--accent-light);
         }
 
         .topbar-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-color), #b892ff);
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            background: linear-gradient(135deg, var(--brand), #10b981);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            font-size: 0.8rem;
-            color: #fff;
+            font-weight: 800;
+            font-size: 0.65rem;
+            color: #ffffff;
             text-transform: uppercase;
             flex-shrink: 0;
         }
 
         .topbar-chevron {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-size: 0.72rem;
             transition: transform 0.2s;
         }
 
@@ -198,29 +329,31 @@
         .user-dropdown {
             display: none;
             position: absolute;
-            top: calc(100% + 8px);
+            top: calc(100% + 5px);
             right: 0;
-            min-width: 200px;
-            background: var(--card-bg);
+            min-width: 180px;
+            background: #ffffff;
             border: 1px solid var(--border-color);
             border-radius: 10px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            box-shadow: var(--shadow-lg);
             overflow: hidden;
             z-index: 1100;
+            padding: 0.25rem;
         }
 
         .user-dropdown.open { display: block; }
 
         .dropdown-header {
-            padding: 0.75rem 1rem;
+            padding: 0.5rem 0.65rem;
             border-bottom: 1px solid var(--border-color);
-            font-size: 0.78rem;
-            color: var(--text-secondary);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 0.2rem;
         }
 
         .dropdown-header strong {
             display: block;
-            font-size: 0.88rem;
+            font-size: 0.78rem;
             color: var(--text-primary);
             margin-bottom: 0.1rem;
         }
@@ -228,54 +361,38 @@
         .dropdown-item {
             display: flex;
             align-items: center;
-            gap: 0.6rem;
-            padding: 0.6rem 1rem;
-            font-size: 0.85rem;
+            gap: 0.5rem;
+            padding: 0.45rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 600;
             color: var(--text-secondary);
             text-decoration: none;
-            transition: background 0.12s, color 0.12s;
+            border-radius: 5px;
+            transition: var(--transition);
         }
 
         .dropdown-item:hover {
-            background: rgba(255,255,255,0.05);
-            color: var(--text-primary);
+            background: var(--canvas-bg);
+            color: var(--brand);
         }
 
-        .dropdown-item i { font-size: 1rem; width: 16px; text-align: center; }
+        .dropdown-item i { font-size: 0.95rem; width: 14px; text-align: center; color: var(--text-muted); }
+        .dropdown-item:hover i { color: var(--brand); }
 
         .dropdown-divider {
             height: 1px;
             background: var(--border-color);
-            margin: 0.25rem 0;
+            margin: 0.2rem 0;
         }
 
         .dropdown-item.danger { color: var(--danger-color); }
-        .dropdown-item.danger:hover { background: rgba(248,81,73,0.08); color: var(--danger-color); }
+        .dropdown-item.danger:hover { background: #fef2f2; color: var(--danger-color); }
+        .dropdown-item.danger i { color: var(--danger-color); }
 
-        .sidebar-toggler {
-            border: none;
-            background: none;
-            color: var(--text-secondary);
-            font-size: 1.15rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-        }
-
-        .sidebar-toggler:hover {
-            color: var(--text-primary);
-            background-color: var(--card-bg);
-        }
-
-        /* Content Area */
+        /* Main Content Wrapper */
         .main-wrapper {
             margin-left: var(--sidebar-width);
-            transition: margin-left 0.3s;
+            transition: margin-left 0.2s ease;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -286,8 +403,15 @@
         }
 
         .content {
-            padding: 2rem;
+            padding: 1.15rem 1.35rem;
             flex-grow: 1;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        /* Generic Card & Container Ultra-Compact Styles */
+        .card, .panel, div[style*="background"], table {
+            border-radius: 8px !important;
         }
 
         /* Responsive Design */
@@ -305,94 +429,136 @@
             .sidebar-toggler {
                 display: block;
             }
+            .content {
+                padding: 1rem 0.75rem;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <a href="{% url 'dashboard' %}" class="sidebar-brand">
-            <i class="ph ph-rocket"></i>
-            <span class="text">ReleaseRocket</span>
-        </a>
-                <div class="sidebar-menu">
-            {% if project %}
-                <a href="{% url 'project_list' %}" style="margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); border-radius: 0;">
-                    <i class="ph ph-arrow-left icon"></i>
-                    <span class="text">Back to Hub</span>
+    <!-- Executive Ultra-Compact Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div>
+            <!-- Brand Stamp Header -->
+            <div class="sidebar-header">
+                <a href="{% url 'dashboard' %}" class="sidebar-brand">
+                    <div class="brand-icon-wrapper">
+                        <img src="{% static 'images/logo/cogfocus_favicon_180x180.png' %}" onerror="this.onerror=null; this.src='{% static 'gitmgmt/images/logo/cogfocus_favicon_180x180.png' %}';" alt="CogFocus">
+                    </div>
+                    <div class="brand-text-block">
+                        <span class="brand-title">CogFocus One™</span>
+                        <span class="brand-subtitle">
+                            <span class="brand-subtitle-dot"></span>
+                            CI/CD
+                        </span>
+                    </div>
                 </a>
-                <a href="{% url 'project_detail' project.name %}">
-                    <i class="ph ph-presentation-chart icon"></i>
-                    <span class="text">Overview</span>
-                </a>
-                <a href="#">
-                    <i class="ph ph-code icon"></i>
-                    <span class="text">Code (Repos)</span>
-                </a>
-                <a href="{% url 'pipeline_list' project.name %}">
-                    <i class="ph ph-rocket-launch icon"></i>
-                    <span class="text">Pipelines</span>
-                </a>
-                <a href="{% url 'application_list' %}?project={{ project.name }}">
-                    <i class="ph ph-cube icon"></i>
-                    <span class="text">Applications</span>
-                </a>
-                <a href="#">
-                    <i class="ph ph-cloud-check icon"></i>
-                    <span class="text">Environments</span>
-                </a>
-                <a href="{% url 'configure_project' project.name %}">
-                    <i class="ph ph-gear-six icon"></i>
-                    <span class="text">Project Settings</span>
-                </a>
-            {% else %}
-                <a href="{% url 'project_list' %}">
-                    <i class="ph ph-tree-structure icon"></i>
-                    <span class="text">Projects</span>
-                </a>
-                <a href="{% url 'organization_list' %}">
-                    <i class="ph ph-buildings icon"></i>
-                    <span class="text">Organizations</span>
-                </a>
-                <a href="{% url 'application_list' %}">
-                    <i class="ph ph-cube icon"></i>
-                    <span class="text">Applications</span>
-                </a>
-                <a href="{% url 'agent_list' %}">
-                    <i class="ph ph-users icon"></i>
-                    <span class="text">Agents</span>
-                </a>
-                <a href="{% url 'global_credential_list' %}">
-                    <i class="ph ph-key icon"></i>
-                    <span class="text">Credentials</span>
-                </a>
-                <a href="{% url 'deployment_target_list' %}">
-                    <i class="ph ph-cloud-arrow-up icon"></i>
-                    <span class="text">Deploy Targets</span>
-                </a>
-                <a href="{% url 'global_settings' %}">
-                    <i class="ph ph-gear icon"></i>
-                    <span class="text">Global Settings</span>
-                </a>
-            {% endif %}
-        </div>
-        <a href="{% url 'documentation' %}" class="nav-link" title="Documentation"
-           style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 1.25rem; color:var(--text-secondary); text-decoration:none; font-size:0.875rem; transition:color 0.15s, background 0.15s; border-radius:0; margin-bottom:0.25rem;"
-           onmouseover="this.style.color='var(--text-primary)'; this.style.background='rgba(255,255,255,0.04)'"
-           onmouseout="this.style.color='var(--text-secondary)'; this.style.background=''">
-            <i class="ph ph-book-open icon"></i>
-            <span class="text">Documentation</span>
-        </a>
-    </div>
+            </div>
 
-    <!-- Main Wrapper -->
+            <!-- Navigation Links -->
+            <nav class="sidebar-menu">
+                {% if project %}
+                    <a href="{% url 'project_list' %}" style="margin-bottom: 0.25rem; border-bottom: 1px solid var(--border-color); border-radius: 0;">
+                        <i class="ph ph-arrow-left icon"></i>
+                        <span class="text">Back to Hub</span>
+                    </a>
+                    <a href="{% url 'project_detail' project.name %}" class="{% if request.resolver_match.url_name == 'project_detail' %}active{% endif %}">
+                        <i class="ph ph-presentation-chart icon"></i>
+                        <span class="text">Overview</span>
+                    </a>
+                    <a href="{% url 'repository_list' %}" class="{% if 'repo' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-code icon"></i>
+                        <span class="text">Repositories</span>
+                    </a>
+                    <a href="{% url 'pipeline_list' project.name %}" class="{% if 'pipeline' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-rocket-launch icon"></i>
+                        <span class="text">Pipelines</span>
+                    </a>
+                    <a href="{% url 'application_list' %}?project={{ project.name }}" class="{% if 'application' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-cube icon"></i>
+                        <span class="text">Applications</span>
+                    </a>
+                    <a href="{% url 'configure_project' project.name %}" class="{% if request.resolver_match.url_name == 'configure_project' %}active{% endif %}">
+                        <i class="ph ph-gear-six icon"></i>
+                        <span class="text">Project Settings</span>
+                    </a>
+                {% else %}
+                    <div class="sidebar-section-label">Core Platform</div>
+                    <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="ph ph-squares-four icon"></i>
+                        <span class="text">Dashboard</span>
+                    </a>
+                    <a href="{% url 'repository_list' %}" class="{% if 'repository' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-git-branch icon"></i>
+                        <span class="text">Repositories</span>
+                    </a>
+                    <a href="{% url 'project_list' %}" class="{% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-tree-structure icon"></i>
+                        <span class="text">Projects</span>
+                    </a>
+                    <a href="{% url 'organization_list' %}" class="{% if 'organization' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-buildings icon"></i>
+                        <span class="text">Organizations</span>
+                    </a>
+                    <a href="{% url 'application_list' %}" class="{% if 'application' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-cube icon"></i>
+                        <span class="text">Applications</span>
+                    </a>
+
+                    <div class="sidebar-section-label" style="margin-top: 0.4rem;">Infrastructure</div>
+                    <a href="{% url 'agent_list' %}" class="{% if 'agent' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-cpu icon"></i>
+                        <span class="text">Build Runners</span>
+                    </a>
+                    <a href="{% url 'global_credential_list' %}" class="{% if 'credential' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-key icon"></i>
+                        <span class="text">Credentials</span>
+                    </a>
+                    <a href="{% url 'deployment_target_list' %}" class="{% if 'deployment' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-cloud-arrow-up icon"></i>
+                        <span class="text">Deploy Targets</span>
+                    </a>
+                    <a href="{% url 'global_settings' %}" class="{% if 'settings' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-gear icon"></i>
+                        <span class="text">Global Settings</span>
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'documentation' %}" class="{% if request.resolver_match.url_name == 'documentation' %}active{% endif %}" title="Documentation">
+                <i class="ph ph-book-open icon"></i>
+                <span class="text">Documentation</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
     <div class="main-wrapper" id="mainWrapper">
         <header class="topbar">
-            <button class="sidebar-toggler" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
-                <i class="ph ph-list"></i>
-            </button>
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-grow:1; max-width:480px;">
+                <button class="sidebar-toggler" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
+                    <i class="ph ph-list"></i>
+                </button>
 
-            <!-- User dropdown -->
+                <!-- Global Search Box with Auto Suggestions -->
+                <div id="globalSearchWrapper" style="position:relative; width:100%;">
+                    <div style="position:relative; display:flex; align-items:center;">
+                        <i class="ph ph-magnifying-glass" style="position:absolute; left:9px; color:var(--text-muted); font-size:0.9rem; pointer-events:none;"></i>
+                        <input type="text" id="globalSearchInput" placeholder="Search repos, projects, apps, issues... (Ctrl+K)" 
+                               style="width:100%; padding:0.3rem 2.2rem 0.3rem 2.1rem; background:#ffffff; border:1px solid var(--border-color); border-radius:6px; font-size:0.75rem; font-family:inherit; color:var(--text-primary); outline:none; transition:var(--transition); box-shadow:var(--shadow-sm);"
+                               onfocus="onGlobalSearchFocus()" oninput="onGlobalSearchInput(this.value)">
+                        <span style="position:absolute; right:7px; font-size:0.6rem; font-weight:700; color:var(--text-muted); background:var(--canvas-bg); border:1px solid var(--border-color); padding:0.05rem 0.3rem; border-radius:4px; pointer-events:none;">Ctrl+K</span>
+                    </div>
+
+                    <!-- Auto Suggestions Popup -->
+                    <div id="globalSearchResults" style="display:none; position:absolute; top:calc(100% + 5px); left:0; width:100%; min-width:320px; background:#ffffff; border:1px solid var(--border-color); border-radius:8px; box-shadow:var(--shadow-lg); z-index:1200; max-height:360px; overflow-y:auto; padding:0.3rem;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Dropdown Menu -->
             <div class="topbar-user" id="topbarUser">
                 <button class="topbar-user-btn" onclick="toggleUserDropdown()" aria-expanded="false" id="userDropdownBtn">
                     <div class="topbar-avatar">{{ request.user.username|make_list|first|default:"U" }}</div>
@@ -402,8 +568,8 @@
 
                 <div class="user-dropdown" id="userDropdown">
                     <div class="dropdown-header">
-                        <strong>{{ request.user.username }}</strong>
-                        {% if request.user.is_superuser %}Admin{% else %}Developer{% endif %}
+                        <strong>{{ request.user.username|default:"User" }}</strong>
+                        {% if request.user.is_superuser %}Enterprise Admin{% else %}Developer{% endif %}
                     </div>
                     <a href="{% url 'profile' %}" class="dropdown-item">
                         <i class="ph ph-user-circle"></i> My Profile
@@ -453,12 +619,91 @@
             btn.setAttribute('aria-expanded', isOpen);
         }
 
-        // Close dropdown when clicking outside
+        // Global Search Logic with Instant Auto-Suggestions
+        let searchDebounceTimer = null;
+
+        function onGlobalSearchInput(val) {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                fetchSearchResults(val);
+            }, 120);
+        }
+
+        function onGlobalSearchFocus() {
+            const input = document.getElementById('globalSearchInput');
+            fetchSearchResults(input.value);
+        }
+
+        function fetchSearchResults(query) {
+            fetch(`/api/search/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    renderSearchSuggestions(data.results, query);
+                })
+                .catch(err => {
+                    console.error('Global search error:', err);
+                });
+        }
+
+        function renderSearchSuggestions(results, query) {
+            const container = document.getElementById('globalSearchResults');
+            if (!results || results.length === 0) {
+                container.innerHTML = `<div style="padding:0.6rem 0.8rem; font-size:0.75rem; color:var(--text-muted); text-align:center;">No results found for "${query}"</div>`;
+                container.style.display = 'block';
+                return;
+            }
+
+            const grouped = {};
+            results.forEach(item => {
+                if (!grouped[item.category]) grouped[item.category] = [];
+                grouped[item.category].push(item);
+            });
+
+            let html = '';
+            for (const [cat, items] of Object.entries(grouped)) {
+                html += `<div style="font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:0.35rem 0.5rem 0.15rem; margin-top:0.2rem;">${cat}</div>`;
+                items.forEach(item => {
+                    html += `
+                        <a href="${item.url}" style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.55rem; border-radius:5px; text-decoration:none; color:var(--text-primary); transition:background 0.12s; margin-bottom:1px;" onmouseover="this.style.background='var(--canvas-bg)'" onmouseout="this.style.background='transparent'">
+                            <i class="ph ${item.icon}" style="font-size:0.95rem; color:var(--brand); flex-shrink:0;"></i>
+                            <div style="flex-grow:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                <div style="font-weight:700; font-size:0.78rem; overflow:hidden; text-overflow:ellipsis;">${item.title}</div>
+                                ${item.sub ? `<div style="font-size:0.68rem; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis;">${item.sub}</div>` : ''}
+                            </div>
+                            <i class="ph ph-arrow-up-right" style="font-size:0.72rem; color:var(--text-muted); flex-shrink:0;"></i>
+                        </a>
+                    `;
+                });
+            }
+
+            container.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        // Close dropdowns when clicking outside
         document.addEventListener('click', function (e) {
-            const container = document.getElementById('topbarUser');
-            if (container && !container.contains(e.target)) {
+            const userContainer = document.getElementById('topbarUser');
+            if (userContainer && !userContainer.contains(e.target)) {
                 document.getElementById('userDropdown').classList.remove('open');
-                document.getElementById('userDropdownBtn').setAttribute('aria-expanded', 'false');
+                const btn = document.getElementById('userDropdownBtn');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+            }
+
+            const searchContainer = document.getElementById('globalSearchWrapper');
+            if (searchContainer && !searchContainer.contains(e.target)) {
+                document.getElementById('globalSearchResults').style.display = 'none';
+            }
+        });
+
+        // Keyboard shortcut Ctrl+K to focus search input
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                const input = document.getElementById('globalSearchInput');
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
             }
         });
     </script>

@@ -14,6 +14,7 @@ urlpatterns = [
 
     # ── Search ────────────────────────────────────────────────────────────────
     path('search/', views.global_search, name='global_search'),
+    path('api/search/', views.global_search_api, name='global_search_api'),
 
     # ── Notifications ────────────────────────────────────────────────────────
     path('notifications/', views.notification_list, name='notification_list'),

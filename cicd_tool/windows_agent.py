@@ -1,7 +1,7 @@
 """
-windows_agent.py — ReleaseRocket build agent for Windows.
+windows_agent.py — CogFocus One™ build agent for Windows.
 
-Registers itself with the ReleaseRocket server, then keeps itself alive with
+Registers itself with the CogFocus One™ server, then keeps itself alive with
 heartbeats so the pipeline worker can dispatch runs to it.
 
 Usage (PowerShell):

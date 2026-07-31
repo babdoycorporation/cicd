@@ -2,3 +2,5 @@ DS_Store
 /nginx
 ../runs
 *log
+__pycache__/
+*.pyc

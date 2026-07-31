@@ -185,7 +185,7 @@ def checkout_repository(run, run_dir):
         log.append("[INFO] No repository linked; steps run in an empty workspace.")
         return run_dir, log
 
-    repo_base = getattr(settings, 'REPO_BASE_PATH', 'D:/repos')
+    repo_base = getattr(settings, 'REPO_BASE_PATH', str(settings.BASE_DIR / 'repos'))
     bare_path = os.path.join(repo_base, f"{repo.name}.git")
     workdir = os.path.join(run_dir, repo.name)
     branch = run.pipeline.monitored_branch or repo.default_branch or 'main'

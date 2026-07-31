@@ -44,19 +44,12 @@ from .models import (ActivityEvent, Branch, BranchProtectionRule, Commit,
                       log_activity, notify)
 
 logger = logging.getLogger(__name__)
-REPO_BASE_PATH = getattr(settings, 'REPO_BASE_PATH', 'D:/repos')
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  Helpers
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _validate_branch_name(name):
-    return bool(re.match(r'^[A-Za-z0-9_./-]+$', name))
-
+def _get_repo_base_path():
+    return getattr(settings, 'REPO_BASE_PATH', str(settings.BASE_DIR / 'repos'))
 
 def _repo_path(name):
-    return os.path.join(REPO_BASE_PATH, f"{name}.git")
+    return os.path.join(_get_repo_base_path(), f"{name}.git")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1645,3 +1638,126 @@ def global_search(request):
     return render(request, 'gitmgmt/search_results.html', {
         'query': q, 'repos': repos, 'issues': issues, 'prs': prs,
     })
+
+
+def global_search_api(request):
+    q = request.GET.get('q', '').strip()
+    results = []
+
+    try:
+        from pipeline.models import Project, Application, Pipeline
+    except ImportError:
+        Project = Application = Pipeline = None
+
+    user = request.user if request.user.is_authenticated else None
+
+    if user:
+        repo_access = Q(visibility='public') | Q(owner=user)
+        issue_access = Q(repository__visibility='public') | Q(repository__owner=user)
+    else:
+        repo_access = Q(visibility='public')
+        issue_access = Q(repository__visibility='public')
+
+    if q:
+        # 1. Repositories (search name or description)
+        for r in Repository.objects.filter(
+            Q(name__icontains=q) | Q(description__icontains=q),
+            repo_access
+        ).distinct()[:5]:
+            results.append({
+                'category': 'Repositories',
+                'title': r.name,
+                'url': f'/repositories/{r.name}/',
+                'icon': 'ph-git-branch',
+                'sub': r.description or f"Owner: {r.owner.username}"
+            })
+
+        # 2. Projects
+        if Project:
+            for p in Project.objects.filter(Q(name__icontains=q) | Q(description__icontains=q))[:5]:
+                results.append({
+                    'category': 'Projects',
+                    'title': p.name,
+                    'url': f'/ci/projects/{p.name}/',
+                    'icon': 'ph-tree-structure',
+                    'sub': p.description or f"Org: {p.organization.name if p.organization else 'Global'}"
+                })
+
+        # 3. Organizations
+        for o in Organization.objects.filter(Q(name__icontains=q) | Q(description__icontains=q))[:5]:
+            results.append({
+                'category': 'Organizations',
+                'title': o.name,
+                'url': f'/organizations/{o.id}/',
+                'icon': 'ph-buildings',
+                'sub': f"Owner: {o.owner.username}"
+            })
+
+        # 4. Applications
+        if Application:
+            for a in Application.objects.filter(name__icontains=q)[:5]:
+                results.append({
+                    'category': 'Applications',
+                    'title': a.name,
+                    'url': f'/ci/applications/{a.name}/',
+                    'icon': 'ph-cube',
+                    'sub': f"Project: {a.project.name if a.project else 'Global'}"
+                })
+
+        # 5. Pipelines
+        if Pipeline:
+            for pipe in Pipeline.objects.filter(name__icontains=q)[:5]:
+                results.append({
+                    'category': 'Pipelines',
+                    'title': pipe.name,
+                    'url': f'/ci/pipeline/{pipe.id}/',
+                    'icon': 'ph-rocket-launch',
+                    'sub': f"App: {pipe.application.name if pipe.application else 'Default'}"
+                })
+
+        # 6. Issues
+        for i in Issue.objects.filter(
+            Q(title__icontains=q) | Q(body__icontains=q),
+            issue_access
+        )[:4]:
+            results.append({
+                'category': 'Issues',
+                'title': f"#{i.id} {i.title}",
+                'url': f'/repositories/{i.repository.name}/issues/',
+                'icon': 'ph-warning-circle',
+                'sub': f"Repo: {i.repository.name}"
+            })
+
+        # 7. Pull Requests
+        for pr in PullRequest.objects.filter(
+            Q(title__icontains=q) | Q(description__icontains=q),
+            issue_access
+        )[:4]:
+            results.append({
+                'category': 'Pull Requests',
+                'title': f"#{pr.id} {pr.title}",
+                'url': f'/repositories/{pr.repository.name}/pull-requests/{pr.id}/',
+                'icon': 'ph-git-pull-request',
+                'sub': f"Repo: {pr.repository.name}"
+            })
+    else:
+        # Default top suggestions when focused with empty query
+        for r in Repository.objects.filter(repo_access).order_by('-updated_at')[:4]:
+            results.append({
+                'category': 'Recent Repositories',
+                'title': r.name,
+                'url': f'/repositories/{r.name}/',
+                'icon': 'ph-git-branch',
+                'sub': r.description or f"Owner: {r.owner.username}"
+            })
+        if Project:
+            for p in Project.objects.all()[:3]:
+                results.append({
+                    'category': 'Recent Projects',
+                    'title': p.name,
+                    'url': f'/ci/projects/{p.name}/',
+                    'icon': 'ph-tree-structure',
+                    'sub': p.description or f"Org: {p.organization.name if p.organization else 'Global'}"
+                })
+
+    return JsonResponse({'results': results})

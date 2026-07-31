@@ -30,12 +30,31 @@ logger = logging.getLogger(__name__)
 #  Internal helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _get_email_integration():
-    """Return the active email NotificationIntegration, or None."""
+import os
+from django.conf import settings
+
+def _get_email_integration_config():
+    """Return SMTP config dictionary from active DB model or settings/environment fallbacks."""
     from .models import NotificationIntegration
-    return NotificationIntegration.objects.filter(
+    integration = NotificationIntegration.objects.filter(
         integration_type='email', is_active=True
     ).first()
+
+    if integration and integration.config:
+        return integration.config
+
+    # Dynamic fallback to Django settings or OS Environment
+    host = getattr(settings, 'EMAIL_HOST', os.environ.get('EMAIL_HOST', ''))
+    if host:
+        return {
+            'smtp_host': host,
+            'smtp_port': int(getattr(settings, 'EMAIL_PORT', os.environ.get('EMAIL_PORT', 587))),
+            'smtp_user': getattr(settings, 'EMAIL_HOST_USER', os.environ.get('EMAIL_HOST_USER', '')),
+            'smtp_password': getattr(settings, 'EMAIL_HOST_PASSWORD', os.environ.get('EMAIL_HOST_PASSWORD', '')),
+            'smtp_from': getattr(settings, 'DEFAULT_FROM_EMAIL', os.environ.get('DEFAULT_FROM_EMAIL', 'CogFocus One <noreply@cogfocus.local>')),
+            'use_tls': bool(getattr(settings, 'EMAIL_USE_TLS', os.environ.get('EMAIL_USE_TLS', True))),
+        }
+    return None
 
 
 def _user_wants(user, event_type: str) -> bool:
@@ -58,26 +77,30 @@ def _send_smtp(config: dict, recipients: list[str], subject: str, body: str):
     port     = int(config.get('smtp_port', 587))
     user     = config.get('smtp_user', '')
     password = config.get('smtp_password', '')
-    from_addr = config.get('smtp_from', 'ReleaseRocket <noreply@releaserocket.local>')
+    from_addr = config.get('smtp_from', 'CogFocus One <noreply@cogfocus.local>')
     use_tls  = bool(config.get('use_tls', True))
 
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = f"[ReleaseRocket] {subject}"
+    msg['Subject'] = f"[CogFocus One] {subject}"
     msg['From']    = from_addr
     msg['To']      = ', '.join(recipients)
 
     # Plain text part
     msg.attach(MIMEText(body, 'plain'))
 
-    # HTML part — simple branded wrapper
+    # HTML part — CogFocus One white theme branded wrapper
     html = f"""
-    <div style="font-family:Inter,sans-serif;max-width:580px;margin:0 auto;color:#e6edf3;background:#0d1117;border-radius:10px;border:1px solid #30363d;overflow:hidden;">
-      <div style="background:#161b22;padding:16px 24px;border-bottom:1px solid #30363d;">
-        <span style="font-size:1rem;font-weight:700;color:#2f81f7;">🚀 ReleaseRocket</span>
+    <div style="font-family:'Plus Jakarta Sans','Inter',sans-serif;max-width:580px;margin:0 auto;color:#0f172a;background:#ffffff;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 4px 12px rgba(0,0,0,0.05);overflow:hidden;">
+      <div style="background:#0f172a;padding:16px 24px;border-bottom:3px solid #059669;">
+        <span style="font-size:1.1rem;font-weight:800;color:#ffffff;letter-spacing:-0.02em;">CogFocus One™</span>
+        <span style="font-size:0.75rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.05em;margin-left:0.5rem;">CI/CD &amp; DevOps</span>
       </div>
-      <div style="padding:24px;">
-        <h2 style="margin:0 0 12px;font-size:1.1rem;color:#e6edf3;">{subject}</h2>
-        <p style="margin:0;font-size:0.9rem;line-height:1.6;color:#8b949e;white-space:pre-wrap;">{body}</p>
+      <div style="padding:24px;background:#ffffff;">
+        <h2 style="margin:0 0 12px;font-size:1.1rem;font-weight:700;color:#0f172a;">{subject}</h2>
+        <p style="margin:0;font-size:0.88rem;line-height:1.6;color:#475569;white-space:pre-wrap;">{body}</p>
+      </div>
+      <div style="background:#f8fafc;padding:12px 24px;border-top:1px solid #e2e8f0;font-size:0.75rem;color:#94a3b8;text-align:center;">
+        Sent by CogFocus One™ Executive Suite &bull; Automated System Notification
       </div>
     </div>
     """
@@ -93,7 +116,7 @@ def _send_smtp(config: dict, recipients: list[str], subject: str, body: str):
             server.login(user, password)
         server.sendmail(from_addr, recipients, msg.as_string())
         server.quit()
-        logger.info(f"Email sent: '{subject}' → {recipients}")
+        logger.info(f"Email sent: '{subject}' -> {recipients}")
     except Exception as exc:
         logger.error(f"Email send failed: {exc}")
 
@@ -113,9 +136,9 @@ def send_notification(event_type: str, subject: str, body: str,
     if not users:
         return
 
-    integration = _get_email_integration()
-    if not integration:
-        logger.debug("No active email integration — skipping notification.")
+    config = _get_email_integration_config()
+    if not config:
+        logger.debug("No active email integration or environment settings — skipping notification.")
         return
 
     if not isinstance(users, (list, tuple)):
@@ -134,7 +157,7 @@ def send_notification(event_type: str, subject: str, body: str,
     if link:
         full_body += f"\n\nView: {link}"
 
-    _send_smtp(integration.config, recipients, subject, full_body)
+    _send_smtp(config, recipients, subject, full_body)
 
 
 def test_smtp_connection(config: dict) -> tuple[bool, str]:

@@ -1098,7 +1098,7 @@ def save_email_integration(request):
         'smtp_host': smtp_host,
         'smtp_port': int(smtp_port) if smtp_port.isdigit() else 587,
         'smtp_user': smtp_user,
-        'smtp_from': smtp_from or f'ReleaseRocket <noreply@{smtp_host}>',
+        'smtp_from': smtp_from or f'CogFocus One <noreply@{smtp_host}>',
         'use_tls': use_tls,
     }
     # Only update password if a new one was provided
@@ -1122,39 +1122,81 @@ def save_email_integration(request):
 @login_required
 def test_email_integration(request):
     """
-    GET  → send a test email to the current user (from the run detail page test button).
-    POST → AJAX test of connection only (from the modal).
+    GET  → Send test email to request.user.email (or ?to= email parameter).
+    POST → AJAX test of connection + optional test email send to specified recipient.
     """
-    from .notifications import test_smtp_connection, send_notification
+    import os
+    from django.conf import settings
+    from .notifications import test_smtp_connection, _send_smtp, _get_email_integration_config
     integration = NotificationIntegration.objects.filter(integration_type='email').first()
 
     if request.method == 'POST':
-        # AJAX connection test
-        if not integration:
-            return JsonResponse({'ok': False, 'message': 'No email integration configured yet.'})
-        config = integration.config.copy()
-        # Allow overriding with form values if provided (modal test-before-save)
+        config = integration.config.copy() if (integration and integration.config) else {}
+
         for field in ('smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from', 'use_tls'):
             val = request.POST.get(field)
             if val is not None and val != '':
-                config[field] = int(val) if field == 'smtp_port' else (val == '1' if field == 'use_tls' else val)
-        ok, msg = test_smtp_connection(config)
-        return JsonResponse({'ok': ok, 'message': msg})
+                config[field] = int(val) if field == 'smtp_port' else (val in ('1', 'true', 'True') if field == 'use_tls' else val)
 
-    # GET → send actual test email
-    if not integration or not integration.is_active:
-        messages.error(request, 'Email integration is not configured or not active.')
+        if not config.get('smtp_host'):
+            config['smtp_host'] = getattr(settings, 'EMAIL_HOST', os.environ.get('EMAIL_HOST', ''))
+        if not config.get('smtp_port'):
+            config['smtp_port'] = int(getattr(settings, 'EMAIL_PORT', os.environ.get('EMAIL_PORT', 587)))
+        if not config.get('smtp_user'):
+            config['smtp_user'] = getattr(settings, 'EMAIL_HOST_USER', os.environ.get('EMAIL_HOST_USER', ''))
+        if not config.get('smtp_password'):
+            config['smtp_password'] = getattr(settings, 'EMAIL_HOST_PASSWORD', os.environ.get('EMAIL_HOST_PASSWORD', ''))
+
+        if not config.get('smtp_host'):
+            return JsonResponse({'ok': False, 'message': 'Please enter an SMTP Host before testing the connection.'})
+
+        # Test SMTP connection & auth first
+        ok, msg = test_smtp_connection(config)
+        if not ok:
+            return JsonResponse({'ok': False, 'message': msg})
+
+        # If a specific test recipient is provided, also send a test email!
+        test_recipient = request.POST.get('test_recipient', '').strip() or request.user.email
+        if test_recipient and '@' in test_recipient:
+            try:
+                _send_smtp(
+                    config,
+                    recipients=[test_recipient],
+                    subject='Test notification from CogFocus One',
+                    body='This is a test email to confirm your SMTP settings are working properly.'
+                )
+                return JsonResponse({'ok': True, 'message': f'Connection successful! Test email sent to {test_recipient}.'})
+            except Exception as exc:
+                return JsonResponse({'ok': False, 'message': f'Connection OK, but failed to send email: {exc}'})
+
+        return JsonResponse({'ok': True, 'message': 'SMTP Connection successful!'})
+
+    # GET → Send test email
+    config = _get_email_integration_config()
+    if not config or not config.get('smtp_host'):
+        messages.error(request, 'Email integration is not configured or active.')
         return redirect('global_settings')
-    if not request.user.email:
-        messages.error(request, 'Your account has no email address. Update your profile first.')
+
+    recipient = request.GET.get('to', '').strip() or request.user.email
+
+    if not recipient:
+        messages.error(
+            request, 
+            f'Your user account ({request.user.username}) has no email address set on your profile. Please add your email at /profile/ or specify a recipient email.'
+        )
         return redirect('global_settings')
-    send_notification(
-        event_type='pipeline_failure',   # use a pref that is on by default
-        subject='Test notification from ReleaseRocket',
-        body='This is a test email to confirm your SMTP configuration is working correctly.',
-        users=[request.user],
-    )
-    messages.success(request, f'Test email sent to {request.user.email}.')
+
+    try:
+        _send_smtp(
+            config,
+            recipients=[recipient],
+            subject='Test notification from CogFocus One',
+            body='This is a test email to confirm your SMTP configuration is working correctly.'
+        )
+        messages.success(request, f'Test email successfully sent to {recipient}.')
+    except Exception as exc:
+        messages.error(request, f'Failed to send test email: {exc}')
+
     return redirect('global_settings')
 
 
