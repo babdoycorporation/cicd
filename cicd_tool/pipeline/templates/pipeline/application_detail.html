@@ -143,15 +143,21 @@
     <div style="margin-top:1.25rem;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
             <h3 style="margin:0; font-size:0.9rem;">Pipelines</h3>
-            <a href="{% url 'pipeline_form' %}?application={{ application.name }}" class="btn-secondary" style="background:var(--brand); color:#ffffff; border-color:var(--brand);">
-                <i class="ph ph-plus"></i> New Pipeline
-            </a>
+            {% if application.project %}
+                <a href="{% url 'pipeline_create' application.project.name %}?application={{ application.name }}" class="btn-secondary" style="background:var(--btn-dark); color:#ffffff; border-color:var(--btn-dark); text-decoration:none; padding:0.35rem 0.75rem; border-radius:6px; font-size:0.78rem; font-weight:700;">
+                    <i class="ph ph-plus"></i> New Pipeline
+                </a>
+            {% else %}
+                <a href="{% url 'create_yaml_pipeline' %}?application={{ application.name }}" class="btn-secondary" style="background:var(--btn-dark); color:#ffffff; border-color:var(--btn-dark); text-decoration:none; padding:0.35rem 0.75rem; border-radius:6px; font-size:0.78rem; font-weight:700;">
+                    <i class="ph ph-plus"></i> New Pipeline
+                </a>
+            {% endif %}
         </div>
 
         {% if pipelines %}
             <div class="pipeline-list">
                 {% for pipe in pipelines %}
-                    <a href="{% url 'pipeline_detail' pipe.id %}" class="pipeline-card">
+                    <a href="{% url 'pipeline_detail' pipe.name %}" class="pipeline-card">
                         <i class="ph ph-rocket-launch"></i>
                         <div>
                             <div style="font-weight:700; font-size:0.82rem;">{{ pipe.name }}</div>
