@@ -207,7 +207,7 @@
             <a href="{% url 'local_credential_list' project_name=project.name %}" class="btn btn-warning">
                 <i class="ph ph-key"></i> Local Credentials
             </a>
-            <a href="{% url 'create_application' project_name=project.name %}" class="btn btn-info">
+            <a href="{% url 'create_application' project.name %}" class="btn btn-info">
                 <i class="ph ph-cube"></i> Create Application
             </a>
             <a href="{% url 'pipeline_list' project.name %}" class="btn btn-info">
@@ -222,8 +222,8 @@
     <!-- Applications Section -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
         <h2 class="section-title" style="margin:0;"><i class="ph ph-cube"></i> Applications</h2>
-        <a href="{% url 'create_application' project_name=project.name %}"
-           style="display:inline-flex; align-items:center; gap:0.4rem; background:#238636; color:#fff; border:1px solid #2ea043; border-radius:6px; padding:0.4rem 0.9rem; font-size:0.82rem; font-weight:500; text-decoration:none; transition:background 0.2s;">
+        <a href="{% url 'create_application_project' project.name %}"
+           style="display:inline-flex; align-items:center; gap:0.4rem; background:var(--btn-dark); color:#fff; border:1px solid var(--btn-dark); border-radius:6px; padding:0.4rem 0.9rem; font-size:0.82rem; font-weight:700; text-decoration:none; transition:var(--transition);">
             <i class="ph ph-plus"></i> New Application
         </a>
     </div>
@@ -231,14 +231,12 @@
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:1rem; margin-bottom:2rem;">
         {% for app in applications %}
         <a href="{% url 'application_detail' app.name %}"
-           style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:1.1rem 1rem; text-decoration:none; color:var(--text-primary); transition:border-color 0.2s, transform 0.2s; display:flex; align-items:center; gap:0.85rem;"
-           onmouseover="this.style.borderColor='var(--accent-color)'; this.style.transform='translateY(-2px)'"
-           onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform=''">
+           style="background:#ffffff; border:1px solid var(--border-color); border-radius:8px; padding:1.1rem 1rem; text-decoration:none; color:var(--text-primary); transition:var(--transition); display:flex; align-items:center; gap:0.85rem; box-shadow:var(--shadow-sm);">
             <div class="proj-app-icon" data-appname="{{ app.name }}"
-                 style="width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:white; flex-shrink:0;"></div>
+                 style="width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:white; flex-shrink:0;"></div>
             <div>
-                <div style="font-weight:600; font-size:0.9rem;">{{ app.name }}</div>
-                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.1rem;">
+                <div style="font-weight:800; font-size:0.9rem; font-family:'Outfit', sans-serif;">{{ app.name }}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.1rem;">
                     <i class="ph ph-git-merge"></i> {{ app.pipelines.count }} pipeline{{ app.pipelines.count|pluralize }}
                 </div>
             </div>
@@ -246,72 +244,13 @@
         {% endfor %}
     </div>
     {% else %}
-    <div style="background:var(--card-bg); border:1px dashed var(--border-color); border-radius:8px; padding:2rem; text-align:center; color:var(--text-secondary); margin-bottom:2rem;">
-        <i class="ph ph-cube" style="font-size:2rem; opacity:0.4; display:block; margin-bottom:0.5rem;"></i>
-        No applications yet. <a href="{% url 'create_application' project_name=project.name %}" style="color:var(--accent-color);">Create one</a>.
+    <div style="background:#ffffff; border:1px dashed var(--border-color); border-radius:8px; padding:2rem; text-align:center; color:var(--text-muted); margin-bottom:2rem;">
+        <i class="ph ph-cube" style="font-size:2rem; color:var(--brand); display:block; margin-bottom:0.5rem;"></i>
+        No applications yet. <a href="{% url 'create_application_project' project.name %}" style="color:var(--brand); font-weight:700;">Create one</a>.
     </div>
     {% endif %}
 
-    <h2 class="section-title"><i class="ph ph-git-merge"></i> Recent Orchestrator Runs</h2>
-    <div class="runs-table-container">
-        {% if orchestrator_runs %}
-        <table class="runs-table">
-            <thead>
-                <tr>
-                    <th style="width: 80px;">ID</th>
-                    <th style="width: 120px;">Status</th>
-                    <th>Log Output</th>
-                    <th style="width: 180px;">Timestamps</th>
-                    <th style="width: 100px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for run in orchestrator_runs %}
-                <tr>
-                    <td>
-                        <a href="{% url 'project_pipeline_run_detail' run.run_id %}" style="color: var(--text-primary); font-family: ui-monospace, SFMono-Regular, monospace; text-decoration: none;">
-                            #{{ run.run_id|stringformat:"s"|slice:":8" }}
-                        </a>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
-                            {{ run.project_pipeline.name }}
-                        </div>
-                    </td>
-                    <td>
-                        {% if run.status == 'SUCCESS' %}
-                            <span class="status-badge status-success"><i class="ph ph-check"></i> Success</span>
-                        {% elif run.status == 'FAILED' %}
-                            <span class="status-badge status-failed"><i class="ph ph-x"></i> Failed</span>
-                        {% else %}
-                            <span class="status-badge status-pending"><i class="ph ph-spinner-gap ph-spin"></i> {{ run.status }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <div class="log-box">{{ run.log|truncatechars:500 }}</div>
-                    </td>
-                    <td style="color: var(--text-secondary); font-size: 0.85rem;">
-                        <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.25rem;">
-                            <i class="ph ph-calendar-blank"></i> {{ run.started_at|date:"M d, Y H:i" }}
-                        </div>
-                    </td>
-                    <td>
-                        <a href="{% url 'project_pipeline_run_detail' run.run_id %}" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
-                            <i class="ph ph-eye"></i> View
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div style="padding: 3rem 2rem; text-align: center; color: var(--text-secondary);">
-            <i class="ph ph-list-dashes" style="font-size: 2.5rem; opacity: 0.3; margin-bottom: 1rem; display: block;"></i>
-            <p style="margin: 0;">No orchestrator runs have been executed yet.</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<script>
+    <script>
 const _ICONS = ['ph-rocket-launch','ph-cloud','ph-database','ph-cpu','ph-code','ph-terminal','ph-globe','ph-shield','ph-gear-six','ph-lightning','ph-cube','ph-tree-structure','ph-graph','ph-package','ph-hard-drives','ph-wifi-high','ph-lock','ph-browsers','ph-stack','ph-wave-sine','ph-robot','ph-flask','ph-anchor','ph-fire'];
 const _GRADS = [['#2f81f7','#a371f7'],['#3fb950','#2f81f7'],['#f78166','#f0883e'],['#a371f7','#f78166'],['#58a6ff','#3fb950'],['#d29922','#f78166'],['#f0883e','#a371f7'],['#39d353','#58a6ff'],['#ff7b72','#ffa657'],['#79c0ff','#a5f3a5'],['#d2a8ff','#79c0ff'],['#ffa657','#d2a8ff']];
 function _hash(s){let h=0;for(let i=0;i<s.length;i++)h=Math.imul(31,h)+s.charCodeAt(i)|0;return Math.abs(h);}

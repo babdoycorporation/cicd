@@ -79,6 +79,7 @@ urlpatterns = [
     # ── Applications ──────────────────────────────────────────────────────────
     path('applications/', login_required(views.application_list), name='application_list'),
     path('applications/create/', login_required(views.create_application), name='create_application'),
+    path('applications/create/<str:project_name>/', login_required(views.create_application), name='create_application'),
     path('applications/<str:application_name>/settings/', login_required(views.application_settings), name='application_settings'),
     path('applications/<str:application_name>/', login_required(views.application_detail), name='application_detail'),
     path('projects/<str:project_name>/applications/create/', login_required(views.create_application), name='create_application_project'),
