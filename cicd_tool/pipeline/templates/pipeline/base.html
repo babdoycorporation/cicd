@@ -40,7 +40,7 @@
             --input-bg: #ffffff;
             
             --transition: all 0.15s ease;
-            --sidebar-width: 195px;
+            --sidebar-width: 210px;
             --sidebar-collapsed-width: 50px;
             
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
@@ -52,30 +52,31 @@
             box-sizing: border-box;
         }
 
+        /* Executive Sidebar Navigation Layout */
         body {
-            font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--canvas-bg);
             color: var(--text-primary);
             margin: 0;
             padding: 0;
-            font-size: 12px;
-            line-height: 1.45;
+            display: flex;
+            min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Sidebar Styling */
         .sidebar {
             width: var(--sidebar-width);
-            height: 100vh;
             background-color: var(--sidebar-bg);
             border-right: 1px solid var(--border-color);
-            position: fixed;
-            top: 0;
-            left: 0;
             display: flex;
             flex-direction: column;
-            transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
             z-index: 1000;
+            transition: var(--transition);
         }
 
         .sidebar.collapsed {
@@ -83,25 +84,25 @@
         }
 
         .sidebar-header {
-            height: 48px;
+            height: 52px;
             display: flex;
             align-items: center;
-            padding: 0 0.85rem;
+            padding: 0 0.9rem;
             border-bottom: 1px solid var(--border-color);
         }
 
         .sidebar-brand {
             display: flex;
             align-items: center;
-            gap: 0.55rem;
+            gap: 0.65rem;
             text-decoration: none;
             color: var(--text-primary);
         }
 
         .brand-icon-wrapper {
-            width: 28px;
-            height: 28px;
-            border-radius: 7px;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
             background: rgba(5, 150, 105, 0.1);
             border: 1px solid rgba(5, 150, 105, 0.2);
             display: flex;
@@ -111,8 +112,8 @@
         }
 
         .brand-icon-wrapper img {
-            width: 17px;
-            height: 17px;
+            width: 22px;
+            height: 22px;
             object-fit: contain;
         }
 
@@ -124,14 +125,14 @@
 
         .brand-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 0.92rem;
+            font-size: 0.98rem;
             font-weight: 800;
             color: var(--text-primary);
             line-height: 1.1;
         }
 
         .brand-subtitle {
-            font-size: 0.58rem;
+            font-size: 0.62rem;
             font-weight: 800;
             color: var(--brand);
             text-transform: uppercase;
