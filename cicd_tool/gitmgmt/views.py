@@ -1442,10 +1442,14 @@ def organization_detail(request, org_id):
     member_ids.update(org.memberships.values_list('user_id', flat=True))
     member_ids.add(org.owner_id)
     members = get_user_model().objects.filter(id__in=member_ids).order_by('username')
+    projects = org.projects.all()
+    repositories = org.repositories.all()
     return render(request, 'gitmgmt/organization_detail.html', {
         'organization': org,
         'org': org,
-        'repos': org.repositories.all(),
+        'projects': projects,
+        'repositories': repositories,
+        'repos': repositories,
         'teams': teams,
         'members': members,
         'my_role': org.get_member_role(request.user),
