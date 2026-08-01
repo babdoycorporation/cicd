@@ -18,41 +18,49 @@
         align-items: center;
         gap: 0.45rem;
         font-family: 'Outfit', sans-serif;
+        color: var(--text-primary);
     }
     .page-title i { color: var(--brand); font-size: 1.25rem; }
+    
     .btn-primary {
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
-        padding: 0.38rem 0.75rem;
+        padding: 0.42rem 0.85rem;
         border-radius: 6px;
         font-weight: 700;
         font-size: 0.78rem;
         text-decoration: none;
-        background-color: var(--brand);
+        background-color: var(--btn-dark);
         color: #ffffff;
         transition: var(--transition);
-        border: 1px solid var(--brand);
+        border: 1px solid var(--btn-dark);
         box-shadow: var(--shadow-sm);
     }
-    .btn-primary:hover { background-color: var(--brand-hover); }
+    .btn-primary:hover {
+        background-color: var(--btn-dark-hover);
+        border-color: var(--btn-dark-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
     
     .btn-action-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 26px;
-        height: 26px;
-        border-radius: 5px;
-        background-color: rgba(51, 65, 85, 0.4);
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        background-color: #ffffff;
         border: 1px solid var(--border-color);
-        color: var(--text-secondary);
+        color: var(--text-primary);
         transition: var(--transition);
         text-decoration: none;
         font-size: 0.85rem;
+        box-shadow: var(--shadow-sm);
     }
     .btn-action-icon:hover {
-        background-color: var(--card-hover-bg);
+        background-color: var(--canvas-bg);
         border-color: var(--brand);
         color: var(--brand);
     }
@@ -61,8 +69,8 @@
         color: var(--text-muted);
     }
     .btn-action-danger:hover {
-        background-color: rgba(248, 113, 113, 0.15);
-        border-color: var(--danger-color);
+        background-color: #fef2f2;
+        border-color: #fca5a5;
         color: var(--danger-color);
     }
 
@@ -73,7 +81,7 @@
         margin-bottom: 2rem;
     }
     .project-card {
-        background-color: var(--card-bg);
+        background-color: #ffffff;
         border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 0.95rem 1.1rem;
@@ -95,9 +103,9 @@
         margin-bottom: 0.6rem;
     }
     .project-name {
-        font-size: 0.95rem;
+        font-size: 0.98rem;
         font-weight: 800;
-        color: var(--brand);
+        color: var(--text-primary);
         text-decoration: none;
         display: flex;
         align-items: center;
@@ -106,8 +114,11 @@
         transition: var(--transition);
     }
     .project-name:hover {
-        color: var(--brand-hover);
+        color: var(--brand);
         text-decoration: underline;
+    }
+    .project-name i {
+        color: var(--brand);
     }
     .project-actions {
         display: flex;
@@ -127,7 +138,7 @@
     .project-meta {
         color: var(--text-muted);
         font-size: 0.72rem;
-        border-top: 1px solid rgba(51, 65, 85, 0.5);
+        border-top: 1px solid #f1f5f9;
         padding-top: 0.6rem;
         display: flex;
         align-items: center;
@@ -145,19 +156,19 @@
         border-radius: 4px;
     }
     .badge-notif-on {
-        background: rgba(16, 185, 129, 0.14);
+        background: rgba(5, 150, 105, 0.1);
         color: var(--brand);
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        border: 1px solid rgba(5, 150, 105, 0.2);
     }
     .badge-notif-off {
-        background: rgba(148, 163, 184, 0.1);
+        background: #f1f5f9;
         color: var(--text-muted);
         border: 1px solid var(--border-color);
     }
     .empty-state {
         text-align: center;
         padding: 3rem 1.5rem;
-        background-color: var(--card-bg);
+        background-color: #ffffff;
         border: 1px dashed var(--border-color);
         border-radius: 8px;
         color: var(--text-muted);
