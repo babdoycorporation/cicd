@@ -18,14 +18,15 @@
     .actions { display: flex; gap: 0.75rem; }
     .btn {
         display: inline-flex; align-items: center; gap: 0.4rem;
-        border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.82rem;
-        font-weight: 600; cursor: pointer; font-family: inherit;
-        border: 1px solid transparent; text-decoration: none; transition: all 0.2s;
+        border-radius: 6px; padding: 0.42rem 0.85rem; font-size: 0.78rem;
+        font-weight: 700; cursor: pointer; font-family: inherit;
+        border: 1px solid transparent; text-decoration: none; transition: var(--transition);
+        box-shadow: var(--shadow-sm);
     }
-    .btn-danger  { background: var(--danger-color); color: #fff; }
-    .btn-danger:hover { background: #c9372c; }
-    .btn-outline { background: transparent; color: var(--text-secondary); border-color: var(--border-color); }
-    .btn-outline:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+    .btn-danger  { background: #dc2626; color: #ffffff; border-color: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; border-color: #b91c1c; }
+    .btn-outline { background: #ffffff; color: var(--text-primary); border-color: var(--border-color); font-weight: 600; }
+    .btn-outline:hover { background: var(--canvas-bg); border-color: var(--btn-dark); color: var(--btn-dark); }
 </style>
 
 <div class="confirm-card">

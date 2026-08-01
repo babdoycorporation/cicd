@@ -61,16 +61,17 @@
 
     .btn {
         display:inline-flex; align-items:center; gap:0.4rem;
-        border-radius:6px; padding:0.4rem 0.8rem; font-size:0.82rem;
-        font-weight:600; cursor:pointer; font-family:inherit;
-        transition:all 0.2s; border:1px solid transparent; text-decoration:none;
+        border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem;
+        font-weight:700; cursor:pointer; font-family:inherit;
+        transition:var(--transition); border:1px solid transparent; text-decoration:none;
+        box-shadow:var(--shadow-sm);
     }
-    .btn-outline { background:transparent; color:var(--text-secondary); border-color:var(--border-color); }
-    .btn-outline:hover { background:rgba(255,255,255,0.05); color:var(--text-primary); }
-    .btn-danger  { background:transparent; color:var(--danger-color); border-color:rgba(248,81,73,0.4); }
-    .btn-danger:hover  { background:rgba(248,81,73,0.08); }
-    .btn-primary { background:var(--accent-color); color:#fff; }
-    .btn-primary:hover { background:#1f6feb; }
+    .btn-outline { background:#ffffff; color:var(--text-primary); border-color:var(--border-color); font-weight:600; }
+    .btn-outline:hover { background:var(--canvas-bg); border-color:var(--btn-dark); color:var(--btn-dark); }
+    .btn-danger  { background:#ffffff; color:var(--text-muted); border-color:var(--border-color); }
+    .btn-danger:hover  { background:#fef2f2; border-color:#fca5a5; color:var(--danger-color); }
+    .btn-primary { background:var(--btn-dark); color:#ffffff; border-color:var(--btn-dark); }
+    .btn-primary:hover { background:var(--btn-dark-hover); border-color:var(--btn-dark-hover); transform:translateY(-1px); box-shadow:var(--shadow-md); }
 
     .info-box {
         background:rgba(47,129,247,0.07); border:1px solid rgba(47,129,247,0.2);
