@@ -537,7 +537,7 @@
     <!-- Main Content Area -->
     <div class="main-wrapper" id="mainWrapper">
         <header class="topbar">
-            <div style="display:flex; align-items:center; gap:0.75rem; flex-grow:1; max-width:480px;">
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-grow:1; max-width:540px;">
                 <button class="sidebar-toggler" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
                     <i class="ph ph-list"></i>
                 </button>
@@ -545,15 +545,17 @@
                 <!-- Global Search Box with Auto Suggestions -->
                 <div id="globalSearchWrapper" style="position:relative; width:100%;">
                     <div style="position:relative; display:flex; align-items:center;">
-                        <i class="ph ph-magnifying-glass" style="position:absolute; left:9px; color:var(--text-muted); font-size:0.9rem; pointer-events:none;"></i>
-                        <input type="text" id="globalSearchInput" placeholder="Search repos, projects, apps, issues... (Ctrl+K)" 
-                               style="width:100%; padding:0.3rem 2.2rem 0.3rem 2.1rem; background:#ffffff; border:1px solid var(--border-color); border-radius:6px; font-size:0.75rem; font-family:inherit; color:var(--text-primary); outline:none; transition:var(--transition); box-shadow:var(--shadow-sm);"
-                               onfocus="onGlobalSearchFocus()" oninput="onGlobalSearchInput(this.value)">
-                        <span style="position:absolute; right:7px; font-size:0.6rem; font-weight:700; color:var(--text-muted); background:var(--canvas-bg); border:1px solid var(--border-color); padding:0.05rem 0.3rem; border-radius:4px; pointer-events:none;">Ctrl+K</span>
+                        <i class="ph ph-magnifying-glass" style="position:absolute; left:10px; color:var(--text-muted); font-size:0.95rem; pointer-events:none;"></i>
+                        <input type="text" id="globalSearchInput" placeholder="Search or jump to (repos, projects, apps, issues)..." 
+                               style="width:100%; padding:0.35rem 2.2rem 0.35rem 2.2rem; background:#f8fafc; border:1px solid var(--border-color); border-radius:6px; font-size:0.78rem; font-family:inherit; color:var(--text-primary); outline:none; transition:var(--transition); box-shadow:var(--shadow-sm);"
+                               onfocus="onGlobalSearchFocus(); this.style.background='#ffffff'; this.style.borderColor='var(--brand)'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.12)';"
+                               onblur="this.style.background='#f8fafc'; this.style.borderColor='var(--border-color)'; this.style.boxShadow='var(--shadow-sm)';"
+                               oninput="onGlobalSearchInput(this.value)">
+                        <span style="position:absolute; right:8px; font-size:0.62rem; font-weight:700; color:var(--text-muted); background:#ffffff; border:1px solid var(--border-color); padding:0.08rem 0.35rem; border-radius:4px; pointer-events:none; box-shadow:0 1px 2px rgba(0,0,0,0.03);">Ctrl+K</span>
                     </div>
 
                     <!-- Auto Suggestions Popup -->
-                    <div id="globalSearchResults" style="display:none; position:absolute; top:calc(100% + 5px); left:0; width:100%; min-width:320px; background:#ffffff; border:1px solid var(--border-color); border-radius:8px; box-shadow:var(--shadow-lg); z-index:1200; max-height:360px; overflow-y:auto; padding:0.3rem;">
+                    <div id="globalSearchResults" style="display:none; position:absolute; top:calc(100% + 6px); left:0; width:100%; min-width:340px; background:#ffffff; border:1px solid var(--border-color); border-radius:8px; box-shadow:var(--shadow-lg); z-index:1200; max-height:360px; overflow-y:auto; padding:0.35rem;">
                     </div>
                 </div>
             </div>
