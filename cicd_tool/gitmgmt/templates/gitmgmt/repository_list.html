@@ -53,7 +53,7 @@
     .repo-search-box input {
         width: 100%;
         padding: 0.38rem 0.75rem 0.38rem 2.1rem;
-        background-color: #ffffff;
+        background-color: var(--input-bg);
         border: 1px solid var(--border-color);
         border-radius: 6px;
         color: var(--text-primary);
@@ -65,8 +65,9 @@
     }
 
     .repo-search-box input:focus {
+        background-color: var(--card-bg);
         border-color: var(--brand);
-        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
     }
 
     .btn {
@@ -86,7 +87,7 @@
 
     .btn-primary {
         background-color: var(--brand);
-        color: white;
+        color: #ffffff;
         border-color: var(--brand);
     }
 
@@ -97,12 +98,12 @@
     }
 
     .btn-outline {
-        background-color: #ffffff;
+        background-color: var(--card-bg);
         color: var(--text-primary);
     }
 
     .btn-outline:hover {
-        background-color: var(--canvas-bg);
+        background-color: var(--card-hover-bg);
         border-color: var(--brand);
         color: var(--brand);
     }
@@ -119,7 +120,7 @@
         border-radius: 20px;
         font-size: 0.72rem;
         font-weight: 600;
-        background: #ffffff;
+        background: var(--card-bg);
         border: 1px solid var(--border-color);
         color: var(--text-secondary);
         cursor: pointer;
@@ -129,7 +130,7 @@
 
     .filter-pill.active, .filter-pill:hover {
         background: var(--accent-light);
-        border-color: rgba(5, 150, 105, 0.3);
+        border-color: rgba(16, 185, 129, 0.3);
         color: var(--brand);
         font-weight: 700;
     }
@@ -143,7 +144,7 @@
     }
 
     .repo-card {
-        background-color: #ffffff;
+        background-color: var(--card-bg);
         border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 0.9rem 1.05rem;
