@@ -1554,11 +1554,12 @@ def organization_settings(request, org_name):
                     member.delete()
                     messages.success(request, f"{member.user.username} removed from {org.name}.")
 
-        return redirect('organization_settings', org_id=org.id)
+        return redirect('organization_settings', org_name=org.name)
 
     memberships = OrganizationMember.objects.filter(organization=org).select_related('user').order_by('user__username')
     return render(request, 'gitmgmt/organization_settings.html', {
         'organization': org,
+        'org': org,
         'memberships': memberships,
         'my_role': role,
         'projects': org.projects.all(),
