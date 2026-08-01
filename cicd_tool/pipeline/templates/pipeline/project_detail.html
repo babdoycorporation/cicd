@@ -194,27 +194,18 @@
             {% endif %}
         </div>
         
-        <div class="action-grid">
-            <button onclick="document.getElementById('orchestrator-modal').style.display='flex'" class="btn btn-primary">
+        <div class="action-grid" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+            <button onclick="document.getElementById('orchestrator-modal').style.display='flex'" class="btn btn-primary" style="background:var(--btn-dark); color:#fff; border:1px solid var(--btn-dark); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:700;">
                 <i class="ph ph-play"></i> Trigger Orchestrator
             </button>
-            <a href="{% url 'project_pipeline_create' project.name %}" class="btn btn-secondary" style="border-color: var(--accent-color); color: var(--accent-color);">
+            <a href="{% url 'project_pipeline_create' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
                 <i class="ph ph-git-merge"></i> Define Orchestrator
             </a>
-            <a href="{% url 'project_settings' project.name %}" class="btn btn-secondary">
-                <i class="ph ph-gear"></i> Project Settings
-            </a>
-            <a href="{% url 'local_credential_list' project_name=project.name %}" class="btn btn-warning">
-                <i class="ph ph-key"></i> Local Credentials
-            </a>
-            <a href="{% url 'create_application' project.name %}" class="btn btn-info">
+            <a href="{% url 'create_application_project' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
                 <i class="ph ph-cube"></i> Create Application
             </a>
-            <a href="{% url 'pipeline_list' project.name %}" class="btn btn-info">
-                <i class="ph ph-git-merge"></i> Manage Pipelines
-            </a>
-            <a href="{% url 'project_pipeline_history' project.name %}" class="btn btn-secondary">
-                <i class="ph ph-clock-counter-clockwise"></i> View Orchestrator History
+            <a href="{% url 'pipeline_list' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                <i class="ph ph-rocket-launch"></i> Manage Pipelines
             </a>
         </div>
     </div>

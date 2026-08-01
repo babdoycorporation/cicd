@@ -462,25 +462,34 @@
                 {% if project %}
                     <a href="{% url 'project_list' %}" style="margin-bottom: 0.25rem; border-bottom: 1px solid var(--border-color); border-radius: 0;">
                         <i class="ph ph-arrow-left icon"></i>
-                        <span class="text">Back to Hub</span>
+                        <span class="text">Back to Projects</span>
                     </a>
+                    <div class="sidebar-section-label">Project</div>
                     <a href="{% url 'project_detail' project.name %}" class="{% if request.resolver_match.url_name == 'project_detail' %}active{% endif %}">
                         <i class="ph ph-presentation-chart icon"></i>
                         <span class="text">Overview</span>
-                    </a>
-                    <a href="{% url 'repository_list' %}" class="{% if 'repo' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="ph ph-code icon"></i>
-                        <span class="text">Repositories</span>
-                    </a>
-                    <a href="{% url 'pipeline_list' project.name %}" class="{% if 'pipeline' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="ph ph-rocket-launch icon"></i>
-                        <span class="text">Pipelines</span>
                     </a>
                     <a href="{% url 'application_list' %}?project={{ project.name }}" class="{% if 'application' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-cube icon"></i>
                         <span class="text">Applications</span>
                     </a>
-                    <a href="{% url 'configure_project' project.name %}" class="{% if request.resolver_match.url_name == 'configure_project' %}active{% endif %}">
+                    <a href="{% url 'repository_list' %}" class="{% if 'repo' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-git-branch icon"></i>
+                        <span class="text">Repositories</span>
+                    </a>
+                    <a href="{% url 'pipeline_list' project.name %}" class="{% if 'pipeline' in request.resolver_match.url_name and 'history' not in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-rocket-launch icon"></i>
+                        <span class="text">Pipelines</span>
+                    </a>
+                    <a href="{% url 'project_pipeline_history' project.name %}" class="{% if 'history' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-clock-counter-clockwise icon"></i>
+                        <span class="text">Run History</span>
+                    </a>
+                    <a href="{% url 'local_credential_list' project_name=project.name %}" class="{% if 'credential' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-key icon"></i>
+                        <span class="text">Local Credentials</span>
+                    </a>
+                    <a href="{% url 'configure_project' project.name %}" class="{% if request.resolver_match.url_name == 'configure_project' or request.resolver_match.url_name == 'project_settings' %}active{% endif %}">
                         <i class="ph ph-gear-six icon"></i>
                         <span class="text">Project Settings</span>
                     </a>
