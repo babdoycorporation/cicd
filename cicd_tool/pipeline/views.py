@@ -860,8 +860,13 @@ def local_credential_delete(request, pk):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
-def create_application(request, project_name):
-    project = get_object_or_404(Project, name=project_name)
+def create_application(request, project_name=None):
+    if project_name:
+        project = get_object_or_404(Project, name=project_name)
+    else:
+        project = Project.objects.first()
+        if not project:
+            return redirect('project_create')
     if request.method == 'POST':
         form = ApplicationForm(request.POST)
         if form.is_valid():
@@ -886,7 +891,7 @@ def create_application(request, project_name):
                     name=app.name,
                     description=form.cleaned_data.get('description', ''),
                     owner=request.user,
-                    organization=project.organization,
+                    organization=project.organization if project else None,
                     visibility=visibility,
                     default_branch=app.default_branch or 'main',
                     application=app,
@@ -900,7 +905,7 @@ def create_application(request, project_name):
                 repo.save()
             else:
                 app.save()
-            return redirect('project_detail', project_name=project.name)
+            return redirect('application_detail', application_name=app.name)
     else:
         form = ApplicationForm()
     return render(request, 'pipeline/create_application.html', {'form': form, 'project': project})

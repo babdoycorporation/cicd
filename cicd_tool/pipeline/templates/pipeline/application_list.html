@@ -127,11 +127,11 @@
             {% endif %}
         </h1>
         {% if project %}
-            <a href="{% url 'application_create_project' project.name %}" class="btn-primary">
+            <a href="{% url 'create_application_project' project.name %}" class="btn-primary">
                 <i class="ph ph-plus"></i> New Application
             </a>
         {% else %}
-            <a href="{% url 'application_create' %}" class="btn-primary">
+            <a href="{% url 'create_application' %}" class="btn-primary">
                 <i class="ph ph-plus"></i> New Application
             </a>
         {% endif %}
@@ -140,7 +140,7 @@
     {% if applications %}
     <div class="app-grid">
         {% for app in applications %}
-        <a href="{% url 'application_detail' app.id %}" class="app-card">
+        <a href="{% url 'application_detail' app.name %}" class="app-card">
             <div class="app-icon" style="background: linear-gradient(135deg, {{ app.color|default:'#059669' }}, #0f172a);">
                 <i class="{{ app.icon|default:'ph ph-cube' }}"></i>
             </div>
@@ -162,11 +162,11 @@
         <h3 style="margin: 0 0 0.25rem; font-size: 0.95rem; color: var(--text-primary);">No applications configured yet</h3>
         <p style="margin: 0 0 1rem; font-size: 0.78rem;">Create your first application to link code repositories and build pipelines.</p>
         {% if project %}
-            <a href="{% url 'application_create_project' project.name %}" class="btn-primary">
+            <a href="{% url 'create_application_project' project.name %}" class="btn-primary">
                 <i class="ph ph-plus"></i> Create Application
             </a>
         {% else %}
-            <a href="{% url 'application_create' %}" class="btn-primary">
+            <a href="{% url 'create_application' %}" class="btn-primary">
                 <i class="ph ph-plus"></i> Create Application
             </a>
         {% endif %}
