@@ -144,7 +144,7 @@
 {% if organizations %}
 <div class="org-grid">
   {% for org in organizations %}
-  <a href="{% url 'organization_detail' org.id %}" class="org-card">
+  <a href="{% url 'organization_detail' org.name %}" class="org-card">
     <div>
       <div class="org-card-top">
         <div class="org-title-area">

@@ -139,7 +139,7 @@
     <div class="breadcrumbs">
         <i class="ph ph-book" style="color: var(--brand);"></i>
         {% if repository.organization %}
-        <a href="{% url 'organization_detail' repository.organization.id %}">{{ repository.organization.name }}</a>
+        <a href="{% url 'organization_detail' repository.organization.name %}">{{ repository.organization.name }}</a>
         {% else %}
         <a href="{% url 'profile' %}">{{ repository.owner.username }}</a>
         {% endif %}

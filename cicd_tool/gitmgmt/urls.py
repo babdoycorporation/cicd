@@ -27,10 +27,10 @@ urlpatterns = [
     # ── Organisations ─────────────────────────────────────────────────────────
     path('organizations/', views.organization_list, name='organization_list'),
     path('organizations/create/', views.create_organization, name='create_organization'),
-    path('organizations/<int:org_id>/', views.organization_detail, name='organization_detail'),
-    path('organizations/<int:org_id>/add-member/', views.add_org_member, name='add_org_member'),
-    path('organizations/<int:org_id>/create-team/', views.create_team, name='create_team'),
-    path('organizations/<int:org_id>/settings/', views.organization_settings, name='organization_settings'),
+    path('organizations/<str:org_name>/', views.organization_detail, name='organization_detail'),
+    path('organizations/<str:org_name>/add-member/', views.add_org_member, name='add_org_member'),
+    path('organizations/<str:org_name>/create-team/', views.create_team, name='create_team'),
+    path('organizations/<str:org_name>/settings/', views.organization_settings, name='organization_settings'),
 
     # ── Repositories ──────────────────────────────────────────────────────────
     path('repositories/', views.repository_list, name='repository_list'),

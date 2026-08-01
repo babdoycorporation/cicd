@@ -491,23 +491,23 @@
                         <span class="text">Back to Hub</span>
                     </a>
                     <div class="sidebar-section-label">Organization</div>
-                    <a href="{% url 'organization_detail' current_org.id %}" class="{% if request.resolver_match.url_name == 'organization_detail' %}active{% endif %}">
+                    <a href="{% url 'organization_detail' current_org.name %}" class="{% if request.resolver_match.url_name == 'organization_detail' %}active{% endif %}">
                         <i class="ph ph-buildings icon"></i>
                         <span class="text">Overview</span>
                     </a>
-                    <a href="{% url 'organization_detail' current_org.id %}#projects" class="{% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'organization_detail' current_org.name %}#projects" class="{% if 'project' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-tree-structure icon"></i>
                         <span class="text">Projects</span>
                     </a>
-                    <a href="{% url 'organization_detail' current_org.id %}#repositories" class="{% if 'repository' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'organization_detail' current_org.name %}#repositories" class="{% if 'repository' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-git-branch icon"></i>
                         <span class="text">Repositories</span>
                     </a>
-                    <a href="{% url 'organization_detail' current_org.id %}#teams" class="{% if 'team' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'organization_detail' current_org.name %}#teams" class="{% if 'team' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-users-three icon"></i>
                         <span class="text">Teams</span>
                     </a>
-                    <a href="{% url 'organization_settings' current_org.id %}" class="{% if request.resolver_match.url_name == 'organization_settings' %}active{% endif %}">
+                    <a href="{% url 'organization_settings' current_org.name %}" class="{% if request.resolver_match.url_name == 'organization_settings' %}active{% endif %}">
                         <i class="ph ph-gear-six icon"></i>
                         <span class="text">Org Settings</span>
                     </a>

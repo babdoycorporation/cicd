@@ -1431,10 +1431,18 @@ def create_organization(request):
     return render(request, 'gitmgmt/organization_form.html')
 
 
+def _get_org(org_name):
+    if str(org_name).isdigit():
+        found = Organization.objects.filter(Q(id=int(org_name)) | Q(name__iexact=str(org_name))).first()
+        if found:
+            return found
+    return get_object_or_404(Organization, name__iexact=org_name)
+
+
 @login_required
-def organization_detail(request, org_id):
+def organization_detail(request, org_name):
     from django.contrib.auth import get_user_model
-    org = get_object_or_404(Organization, id=org_id)
+    org = _get_org(org_name)
     teams = org.teams.prefetch_related('members').all()
     member_ids = set()
     for t in teams:
@@ -1457,8 +1465,8 @@ def organization_detail(request, org_id):
 
 
 @login_required
-def add_org_member(request, org_id):
-    org = get_object_or_404(Organization, id=org_id)
+def add_org_member(request, org_name):
+    org = _get_org(org_name)
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         role = request.POST.get('role', 'member')
@@ -1477,30 +1485,30 @@ def add_org_member(request, org_id):
     referer = request.META.get('HTTP_REFERER')
     if referer:
         return redirect(referer)
-    return redirect('organization_detail', org_id=org.id)
+    return redirect('organization_detail', org_name=org.name)
 
 
 @login_required
-def create_team(request, org_id):
-    org = get_object_or_404(Organization, id=org_id)
+def create_team(request, org_name):
+    org = _get_org(org_name)
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
         if name:
             Team.objects.get_or_create(name=name, organization=org)
             messages.success(request, f"Team '{name}' created.")
-    return redirect('organization_detail', org_id=org.id)
+    return redirect('organization_detail', org_name=org.name)
 
 
 @login_required
-def organization_settings(request, org_id):
+def organization_settings(request, org_name):
     """Organization settings — general, members with roles, and policies."""
     from .models import OrganizationMember
-    org = get_object_or_404(Organization, id=org_id)
+    org = _get_org(org_name)
 
     role = org.get_member_role(request.user)
     if role not in ('owner', 'admin'):
         messages.error(request, "You need admin access to manage organization settings.")
-        return redirect('organization_detail', org_id=org.id)
+        return redirect('organization_detail', org_name=org.name)
 
     if request.method == 'POST':
         action = request.POST.get('action')

@@ -159,7 +159,7 @@
             <i class="ph ph-plus"></i> New Repo
           </a>
           {% if my_role == 'owner' or my_role == 'admin' %}
-          <a href="{% url 'organization_settings' org.id %}" class="btn-outline">
+          <a href="{% url 'organization_settings' org.name %}" class="btn-outline">
             <i class="ph ph-gear"></i> Settings
           </a>
           {% endif %}
@@ -304,7 +304,7 @@
       {% if my_role == 'owner' or my_role == 'admin' %}
       <div style="margin-top:1rem; border-top:1px solid var(--border-color); padding-top:0.75rem;">
         <h4 style="margin:0 0 0.4rem; font-size:0.75rem; color:var(--text-secondary); font-weight:700;">Add Member</h4>
-        <form method="post" action="{% url 'add_org_member' org.id %}">
+        <form method="post" action="{% url 'add_org_member' org.name %}">
           {% csrf_token %}
           <div class="form-row">
             <input type="text" name="username" placeholder="Username" required>
@@ -331,7 +331,7 @@
       <h3 style="margin:0; font-size:1rem; font-family:'Outfit', sans-serif; font-weight:800;">Create New Team</h3>
       <button onclick="document.getElementById('createTeamModal').style.display='none'" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--text-muted);">&times;</button>
     </div>
-    <form method="post" action="{% url 'create_team' org.id %}">
+    <form method="post" action="{% url 'create_team' org.name %}">
       {% csrf_token %}
       <div class="form-row">
         <label style="display:block; font-size:0.75rem; font-weight:700; margin-bottom:0.3rem;">Team Name</label>
