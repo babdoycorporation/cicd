@@ -19,6 +19,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate as django_authenticate
 from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
@@ -1365,6 +1366,13 @@ def signup(request):
     else:
         form = UserCreationForm()
     return render(request, 'gitmgmt/signup.html', {'form': form})
+
+
+def user_logout(request):
+    """Cleanly log out the user (GET & POST) and redirect to login page."""
+    auth_logout(request)
+    messages.info(request, "You have been logged out successfully.")
+    return redirect('login')
 
 
 @login_required

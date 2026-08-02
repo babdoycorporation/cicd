@@ -7,7 +7,7 @@ from .views import GitService
 urlpatterns = [
     # ── Auth ─────────────────────────────────────────────────────────────────
     path('', auth_views.LoginView.as_view(template_name='gitmgmt/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    path('logout/', views.user_logout, name='logout'),
     path('signup/', views.signup, name='signup'),
     path('profile/', views.profile, name='profile'),
     path('users/<str:username>/', views.user_profile_view, name='user_profile'),
