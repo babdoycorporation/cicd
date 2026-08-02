@@ -98,23 +98,32 @@ def _execute_run(run_pk, agent_pk):
         run.save(update_fields=['log'])
 
         if not checkout_ok:
-            log_lines.append("[FAILED] Pipeline execution failed due to repository checkout error.")
+            log_lines.append("\n" + "=" * 60)
+            log_lines.append("❌ [STAGE FAILED] Repository Checkout Stage")
+            log_lines.append("   Reason: Bare repository path or remote host could not be checked out.")
+            log_lines.append("   Action Required: Verify git repository existence and monitored branch name.")
+            log_lines.append("=" * 60)
             overall_status = 'failed'
         else:
             steps = list(run.pipeline.pipelinestep_set.all().order_by('id'))
             if not steps:
-                log_lines.append("[WARNING] No steps defined for this pipeline.")
+                log_lines.append("\n" + "=" * 60)
+                log_lines.append("⚠️ [STAGE FAILED] Pipeline Configuration Stage")
+                log_lines.append("   Reason: No executable pipeline steps were found in YAML configuration.")
+                log_lines.append("   Action Required: Define steps in .rocketci.yml (e.g. steps: - name: ... command: ...)")
+                log_lines.append("=" * 60)
                 overall_status = 'failed'
             else:
                 for step in steps:
-                    log_lines.append(f"[STEP] {step.name}")
+                    log_lines.append(f"\n▶ [STAGE START] Step: '{step.name}'")
+                    log_lines.append(f"  Command: {step.command}")
                     run.log = '\n'.join(log_lines)
                     run.save(update_fields=['log'])
                     try:
                         if is_artifact_command(step.command):
                             stored = store_artifact(step.command, run, workdir)
                             names = ', '.join(a.name for a in stored) or 'no files matched'
-                            log_lines.append(f"[ARTIFACT] Stored: {names}")
+                            log_lines.append(f"  [ARTIFACT] Stored: {names}")
                             result_rc = 0
                         elif is_deploy_command(step.command):
                             result = execute_deploy(step.command, run.run_id, workdir=workdir)
@@ -126,12 +135,20 @@ def _execute_run(run_pk, agent_pk):
                             result_rc = result.returncode
 
                         if result_rc != 0:
-                            log_lines.append(f"[FAILED] {step.name} exited {result_rc}")
+                            log_lines.append("\n" + "=" * 60)
+                            log_lines.append(f"❌ [STAGE FAILED] Step '{step.name}' failed!")
+                            log_lines.append(f"   Exit Code: {result_rc}")
+                            log_lines.append(f"   Failed Command: {step.command}")
+                            log_lines.append(f"   Action Required: Fix command syntax, missing dependencies, or test failure.")
+                            log_lines.append("=" * 60)
                             overall_status = 'failed'
                             break
-                        log_lines.append(f"[OK] {step.name}")
+                        log_lines.append(f"✅ [STAGE PASSED] Step '{step.name}' completed successfully (Exit Code 0)")
                     except Exception as e:
-                        log_lines.append(f"[ERROR] {step.name}: {e}")
+                        log_lines.append("\n" + "=" * 60)
+                        log_lines.append(f"❌ [STAGE ERROR] Step '{step.name}' threw an unhandled exception:")
+                        log_lines.append(f"   {e}")
+                        log_lines.append("=" * 60)
                         overall_status = 'failed'
                         break
                     finally:
