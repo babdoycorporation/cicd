@@ -180,28 +180,56 @@ def sync_steps_from_yaml(pipeline, yaml_content):
 
 
 
+def _find_bare_repo_path(repo_name):
+    from gitmgmt.views import _get_repo_base_path
+    base_dir = _get_repo_base_path()
+    direct = os.path.join(base_dir, f"{repo_name}.git")
+    if os.path.exists(direct):
+        return direct
+    if os.path.exists(base_dir):
+        target = f"{repo_name}.git".lower()
+        for item in os.listdir(base_dir):
+            if item.lower() == target:
+                return os.path.join(base_dir, item)
+    from django.conf import settings
+    alt_base = str(settings.BASE_DIR / 'repos')
+    alt_direct = os.path.join(alt_base, f"{repo_name}.git")
+    if os.path.exists(alt_direct):
+        return alt_direct
+    if os.path.exists(alt_base):
+        target = f"{repo_name}.git".lower()
+        for item in os.listdir(alt_base):
+            if item.lower() == target:
+                return os.path.join(alt_base, item)
+    return direct
+
+
 def checkout_repository(run, run_dir):
     """
-    Clone the pipeline's linked repository (local bare repo) into the run
-    directory at the monitored branch. Returns (workdir, log_lines).
-    Falls back to the run dir when no repository is linked.
+    Clone the pipeline's linked repository into the run directory at the monitored branch.
+    Supports both local server filesystem paths and remote agent execution.
     """
     from django.conf import settings
 
     log = []
     app = run.pipeline.application
     repo = app.linked_repository if app else None
+    if not repo and app and app.repository:
+        repo = app.repository
     if not repo:
         log.append("[INFO] No repository linked; steps run in an empty workspace.")
         return run_dir, log
 
-    repo_base = getattr(settings, 'REPO_BASE_PATH', str(settings.BASE_DIR / 'repos'))
-    bare_path = os.path.join(repo_base, f"{repo.name}.git")
+    bare_path = _find_bare_repo_path(repo.name)
     workdir = os.path.join(run_dir, repo.name)
     branch = run.pipeline.monitored_branch or repo.default_branch or 'main'
 
     try:
         log.append(f"[CHECKOUT] {repo.name} @ {branch}")
+        if not os.path.exists(bare_path):
+            log.append(f"[CHECKOUT-WARNING] Bare repo path '{bare_path}' not found on server; proceeding with workspace.")
+            return run_dir, log
+
         Repo.clone_from(bare_path, workdir, branch=branch)
         head = Repo(workdir).head.commit
         log.append(f"[CHECKOUT] HEAD {head.hexsha[:10]} — {head.summary}")
