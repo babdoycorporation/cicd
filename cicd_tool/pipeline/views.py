@@ -591,11 +591,28 @@ def cancel_pipeline_run(request, run_id):
     if request.method == 'POST' and run.status in ('pending', 'running'):
         run.status = 'failed'
         run.finished_at = timezone.now()
-        run.log = (run.log or '') + '\n[CANCELLED by user]'
+        run.log = (run.log or '') + '\n\n===================================\n❌ [RUN CANCELLED BY USER]\n==================================='
         run.save()
         if run.agent:
             run.agent.live = True
             run.agent.save(update_fields=['live'])
+        messages.warning(request, f"Pipeline run #{str(run.run_id)[:8]} has been stopped.")
+    return redirect('pipeline_run_detail', run_id=str(run.run_id))
+
+
+@login_required
+def rerun_pipeline_run(request, run_id):
+    """Re-triggers an existing pipeline run."""
+    run = get_object_or_404(PipelineRun, run_id=run_id)
+    if request.method == 'POST':
+        new_run = PipelineRun.objects.create(
+            pipeline=run.pipeline,
+            status='pending',
+            started_at=timezone.now(),
+            log=f'[RE-RUN] Manually re-triggered from Run #{str(run.run_id)[:8]}\n'
+        )
+        messages.success(request, f"Re-triggered pipeline run #{str(new_run.run_id)[:8]}")
+        return redirect('pipeline_run_detail', run_id=str(new_run.run_id))
     return redirect('pipeline_run_detail', run_id=str(run.run_id))
 
 

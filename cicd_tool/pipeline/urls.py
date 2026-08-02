@@ -33,6 +33,7 @@ urlpatterns = [
     path('pipeline/run/<uuid:run_id>/', login_required(views.pipeline_run_detail), name='pipeline_run_detail'),
     path('pipeline/run/<uuid:run_id>/api/', login_required(views.pipeline_run_api), name='pipeline_run_api'),
     path('pipeline/run/<uuid:run_id>/cancel/', login_required(views.cancel_pipeline_run), name='cancel_pipeline_run'),
+    path('pipeline/run/<uuid:run_id>/rerun/', login_required(views.rerun_pipeline_run), name='rerun_pipeline_run'),
 
     # ── Pipeline Steps ────────────────────────────────────────────────────────
     path('pipelines/<str:pipeline_name>/steps/', login_required(views.pipeline_step_list), name='pipeline_step_list'),

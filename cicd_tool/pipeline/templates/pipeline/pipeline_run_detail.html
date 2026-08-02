@@ -169,13 +169,31 @@
             </h1>
             <p style="color: var(--text-secondary); margin: 0;">Run for pipeline: <strong>{{ pipeline_run.pipeline.name }}</strong></p>
         </div>
-        <div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
             {% if pipeline_run.status|lower == 'success' %}
                 <span class="badge badge-success"><i class="fas fa-check"></i> {{ pipeline_run.status|title }}</span>
+                <form method="post" action="{% url 'rerun_pipeline_run' pipeline_run.run_id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="background: var(--accent-color); border: none; color: white; padding: 0.45rem 1.1rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-redo"></i> Rerun Pipeline
+                    </button>
+                </form>
             {% elif pipeline_run.status|lower == 'failed' %}
                 <span class="badge badge-danger"><i class="fas fa-xmark"></i> {{ pipeline_run.status|title }}</span>
+                <form method="post" action="{% url 'rerun_pipeline_run' pipeline_run.run_id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="background: var(--accent-color); border: none; color: white; padding: 0.45rem 1.1rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-redo"></i> Rerun Pipeline
+                    </button>
+                </form>
             {% else %}
                 <span class="badge badge-warning"><i class="fas fa-spinner fa-spin"></i> {{ pipeline_run.status|title }}</span>
+                <form method="post" action="{% url 'cancel_pipeline_run' pipeline_run.run_id %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to stop this pipeline run?');" style="background: #da3633; border: none; color: white; padding: 0.45rem 1.1rem; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-stop-circle"></i> Stop Run
+                    </button>
+                </form>
             {% endif %}
         </div>
     </div>
