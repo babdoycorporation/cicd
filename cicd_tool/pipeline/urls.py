@@ -61,6 +61,8 @@ urlpatterns = [
     path('agents/register/', views.register_agent, name='register_agent'),
     path('agents/receive-heartbeat/', views.receive_heartbeat, name='receive_heartbeat'),
     path('agents/receive-command/', views.receive_command, name='receive_command'),
+    path('agents/poll/', views.poll_agent_task, name='poll_agent_task'),
+    path('agents/report-task/', views.report_agent_task, name='report_agent_task'),
 
     # Wildcard — must come LAST in agent group
     path('agents/<str:agent_hostname>/', login_required(views.agent_detail), name='agent_detail'),

@@ -259,6 +259,30 @@ class Command(models.Model):
     command = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
 
+class AgentTask(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('running', 'Running'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='tasks')
+    run = models.ForeignKey('PipelineRun', on_delete=models.CASCADE, related_name='agent_tasks', null=True, blank=True)
+    step_name = models.CharField(max_length=255, default='Step Execution')
+    command = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    stdout = models.TextField(blank=True, default='')
+    stderr = models.TextField(blank=True, default='')
+    returncode = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Task #{self.pk} ({self.agent.hostname}) - {self.status}"
+
 class Heartbeat(models.Model):
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)

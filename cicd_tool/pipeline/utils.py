@@ -36,21 +36,27 @@ def execute_step(step, run_id, credentials: dict, workdir=None, agent=None):
     if credentials:
         env.update({str(k): str(v) for k, v in credentials.items()})
 
-    # ── Dispatch to Remote Build Agent Daemon (e.g. LAPTOP-7CPI1OEH) ────────────
-    if agent and getattr(agent, 'ip_address', None) and agent.hostname != 'local':
-        agent_url = f"http://{agent.ip_address}:9000"
-        try:
-            import requests as _requests
-            resp = _requests.post(agent_url, json={'command': command}, timeout=600)
-            if resp.status_code == 200:
-                res = resp.json().get('result', {})
-                stdout = res.get('stdout', '')
-                stderr = res.get('stderr', '')
-                rc = res.get('returncode', 0)
-                output = (stdout + ('\n' + stderr if stderr else '')).strip()
+    # ── NAT-Safe Agent Task Queueing for Remote Build Agents ─────────────────────
+    if agent and agent.hostname != 'local':
+        from .models import AgentTask
+        task = AgentTask.objects.create(
+            agent=agent,
+            step_name=getattr(step, 'name', 'Step Execution'),
+            command=command,
+            status='pending'
+        )
+        logger.info(f"Queued AgentTask #{task.pk} for agent '{agent.hostname}'. Waiting for agent outbound poll...")
+
+        start_time = time.time()
+        while time.time() - start_time < 600:
+            task.refresh_from_db()
+            if task.status in ('completed', 'failed'):
+                output = (task.stdout + ('\n' + task.stderr if task.stderr else '')).strip()
+                rc = task.returncode if task.returncode is not None else (0 if task.status == 'completed' else 1)
                 return subprocess.CompletedProcess(args=command, returncode=rc, stdout=output)
-        except Exception as err:
-            logger.warning(f"Remote agent execution on {agent.hostname} ({agent.ip_address}:9000) unreachable: {err}. Falling back to worker execution.")
+            time.sleep(1)
+
+        logger.warning(f"AgentTask #{task.pk} for '{agent.hostname}' timed out. Falling back to local worker execution.")
 
     # ── git clone shortcut ────────────────────────────────────────────────────
     if command.lower().startswith('git clone'):

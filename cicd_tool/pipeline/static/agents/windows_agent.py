@@ -126,6 +126,40 @@ def send_heartbeat(hash_key):
         time.sleep(HEARTBEAT_INTERVAL)
 
 
+def poll_agent_tasks(hash_key):
+    handler = RequestHandler
+    while True:
+        try:
+            r = requests.post(f'{SERVER_URL}/ci/agents/poll/', json={'hash_key': hash_key}, timeout=10)
+            if r.status_code == 200:
+                data = r.json()
+                task_id = data.get('task_id')
+                command = data.get('command')
+                if task_id and command:
+                    step_name = data.get('step_name', 'Step Execution')
+                    logging.info("Received task #%s ('%s'): %s", task_id, step_name, command[:60])
+                    env = os.environ.copy()
+                    env['PIP_NO_INPUT'] = '1'
+                    env['PYTHONUNBUFFERED'] = '1'
+                    env['CI'] = 'true'
+                    process = subprocess.run(command, shell=True, env=env, capture_output=True, timeout=600)
+                    stdout = process.stdout.decode('utf-8', errors='replace')
+                    stderr = process.stderr.decode('utf-8', errors='replace')
+                    rc = process.returncode
+                    report_payload = {
+                        'hash_key': hash_key,
+                        'task_id': task_id,
+                        'returncode': rc,
+                        'stdout': stdout,
+                        'stderr': stderr
+                    }
+                    requests.post(f'{SERVER_URL}/ci/agents/report-task/', json=report_payload, timeout=15)
+                    logging.info("Completed task #%s (exit code %s)", task_id, rc)
+        except Exception as e:
+            logging.debug('Task polling error: %s', e)
+        time.sleep(2)
+
+
 def main(server, hash_key, port):
     global SERVER_URL, AGENT_COMMAND_PORT
     SERVER_URL = server.rstrip('/')
@@ -136,11 +170,13 @@ def main(server, hash_key, port):
     heartbeat_thread = threading.Thread(target=send_heartbeat, args=(hash_key,), daemon=True)
     heartbeat_thread.start()
 
-    httpd = ThreadingHTTPServer(('', AGENT_COMMAND_PORT), RequestHandler)
-    atexit.register(httpd.shutdown)
-    logging.info('Agent listening on port %s — server %s', AGENT_COMMAND_PORT, SERVER_URL)
+    task_thread = threading.Thread(target=poll_agent_tasks, args=(hash_key,), daemon=True)
+    task_thread.start()
+
+    logging.info('Agent listening on server %s for outbound tasks...', SERVER_URL)
     try:
-        httpd.serve_forever()
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         logging.info('Agent stopped.')
 

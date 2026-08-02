@@ -757,6 +757,68 @@ def receive_heartbeat(request):
 
 
 @csrf_exempt
+def poll_agent_task(request):
+    """Agents poll this endpoint to pull pending AgentTask commands."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        hash_key = data.get('hash_key', '').strip()
+        agent = Agent.objects.filter(hash_key=hash_key).first()
+        if not agent:
+            return JsonResponse({'error': 'Agent not found'}, status=404)
+        
+        agent.last_heartbeat = timezone.now()
+        agent.live = True
+        agent.save(update_fields=['last_heartbeat', 'live'])
+
+        from .models import AgentTask
+        task = AgentTask.objects.filter(agent=agent, status='pending').order_by('created_at').first()
+        if task:
+            task.status = 'running'
+            task.save(update_fields=['status'])
+            return JsonResponse({
+                'status': 'ok',
+                'task_id': task.pk,
+                'command': task.command,
+                'step_name': task.step_name
+            })
+        return JsonResponse({'status': 'ok', 'task_id': None, 'command': None})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def report_agent_task(request):
+    """Agents post execution stdout, stderr, and returncode back to server."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        hash_key = data.get('hash_key', '').strip()
+        task_id = data.get('task_id')
+        agent = Agent.objects.filter(hash_key=hash_key).first()
+        if not agent:
+            return JsonResponse({'error': 'Agent not found'}, status=404)
+
+        from .models import AgentTask
+        task = AgentTask.objects.filter(pk=task_id, agent=agent).first()
+        if not task:
+            return JsonResponse({'error': 'Task not found'}, status=404)
+
+        rc = data.get('returncode', 0)
+        task.stdout = data.get('stdout', '')
+        task.stderr = data.get('stderr', '')
+        task.returncode = rc
+        task.status = 'completed' if rc == 0 else 'failed'
+        task.completed_at = timezone.now()
+        task.save()
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
 def receive_command(request):
     """Agents poll this for pending commands."""
     if request.method != 'POST':
