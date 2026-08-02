@@ -127,9 +127,14 @@ def sync_steps_from_yaml(pipeline, yaml_content):
 
     try:
         parsed = _yaml.safe_load(yaml_content) or {}
-    except _yaml.YAMLError as e:
-        logger.error(f"sync_steps_from_yaml: invalid YAML for {pipeline.name}: {e}")
-        return 0
+    except _yaml.YAMLError:
+        try:
+            import re
+            sanitized = re.sub(r'^\s*-\s*name:\s*(.*:\s*.*)$', r'  - name: "\1"', yaml_content, flags=re.MULTILINE)
+            parsed = _yaml.safe_load(sanitized) or {}
+        except Exception as e:
+            logger.error(f"sync_steps_from_yaml: invalid YAML for {pipeline.name}: {e}")
+            return 0
 
     steps = []
 
