@@ -722,11 +722,13 @@ class GitService(View):
         if proc.returncode != 0:
             return HttpResponseServerError(stderr.decode())
         if service == 'git-receive-pack':
-            repo_obj = Repository.objects.filter(name__iexact=repo_name).first()
-            if repo_obj:
-                user_act = request.user if hasattr(request, 'user') and request.user.is_authenticated else repo_obj.owner
-                log_activity(user_act, 'push', f"Pushed commits to {repo_obj.name}", repository=repo_obj)
-            self._trigger_yaml_pipeline(rp, repo_name)
+            try:
+                repo_obj = Repository.objects.filter(name__iexact=repo_name).first()
+                if repo_obj:
+                    log_activity(repo_obj.owner, 'push', f"Pushed commits to {repo_obj.name}", repository=repo_obj)
+                self._trigger_yaml_pipeline(rp, repo_name)
+            except Exception as e:
+                logger.error(f"Error in post-receive hook for {repo_name}: {e}")
         return HttpResponse(stdout, content_type=f'application/x-{service}-result')
 
     def _trigger_yaml_pipeline(self, rp, repo_name):
