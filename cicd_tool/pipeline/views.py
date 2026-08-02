@@ -1320,12 +1320,19 @@ def keycloak_callback(request):
         token_data = {
             'grant_type': 'authorization_code',
             'client_id': kc_client_id,
-            'client_secret': kc_client_secret,
             'code': code,
             'redirect_uri': redirect_uri,
         }
+        if kc_client_secret:
+            token_data['client_secret'] = kc_client_secret
+
+        logger.info(f"Exchanging Keycloak code for client '{kc_client_id}' at {token_url}")
         token_resp = requests.post(token_url, data=token_data, timeout=8)
-        token_resp.raise_for_status()
+        if token_resp.status_code != 200:
+            logger.error(f"Keycloak token exchange error {token_resp.status_code}: {token_resp.text}")
+            messages.error(request, f"Keycloak SSO Token Error: {token_resp.text}")
+            return redirect('login')
+
         tokens = token_resp.json()
         access_token = tokens.get('access_token')
 
@@ -1364,11 +1371,13 @@ def keycloak_callback(request):
                 user.last_name = last_name
             user.save()
 
-        auth_login(request, user)
+        # Log the user into Django session with explicit auth backend
+        auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         messages.success(request, f"Welcome, {user.first_name or user.username}! Signed in via Keycloak (Azure AD SSO).")
         return redirect('dashboard')
 
     except Exception as e:
+        logger.exception("Keycloak SSO callback exception occurred")
         messages.error(request, f"Keycloak SSO callback error: {e}")
         return redirect('login')
 
