@@ -716,31 +716,83 @@ class GitService(View):
 
     def _trigger_yaml_pipeline(self, rp, repo_name):
         try:
-            from pipeline.models import Application, Pipeline, PipelineRun, YamlFileVersion
+            from pipeline.models import Application, Pipeline, PipelineRun, YamlFileVersion, Project
+            from pipeline.utils import sync_steps_from_yaml
+
             git_repo = Repo(rp)
-            app = Application.objects.filter(repository__name=repo_name).first()
+            repo_obj = Repository.objects.filter(name__iexact=repo_name).first()
+            if not repo_obj:
+                return
+
+            app = Application.objects.filter(repository=repo_obj).first()
+            if not app:
+                proj = repo_obj.project
+                if not proj and repo_obj.organization:
+                    proj = Project.objects.filter(organization=repo_obj.organization).first()
+                if not proj:
+                    proj = Project.objects.first()
+                if proj:
+                    app, _ = Application.objects.get_or_create(
+                        name=repo_obj.name,
+                        project=proj,
+                        defaults={'repository': repo_obj, 'framework': 'python'}
+                    )
+
             if not app:
                 return
-            for pipeline in app.pipelines.all():
-                branch = pipeline.monitored_branch
-                if branch in [h.name for h in git_repo.heads]:
-                    tree = git_repo.heads[branch].commit.tree
-                    if pipeline.yaml_path in tree:
-                        yaml_content = tree[pipeline.yaml_path].data_stream.read().decode('utf-8')
-                        version = YamlFileVersion.objects.filter(pipeline=pipeline).count() + 1
-                        YamlFileVersion.objects.create(
-                            pipeline=pipeline, version_number=version, yaml_content=yaml_content
+
+            yaml_candidates = ['.rocketci.yml', 'rocketci.yml', '.rocketci.yaml', 'rocketci.yaml', 'pipeline.yml', 'ci.yml']
+
+            for head in git_repo.heads:
+                branch = head.name
+                tree = head.commit.tree
+                found_yaml_name = None
+                yaml_content = None
+
+                for y_name in yaml_candidates:
+                    if y_name in tree:
+                        found_yaml_name = y_name
+                        yaml_content = tree[y_name].data_stream.read().decode('utf-8')
+                        break
+
+                if not yaml_content and app.pipelines.exists():
+                    for p in app.pipelines.all():
+                        if p.yaml_path in tree:
+                            found_yaml_name = p.yaml_path
+                            yaml_content = tree[p.yaml_path].data_stream.read().decode('utf-8')
+                            break
+
+                if yaml_content:
+                    pipeline = app.pipelines.filter(monitored_branch=branch).first()
+                    if not pipeline:
+                        pipeline = app.pipelines.first()
+                    if not pipeline:
+                        pipeline = Pipeline.objects.create(
+                            name=f"{app.name} Main Pipeline",
+                            application=app,
+                            monitored_branch=branch,
+                            yaml_path=found_yaml_name or '.rocketci.yml'
                         )
-                        # Rebuild executable steps from the pushed YAML
-                        from pipeline.utils import sync_steps_from_yaml
-                        n_steps = sync_steps_from_yaml(pipeline, yaml_content)
-                        commit = git_repo.heads[branch].commit
-                        PipelineRun.objects.create(
-                            pipeline=pipeline, status='pending',
-                            log=(f'Triggered via git push on {branch} '
-                                 f'(commit {commit.hexsha[:10]}, {n_steps} steps)')
-                        )
-                        logger.info(f"Triggered pipeline {pipeline.name} for {repo_name} ({n_steps} steps)")
+                    else:
+                        pipeline.monitored_branch = branch
+                        if found_yaml_name:
+                            pipeline.yaml_path = found_yaml_name
+                        pipeline.save(update_fields=['monitored_branch', 'yaml_path'])
+
+                    version = YamlFileVersion.objects.filter(pipeline=pipeline).count() + 1
+                    YamlFileVersion.objects.create(
+                        pipeline=pipeline, version_number=version, yaml_content=yaml_content
+                    )
+
+                    n_steps = sync_steps_from_yaml(pipeline, yaml_content)
+                    commit = head.commit
+                    run = PipelineRun.objects.create(
+                        pipeline=pipeline,
+                        status='pending',
+                        log=(f'Triggered via git push on {branch} '
+                             f'(commit {commit.hexsha[:10]}, {n_steps} steps)')
+                    )
+                    logger.info(f"Auto-triggered pipeline '{pipeline.name}' (Run ID {run.run_id}) for {repo_name} with {n_steps} steps.")
         except Exception as e:
             logger.error(f"Pipeline trigger failed for {repo_name}: {e}")
 

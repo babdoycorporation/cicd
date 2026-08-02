@@ -158,6 +158,16 @@ def sync_steps_from_yaml(pipeline, yaml_content):
                     name = s.get('name') or str(cmd)[:60]
                     steps.append((str(name)[:100], str(cmd)))
 
+    # ── Flat steps format: steps → command / run ─────────────────────────
+    elif 'steps' in parsed:
+        for s in (parsed.get('steps') or []):
+            if not isinstance(s, dict):
+                continue
+            cmd = s.get('command') or s.get('run')
+            if cmd:
+                name = s.get('name') or str(cmd)[:60]
+                steps.append((str(name)[:100], str(cmd)))
+
     if not steps:
         logger.warning(f"sync_steps_from_yaml: no steps found in YAML for {pipeline.name}")
         return 0
