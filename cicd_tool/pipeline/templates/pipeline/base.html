@@ -70,7 +70,6 @@
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             position: fixed;
             top: 0;
             bottom: 0;
@@ -234,8 +233,10 @@
         }
 
         .sidebar-footer {
-            padding: 0.35rem;
+            padding: 0.35rem 0.4rem;
             border-top: 1px solid var(--border-color);
+            margin-top: auto;
+            background-color: var(--sidebar-bg);
         }
 
         /* Topbar & Header */
@@ -399,17 +400,21 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            flex: 1;
+            min-width: 0;
+            width: calc(100% - var(--sidebar-width));
         }
 
         .main-wrapper.collapsed {
             margin-left: var(--sidebar-collapsed-width);
+            width: calc(100% - var(--sidebar-collapsed-width));
         }
 
         .content {
             padding: 1.15rem 1.35rem;
             flex-grow: 1;
-            max-width: 1400px;
             width: 100%;
+            box-sizing: border-box;
         }
 
         /* Generic Card & Container Ultra-Compact Styles */
