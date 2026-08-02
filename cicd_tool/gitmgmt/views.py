@@ -107,7 +107,7 @@ def toggle_watch(request, repository_name):
 
 def _initialize_repository(name, user=None):
     """Create a bare git repo on disk with an initial README commit."""
-    repo_path = os.path.join(REPO_BASE_PATH, f"{name}.git")
+    repo_path = _repo_path(name)
     if not os.path.exists(repo_path):
         os.makedirs(repo_path)
 
@@ -661,7 +661,7 @@ class GitService(View):
         if not repo:
             return HttpResponse(f"Repository '{repo_name}' not found.", status=404)
         repo_name = repo.name
-        rp = os.path.join(REPO_BASE_PATH, f"{repo_name}.git")
+        rp = _repo_path(repo_name)
         if not os.path.exists(rp):
             return HttpResponse(f"Repository '{repo_name}' not found.", status=404)
         service = request.GET.get('service')
@@ -676,7 +676,7 @@ class GitService(View):
         if not repo:
             return HttpResponse(f"Repository '{repo_name}' not found.", status=404)
         repo_name = repo.name
-        rp = os.path.join(REPO_BASE_PATH, f"{repo_name}.git")
+        rp = _repo_path(repo_name)
         if not os.path.exists(rp):
             return HttpResponse(f"Repository '{repo_name}' not found.", status=404)
         if path in ('git-upload-pack', 'git-receive-pack'):
