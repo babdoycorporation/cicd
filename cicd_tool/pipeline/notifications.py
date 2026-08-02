@@ -34,26 +34,35 @@ import os
 from django.conf import settings
 
 def _get_email_integration_config():
-    """Return SMTP config dictionary from active DB model or settings/environment fallbacks."""
+    """Return SMTP config dictionary only if email notifications are explicitly configured and active."""
     from .models import NotificationIntegration
     integration = NotificationIntegration.objects.filter(
         integration_type='email', is_active=True
     ).first()
 
     if integration and integration.config:
-        return integration.config
+        cfg = integration.config
+        host = cfg.get('smtp_host', '').strip()
+        user = cfg.get('smtp_user', '').strip()
+        password = cfg.get('smtp_password', '').strip()
+        if host and (user and password or not cfg.get('requires_auth', True)):
+            return cfg
 
-    # Dynamic fallback to Django settings or OS Environment
-    host = getattr(settings, 'EMAIL_HOST', os.environ.get('EMAIL_HOST', ''))
-    if host:
+    # Fallback to settings / env variables ONLY if credentials are fully provided
+    host = str(getattr(settings, 'EMAIL_HOST', os.environ.get('EMAIL_HOST', ''))).strip()
+    user = str(getattr(settings, 'EMAIL_HOST_USER', os.environ.get('EMAIL_HOST_USER', ''))).strip()
+    password = str(getattr(settings, 'EMAIL_HOST_PASSWORD', os.environ.get('EMAIL_HOST_PASSWORD', ''))).strip()
+
+    if host and user and password:
         return {
             'smtp_host': host,
             'smtp_port': int(getattr(settings, 'EMAIL_PORT', os.environ.get('EMAIL_PORT', 587))),
-            'smtp_user': getattr(settings, 'EMAIL_HOST_USER', os.environ.get('EMAIL_HOST_USER', '')),
-            'smtp_password': getattr(settings, 'EMAIL_HOST_PASSWORD', os.environ.get('EMAIL_HOST_PASSWORD', '')),
-            'smtp_from': getattr(settings, 'DEFAULT_FROM_EMAIL', os.environ.get('DEFAULT_FROM_EMAIL', 'CogFocus One <noreply@cogfocus.local>')),
+            'smtp_user': user,
+            'smtp_password': password,
+            'smtp_from': getattr(settings, 'DEFAULT_FROM_EMAIL', os.environ.get('DEFAULT_FROM_EMAIL', 'CogFocus One Enterprise <noreply@cogfocus.com>')),
             'use_tls': bool(getattr(settings, 'EMAIL_USE_TLS', os.environ.get('EMAIL_USE_TLS', True))),
         }
+
     return None
 
 
