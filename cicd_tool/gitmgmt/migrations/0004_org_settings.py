@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('gitmgmt', '0003_merge'),
+        ('gitmgmt', '0003_new_models'),
     ]
 
     operations = [
