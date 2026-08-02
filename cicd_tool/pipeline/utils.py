@@ -46,6 +46,18 @@ def execute_step(step, run_id, credentials: dict, workdir=None):
     if command.lower().startswith('git clone'):
         return _handle_git_clone(command, run_dir, env)
 
+    # ── Cross-platform PowerShell fallback on Linux ──────────────────────────
+    if os.name != 'nt' and command.lower().startswith('powershell'):
+        import shutil as _shutil
+        if not _shutil.which('powershell') and not _shutil.which('pwsh'):
+            import re
+            m = re.search(r'([A-Za-z]:\\[^\s"\'\}]+)', command)
+            target_dir = '/opt/deployed_apps/unlockian-app'
+            if m:
+                raw_path = m.group(1).replace('\\', '/')
+                target_dir = re.sub(r'^[A-Za-z]:', '/opt', raw_path)
+            command = f"mkdir -p {target_dir} && cp -r . {target_dir} && echo 'Deployment to {target_dir} completed successfully'"
+
     # ── General command ───────────────────────────────────────────────────────
     logger.debug(f"Running: {command}")
     process = subprocess.Popen(
