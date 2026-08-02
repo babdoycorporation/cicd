@@ -250,6 +250,16 @@ def project_settings(request, project_name):
                 ProjectMember.objects.update_or_create(
                     project=project, user=user, defaults={'role': role})
                 messages.success(request, f"{username} added as {role}.")
+                try:
+                    from .notifications import send_notification
+                    send_notification(
+                        event_type='member_added',
+                        subject=f"Added to Project '{project.name}' on CogFocus One",
+                        body=f"Hello {user.first_name or user.username},\n\nYou have been added to Project '{project.name}' with the role '{role.title()}'.",
+                        users=[user]
+                    )
+                except Exception as notify_err:
+                    logger.warning(f"Failed to send project member email notification: {notify_err}")
             else:
                 messages.error(request, f"User '{username}' not found.")
 

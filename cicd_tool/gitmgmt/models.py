@@ -605,7 +605,7 @@ class Notification(models.Model):
 
 
 def notify(users, notification_type, title, content, link='', repository=None):
-    """Create Notification records for one or many users."""
+    """Create Notification records and dispatch email notifications for one or many users."""
     if isinstance(users, User):
         users = [users]
     objs = [
@@ -616,3 +616,15 @@ def notify(users, notification_type, title, content, link='', repository=None):
         for u in users
     ]
     Notification.objects.bulk_create(objs)
+
+    try:
+        from pipeline.notifications import send_notification
+        send_notification(
+            event_type=notification_type,
+            subject=title,
+            body=f"{content}\n\nRepository: {repository.name if repository else 'CogFocus Platform'}",
+            users=users,
+            link=link
+        )
+    except Exception:
+        pass

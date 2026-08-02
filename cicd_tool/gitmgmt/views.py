@@ -1489,6 +1489,16 @@ def add_org_member(request, org_name):
             team, _ = Team.objects.get_or_create(name='Members', organization=org)
             team.members.add(user)
             messages.success(request, f"{username} added to {org.name} as {role}.")
+            try:
+                from pipeline.notifications import send_notification
+                send_notification(
+                    event_type='member_added',
+                    subject=f"Welcome to {org.name} on CogFocus One",
+                    body=f"Hello {user.first_name or user.username},\n\nYou have been added to Organization '{org.name}' with the role '{role.title()}'.",
+                    users=[user]
+                )
+            except Exception as notify_err:
+                logger.warning(f"Failed to send member email notification: {notify_err}")
         else:
             messages.error(request, f"User '{username}' not found.")
     referer = request.META.get('HTTP_REFERER')
