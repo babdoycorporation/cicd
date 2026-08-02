@@ -56,6 +56,8 @@ urlpatterns = [
     path('agents/instructions/', login_required(views.agent_instructions), name='agent_instructions'),
 
     # Agent API endpoints — MUST be before <str:agent_hostname>/ to avoid wildcard capture
+    path('agents/download/<str:filename>', views.download_agent_script, name='download_agent_script'),
+    path('static/agents/<str:filename>', views.download_agent_script, name='download_agent_script_static'),
     path('agents/register/', views.register_agent, name='register_agent'),
     path('agents/receive-heartbeat/', views.receive_heartbeat, name='receive_heartbeat'),
     path('agents/receive-command/', views.receive_command, name='receive_command'),

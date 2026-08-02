@@ -657,6 +657,18 @@ def agent_detail(request, agent_hostname):
     })
 
 
+def download_agent_script(request, filename):
+    if filename not in ('windows_agent.py', 'linux_agent.py'):
+        return HttpResponseNotFound("Invalid agent script requested.")
+    file_path = os.path.join(settings.BASE_DIR, filename)
+    if not os.path.exists(file_path):
+        file_path = os.path.join(settings.BASE_DIR, 'pipeline', 'static', 'agents', filename)
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as f:
+            return HttpResponse(f.read(), content_type='text/x-python')
+    return HttpResponseNotFound("Agent script file not found.")
+
+
 @login_required
 def add_agent(request):
     hash_key = uuid.uuid4().hex
