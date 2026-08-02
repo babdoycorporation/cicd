@@ -130,7 +130,7 @@ def _execute_run(run_pk, agent_pk):
                             log_lines.extend(result.stdout.splitlines())
                             result_rc = result.returncode
                         else:
-                            result = execute_step(step, run.run_id, credentials, workdir=workdir)
+                            result = execute_step(step, run.run_id, credentials, workdir=workdir, agent=agent)
                             log_lines.extend(result.stdout.splitlines())
                             result_rc = result.returncode
 

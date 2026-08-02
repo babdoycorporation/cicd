@@ -21,18 +21,12 @@ BASE_RUNS_DIR = os.environ.get('CI_RUNS_DIR', 'D:/cicd/runs')
 #  Step execution
 # ─────────────────────────────────────────────────────────────────────────────
 
-def execute_step(step, run_id, credentials: dict, workdir=None):
+def execute_step(step, run_id, credentials: dict, workdir=None, agent=None):
     """
     Execute a single PipelineStep.
 
-    For `git clone …` commands the repo is cloned/pulled into the run directory.
-    All other commands are run via subprocess with the credentials injected as
-    environment variables.
-
-    `workdir` — optional working directory (e.g. the checked-out repository);
-    defaults to the run directory.
-
-    Returns a subprocess.CompletedProcess-like object with .returncode and .stdout.
+    For remote build agents (e.g. Windows agent LAPTOP-7CPI1OEH), dispatches the step
+    command directly to the agent's HTTP daemon (port 9000) for native remote execution.
     """
     command = step.command.strip()
     run_dir = workdir or os.path.join(BASE_RUNS_DIR, str(run_id))
@@ -41,6 +35,22 @@ def execute_step(step, run_id, credentials: dict, workdir=None):
     env = os.environ.copy()
     if credentials:
         env.update({str(k): str(v) for k, v in credentials.items()})
+
+    # ── Dispatch to Remote Build Agent Daemon (e.g. LAPTOP-7CPI1OEH) ────────────
+    if agent and getattr(agent, 'ip_address', None) and agent.hostname != 'local':
+        agent_url = f"http://{agent.ip_address}:9000"
+        try:
+            import requests as _requests
+            resp = _requests.post(agent_url, json={'command': command}, timeout=600)
+            if resp.status_code == 200:
+                res = resp.json().get('result', {})
+                stdout = res.get('stdout', '')
+                stderr = res.get('stderr', '')
+                rc = res.get('returncode', 0)
+                output = (stdout + ('\n' + stderr if stderr else '')).strip()
+                return subprocess.CompletedProcess(args=command, returncode=rc, stdout=output)
+        except Exception as err:
+            logger.warning(f"Remote agent execution on {agent.hostname} ({agent.ip_address}:9000) unreachable: {err}. Falling back to worker execution.")
 
     # ── git clone shortcut ────────────────────────────────────────────────────
     if command.lower().startswith('git clone'):
