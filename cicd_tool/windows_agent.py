@@ -126,37 +126,55 @@ def send_heartbeat(hash_key):
         time.sleep(HEARTBEAT_INTERVAL)
 
 
-def poll_agent_tasks(hash_key):
-    handler = RequestHandler
+def connect_agent_stream(hash_key):
+    """
+    Connects to server via persistent streaming tunnel.
+    Pushes execution results back instantly. Reconnects automatically if disconnected.
+    """
     while True:
         try:
-            r = requests.post(f'{SERVER_URL}/ci/agents/poll/', json={'hash_key': hash_key}, timeout=10)
-            if r.status_code == 200:
-                data = r.json()
-                task_id = data.get('task_id')
-                command = data.get('command')
-                if task_id and command:
-                    step_name = data.get('step_name', 'Step Execution')
-                    logging.info("Received task #%s ('%s'): %s", task_id, step_name, command[:60])
-                    env = os.environ.copy()
-                    env['PIP_NO_INPUT'] = '1'
-                    env['PYTHONUNBUFFERED'] = '1'
-                    env['CI'] = 'true'
-                    process = subprocess.run(command, shell=True, env=env, capture_output=True, timeout=600)
-                    stdout = process.stdout.decode('utf-8', errors='replace')
-                    stderr = process.stderr.decode('utf-8', errors='replace')
-                    rc = process.returncode
-                    report_payload = {
-                        'hash_key': hash_key,
-                        'task_id': task_id,
-                        'returncode': rc,
-                        'stdout': stdout,
-                        'stderr': stderr
-                    }
-                    requests.post(f'{SERVER_URL}/ci/agents/report-task/', json=report_payload, timeout=15)
-                    logging.info("Completed task #%s (exit code %s)", task_id, rc)
+            logging.info("Connecting to Real-Time Agent Stream Tunnel at %s...", SERVER_URL)
+            url = f'{SERVER_URL}/ci/agents/stream/'
+            with requests.post(url, json={'hash_key': hash_key}, stream=True, timeout=60) as resp:
+                if resp.status_code == 200:
+                    logging.info("⚡ Real-Time Agent Stream Tunnel Connected!")
+                    for line in resp.iter_lines():
+                        if not line:
+                            continue
+                        try:
+                            msg = json.loads(line.decode('utf-8'))
+                            msg_type = msg.get('type')
+                            if msg_type == 'task':
+                                payload = msg.get('payload', {})
+                                task_id = payload.get('task_id')
+                                command = payload.get('command')
+                                step_name = payload.get('step_name', 'Step Execution')
+                                logging.info("⚡ Real-Time Task Received #%s ('%s'): %s", task_id, step_name, command[:60])
+                                
+                                env = os.environ.copy()
+                                env['PIP_NO_INPUT'] = '1'
+                                env['PYTHONUNBUFFERED'] = '1'
+                                env['CI'] = 'true'
+                                process = subprocess.run(command, shell=True, env=env, capture_output=True, timeout=600)
+                                stdout = process.stdout.decode('utf-8', errors='replace')
+                                stderr = process.stderr.decode('utf-8', errors='replace')
+                                rc = process.returncode
+                                
+                                report = {
+                                    'hash_key': hash_key,
+                                    'task_id': task_id,
+                                    'returncode': rc,
+                                    'stdout': stdout,
+                                    'stderr': stderr
+                                }
+                                requests.post(f'{SERVER_URL}/ci/agents/report-stream-result/', json=report, timeout=15)
+                                logging.info("⚡ Task #%s Completed (Exit Code %s)", task_id, rc)
+                        except Exception as err:
+                            logging.debug("Stream parse error: %s", err)
+                else:
+                    logging.warning("Stream connection rejected (%s): %s", resp.status_code, resp.text[:200])
         except Exception as e:
-            logging.debug('Task polling error: %s', e)
+            logging.warning("Stream connection error: %s. Reconnecting in 2s...", e)
         time.sleep(2)
 
 
@@ -170,10 +188,10 @@ def main(server, hash_key, port):
     heartbeat_thread = threading.Thread(target=send_heartbeat, args=(hash_key,), daemon=True)
     heartbeat_thread.start()
 
-    task_thread = threading.Thread(target=poll_agent_tasks, args=(hash_key,), daemon=True)
+    task_thread = threading.Thread(target=connect_agent_stream, args=(hash_key,), daemon=True)
     task_thread.start()
 
-    logging.info('Agent listening on server %s for outbound tasks...', SERVER_URL)
+    logging.info('Agent connected to server %s via Real-Time Tunnel...', SERVER_URL)
     try:
         while True:
             time.sleep(1)

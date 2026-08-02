@@ -757,6 +757,80 @@ def receive_heartbeat(request):
 
 
 @csrf_exempt
+def agent_stream(request):
+    """
+    Persistent Real-Time Streaming Tunnel for Agents.
+    Agent connects outbound and stays connected. Server pushes tasks instantly via chunked response.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        hash_key = data.get('hash_key', '').strip()
+        agent = Agent.objects.filter(hash_key=hash_key).first()
+        if not agent:
+            return JsonResponse({'error': 'Agent not found'}, status=404)
+
+        agent.last_heartbeat = timezone.now()
+        agent.live = True
+        agent.save(update_fields=['last_heartbeat', 'live'])
+
+        from .agent_tunnel import tunnel_manager
+        agent_q = tunnel_manager.register_agent(agent.pk)
+
+        def event_stream():
+            yield json.dumps({'type': 'connected', 'status': 'ok'}) + '\n'
+            start_t = time.time()
+            while time.time() - start_t < 45:  # Keep stream alive up to 45s per cycle
+                try:
+                    task = agent_q.get(timeout=2)
+                    yield json.dumps({'type': 'task', 'payload': task}) + '\n'
+                except Exception:
+                    yield json.dumps({'type': 'ping'}) + '\n'
+
+        resp = StreamingHttpResponse(event_stream(), content_type='application/x-ndjson')
+        resp['Cache-Control'] = 'no-cache'
+        resp['X-Accel-Buffering'] = 'no'
+        return resp
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def report_stream_result(request):
+    """Agents submit real-time stream execution results back to server."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        hash_key = data.get('hash_key', '').strip()
+        task_id = data.get('task_id')
+        agent = Agent.objects.filter(hash_key=hash_key).first()
+        if not agent:
+            return JsonResponse({'error': 'Agent not found'}, status=404)
+
+        from .agent_tunnel import tunnel_manager
+        rc = data.get('returncode', 0)
+        stdout = data.get('stdout', '')
+        stderr = data.get('stderr', '')
+
+        from .models import AgentTask
+        task = AgentTask.objects.filter(pk=task_id, agent=agent).first()
+        if task:
+            task.stdout = stdout
+            task.stderr = stderr
+            task.returncode = rc
+            task.status = 'completed' if rc == 0 else 'failed'
+            task.completed_at = timezone.now()
+            task.save()
+
+        tunnel_manager.submit_result(task_id, rc, stdout, stderr)
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
 def poll_agent_task(request):
     """Agents poll this endpoint to pull pending AgentTask commands."""
     if request.method != 'POST':

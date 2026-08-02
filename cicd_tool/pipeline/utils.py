@@ -39,33 +39,32 @@ def execute_step(step, run_id, credentials: dict, workdir=None, agent=None):
 
     step_timeout = getattr(step, 'timeout', 60) or 60
 
-    # ── NAT-Safe Agent Task Queueing for Remote Build Agents ─────────────────────
+    # ── Real-Time Outbound Agent Tunnel (Solution 2) ───────────────────────────
     if agent and agent.hostname != 'local':
+        from .agent_tunnel import tunnel_manager
         from .models import AgentTask
+        step_name = getattr(step, 'name', 'Step Execution')
         task = AgentTask.objects.create(
             agent=agent,
-            step_name=getattr(step, 'name', 'Step Execution'),
+            step_name=step_name,
             command=command,
-            status='pending'
+            status='running'
         )
-        logger.info(f"Queued AgentTask #{task.pk} for agent '{agent.hostname}'. Waiting for agent outbound poll (Timeout: {step_timeout}s)...")
+        logger.info(f"[TUNNEL] Dispatching task #{task.pk} ('{step_name}') to agent '{agent.hostname}' via Real-Time Tunnel (Timeout: {step_timeout}s)...")
 
-        start_time = time.time()
-        while time.time() - start_time < step_timeout:
-            task.refresh_from_db()
-            if task.status in ('completed', 'failed'):
-                output = (task.stdout + ('\n' + task.stderr if task.stderr else '')).strip()
-                rc = task.returncode if task.returncode is not None else (0 if task.status == 'completed' else 1)
-                return subprocess.CompletedProcess(args=command, returncode=rc, stdout=output)
-            time.sleep(1)
+        res = tunnel_manager.dispatch_task(agent.pk, task.pk, command, step_name, timeout=step_timeout)
+        rc = res.get('returncode', 0)
+        stdout = res.get('stdout', '')
+        stderr = res.get('stderr', '')
 
-        task.status = 'failed'
-        task.save(update_fields=['status'])
-        return subprocess.CompletedProcess(
-            args=command,
-            returncode=124,
-            stdout=f"❌ [TIMEOUT ERROR] Step '{getattr(step, 'name', 'Execution')}' timed out after {step_timeout} seconds waiting for agent '{agent.hostname}' outbound poll/execution."
-        )
+        task.stdout = stdout
+        task.stderr = stderr
+        task.returncode = rc
+        task.status = 'completed' if rc == 0 else 'failed'
+        task.save()
+
+        output = (stdout + ('\n' + stderr if stderr else '')).strip()
+        return subprocess.CompletedProcess(args=command, returncode=rc, stdout=output)
 
     # ── git clone shortcut ────────────────────────────────────────────────────
     if command.lower().startswith('git clone'):
