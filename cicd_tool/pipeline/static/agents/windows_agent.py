@@ -18,7 +18,7 @@ import socket
 import subprocess
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import requests
 
@@ -65,16 +65,19 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def execute_command(self, command):
         try:
-            # shell=True so built-ins (echo, dir) and .bat/.cmd work on Windows
+            env = os.environ.copy()
+            env['PIP_NO_INPUT'] = '1'
+            env['PYTHONUNBUFFERED'] = '1'
+            env['CI'] = 'true'
             process = subprocess.run(
-                command, shell=True, capture_output=True, timeout=600)
+                command, shell=True, env=env, capture_output=True, timeout=300)
             return {
                 'stdout': process.stdout.decode('utf-8', errors='replace'),
                 'stderr': process.stderr.decode('utf-8', errors='replace'),
                 'returncode': process.returncode,
             }
         except subprocess.TimeoutExpired:
-            return {'stdout': '', 'stderr': 'Command timed out (600s)', 'returncode': 1}
+            return {'stdout': '', 'stderr': 'Command timed out (300s)', 'returncode': 1}
         except Exception as e:
             return {'stdout': '', 'stderr': f'Error executing command: {e}', 'returncode': 1}
 
@@ -133,7 +136,7 @@ def main(server, hash_key, port):
     heartbeat_thread = threading.Thread(target=send_heartbeat, args=(hash_key,), daemon=True)
     heartbeat_thread.start()
 
-    httpd = HTTPServer(('', AGENT_COMMAND_PORT), RequestHandler)
+    httpd = ThreadingHTTPServer(('', AGENT_COMMAND_PORT), RequestHandler)
     atexit.register(httpd.shutdown)
     logging.info('Agent listening on port %s — server %s', AGENT_COMMAND_PORT, SERVER_URL)
     try:
