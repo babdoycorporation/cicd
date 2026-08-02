@@ -675,7 +675,8 @@ def agent_detail(request, agent_hostname):
 
 
 def download_agent_script(request, filename):
-    if filename not in ('windows_agent.py', 'linux_agent.py'):
+    allowed_scripts = ('windows_agent.py', 'linux_agent.py', 'test_agent_connection.py', 'test_diag.py')
+    if filename not in allowed_scripts:
         return HttpResponseNotFound("Invalid agent script requested.")
     file_path = os.path.join(settings.BASE_DIR, filename)
     if not os.path.exists(file_path):
