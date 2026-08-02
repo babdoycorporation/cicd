@@ -207,7 +207,7 @@ def _find_bare_repo_path(repo_name):
 def checkout_repository(run, run_dir):
     """
     Clone the pipeline's linked repository into the run directory at the monitored branch.
-    Supports both local server filesystem paths and remote agent execution.
+    Returns (workdir, log_lines, success_bool).
     """
     from django.conf import settings
 
@@ -218,7 +218,7 @@ def checkout_repository(run, run_dir):
         repo = app.repository
     if not repo:
         log.append("[INFO] No repository linked; steps run in an empty workspace.")
-        return run_dir, log
+        return run_dir, log, True
 
     bare_path = _find_bare_repo_path(repo.name)
     workdir = os.path.join(run_dir, repo.name)
@@ -227,16 +227,16 @@ def checkout_repository(run, run_dir):
     try:
         log.append(f"[CHECKOUT] {repo.name} @ {branch}")
         if not os.path.exists(bare_path):
-            log.append(f"[CHECKOUT-WARNING] Bare repo path '{bare_path}' not found on server; proceeding with workspace.")
-            return run_dir, log
+            log.append(f"[CHECKOUT-ERROR] Bare repository path '{bare_path}' does not exist on server.")
+            return run_dir, log, False
 
         Repo.clone_from(bare_path, workdir, branch=branch)
         head = Repo(workdir).head.commit
         log.append(f"[CHECKOUT] HEAD {head.hexsha[:10]} — {head.summary}")
-        return workdir, log
+        return workdir, log, True
     except Exception as e:
         log.append(f"[CHECKOUT-ERROR] {e}")
-        return run_dir, log
+        return run_dir, log, False
 
 
 # ─────────────────────────────────────────────────────────────────────────────

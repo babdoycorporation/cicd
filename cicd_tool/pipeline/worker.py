@@ -92,48 +92,51 @@ def _execute_run(run_pk, agent_pk):
         # Check out the linked repository into the run workspace
         run_dir = os.path.join(BASE_RUNS_DIR, str(run.run_id))
         os.makedirs(run_dir, exist_ok=True)
-        workdir, checkout_log = checkout_repository(run, run_dir)
+        workdir, checkout_log, checkout_ok = checkout_repository(run, run_dir)
         log_lines.extend(checkout_log)
         run.log = '\n'.join(log_lines)
         run.save(update_fields=['log'])
 
-        steps = list(run.pipeline.pipelinestep_set.all().order_by('id'))
-
-        if not steps:
-            log_lines.append("[INFO] No steps defined for this pipeline.")
-            overall_status = 'success'
+        if not checkout_ok:
+            log_lines.append("[FAILED] Pipeline execution failed due to repository checkout error.")
+            overall_status = 'failed'
         else:
-            for step in steps:
-                log_lines.append(f"[STEP] {step.name}")
-                run.log = '\n'.join(log_lines)
-                run.save(update_fields=['log'])
-                try:
-                    if is_artifact_command(step.command):
-                        stored = store_artifact(step.command, run, workdir)
-                        names = ', '.join(a.name for a in stored) or 'no files matched'
-                        log_lines.append(f"[ARTIFACT] Stored: {names}")
-                        result_rc = 0
-                    elif is_deploy_command(step.command):
-                        result = execute_deploy(step.command, run.run_id, workdir=workdir)
-                        log_lines.extend(result.stdout.splitlines())
-                        result_rc = result.returncode
-                    else:
-                        result = execute_step(step, run.run_id, credentials, workdir=workdir)
-                        log_lines.extend(result.stdout.splitlines())
-                        result_rc = result.returncode
-
-                    if result_rc != 0:
-                        log_lines.append(f"[FAILED] {step.name} exited {result_rc}")
-                        overall_status = 'failed'
-                        break
-                    log_lines.append(f"[OK] {step.name}")
-                except Exception as e:
-                    log_lines.append(f"[ERROR] {step.name}: {e}")
-                    overall_status = 'failed'
-                    break
-                finally:
+            steps = list(run.pipeline.pipelinestep_set.all().order_by('id'))
+            if not steps:
+                log_lines.append("[WARNING] No steps defined for this pipeline.")
+                overall_status = 'failed'
+            else:
+                for step in steps:
+                    log_lines.append(f"[STEP] {step.name}")
                     run.log = '\n'.join(log_lines)
                     run.save(update_fields=['log'])
+                    try:
+                        if is_artifact_command(step.command):
+                            stored = store_artifact(step.command, run, workdir)
+                            names = ', '.join(a.name for a in stored) or 'no files matched'
+                            log_lines.append(f"[ARTIFACT] Stored: {names}")
+                            result_rc = 0
+                        elif is_deploy_command(step.command):
+                            result = execute_deploy(step.command, run.run_id, workdir=workdir)
+                            log_lines.extend(result.stdout.splitlines())
+                            result_rc = result.returncode
+                        else:
+                            result = execute_step(step, run.run_id, credentials, workdir=workdir)
+                            log_lines.extend(result.stdout.splitlines())
+                            result_rc = result.returncode
+
+                        if result_rc != 0:
+                            log_lines.append(f"[FAILED] {step.name} exited {result_rc}")
+                            overall_status = 'failed'
+                            break
+                        log_lines.append(f"[OK] {step.name}")
+                    except Exception as e:
+                        log_lines.append(f"[ERROR] {step.name}: {e}")
+                        overall_status = 'failed'
+                        break
+                    finally:
+                        run.log = '\n'.join(log_lines)
+                        run.save(update_fields=['log'])
 
     except Exception as e:
         log_lines.append(f"[FATAL] {e}")
