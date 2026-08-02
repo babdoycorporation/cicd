@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1')
 
 ALLOWED_HOSTS = [
-    h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+    h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
     if h.strip()
 ]
 
