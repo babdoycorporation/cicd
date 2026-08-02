@@ -251,6 +251,7 @@ def repository_detail(request, repository_name):
         'is_starred': is_starred,
         'is_watching': is_watching,
         'user_role': user_role,
+        'can_manage_repo': _user_can_manage_repo(request.user, repo),
     })
 
 
@@ -296,23 +297,45 @@ def fork_repository(request, repository_name):
 #  Collaborators / Settings
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _user_can_manage_repo(user, repo):
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff or repo.owner == user:
+        return True
+    if repo.organization:
+        role = repo.organization.get_member_role(user)
+        if role in ('owner', 'admin'):
+            return True
+    if repo.project:
+        role = repo.project.get_member_role(user)
+        if role in ('maintainer',):
+            return True
+    collab = repo.collaborators.filter(user=user).first()
+    if collab and collab.role in ('admin', 'write'):
+        return True
+    return False
+
+
 @login_required
 def repository_settings(request, repository_name):
     repo = get_object_or_404(Repository, name=repository_name)
-    if repo.owner != request.user and not request.user.is_staff:
-        return HttpResponseForbidden()
+    if not _user_can_manage_repo(request.user, repo):
+        messages.error(request, "Access Denied: You need Maintainer or Repository Admin permissions to manage repository settings.")
+        return redirect('repository_detail', repository_name=repo.name)
     collaborators = repo.collaborators.select_related('user').all()
     return render(request, 'gitmgmt/repository_settings.html', {
         'repository': repo,
         'collaborators': collaborators,
+        'can_manage_repo': True,
     })
 
 
 @login_required
 def add_collaborator(request, repository_name):
     repo = get_object_or_404(Repository, name=repository_name)
-    if repo.owner != request.user and not request.user.is_staff:
-        return HttpResponseForbidden()
+    if not _user_can_manage_repo(request.user, repo):
+        messages.error(request, "Access Denied: Permission required to manage collaborators.")
+        return redirect('repository_detail', repository_name=repo.name)
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         role = request.POST.get('role', 'read')
@@ -329,8 +352,9 @@ def add_collaborator(request, repository_name):
 @login_required
 def remove_collaborator(request, repository_name, user_id):
     repo = get_object_or_404(Repository, name=repository_name)
-    if repo.owner != request.user and not request.user.is_staff:
-        return HttpResponseForbidden()
+    if not _user_can_manage_repo(request.user, repo):
+        messages.error(request, "Access Denied: Permission required to remove collaborators.")
+        return redirect('repository_detail', repository_name=repo.name)
     if request.method == 'POST':
         from .models import Collaborator
         Collaborator.objects.filter(repository=repo, user_id=user_id).delete()

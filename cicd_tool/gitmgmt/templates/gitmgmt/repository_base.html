@@ -226,9 +226,11 @@
         <a href="{% url 'view_logs' repository.name %}?branch={{ current_branch|default:'main' }}" class="tab {% if request.resolver_match.url_name == 'view_logs' %}active{% endif %}">
             <i class="ph ph-clock-counter-clockwise"></i> History
         </a>
+        {% if can_manage_repo or repository.owner == request.user or request.user.is_superuser %}
         <a href="{% url 'repository_settings' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_settings' %}active{% endif %}">
             <i class="ph ph-gear"></i> Settings
         </a>
+        {% endif %}
     </div>
 
     {% block repo_content %}{% endblock %}
