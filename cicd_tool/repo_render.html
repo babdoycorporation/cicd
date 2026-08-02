@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReleaseRocket - Pipeline Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' fill='%232f81f7'%3E%3Cpath d='M152,224a8,8,0,0,1-8,8H112a8,8,0,0,1,0-16h32A8,8,0,0,1,152,224ZM128,112a12,12,0,1,0-12-12A12,12,0,0,0,128,112Zm95.62,43.83-12.36,55.63a16,16,0,0,1-25.51,9.11L158.51,200h-61L70.25,220.57a16,16,0,0,1-25.51-9.11L32.38,155.83a16.09,16.09,0,0,1,3.32-13.71l28.56-34.26a123.07,123.07,0,0,1,8.57-36.67c12.9-32.34,36-52.63,45.37-59.85a16,16,0,0,1,19.6,0c9.34,7.22,32.47,27.51,45.37,59.85a123.07,123.07,0,0,1,8.57,36.67l28.56,34.26A16.09,16.09,0,0,1,223.62,155.83ZM99.43,184h57.14c21.12-37.54,25.07-73.48,11.74-106.88C156.55,47.64,134.49,29,128,24c-6.51,5-28.57,23.64-40.33,53.12C74.36,110.52,78.31,146.46,99.43,184Zm-15,5.85Q68.28,160.5,64.83,132.16L48,152.36,60.36,208l.18-.13ZM208,152.36l-16.83-20.2q-3.42,28.28-19.56,57.69l23.85,18,.18.13Z'/%3E%3C/svg%3E">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>.fa-spin { animation: spin 2s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }</style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #0d1117;
+            --darker-bg: #010409;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #7d8590;
+            --accent-color: #2f81f7;
+            --success-color: #3fb950;
+            --danger-color: #f85149;
+            --warning-color: #d29922;
+            --transition: all 0.25s cubic-bezier(0.645, 0.045, 0.355, 1);
+            --sidebar-width: 210px;
+            --sidebar-collapsed-width: 64px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            letter-spacing: 0.2px;
+            color: var(--text-primary);
+            background-color: var(--dark-bg);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            height: 100vh;
+            width: var(--sidebar-width);
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: var(--darker-bg);
+            border-right: 1px solid var(--border-color);
+            padding-top: 1rem;
+            overflow-x: hidden;
+            transition: width 0.3s;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-color), #b892ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+            text-transform: uppercase;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-grow: 1;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .logout-btn {
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            display: flex;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            color: var(--danger-color);
+        }
+
+        .sidebar.collapsed .sidebar-footer {
+            flex-direction: column;
+            padding: 1rem 0;
+        }
+        
+        .sidebar.collapsed .user-info, .sidebar.collapsed .logout-btn {
+            display: none;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar-brand {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            color: var(--text-primary);
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-decoration: none;
+        }
+
+        .sidebar-brand i {
+            color: var(--accent-color);
+            margin-right: 0.75rem;
+            font-size: 1.5rem;
+        }
+
+        .sidebar.collapsed .sidebar-brand .text {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-brand i {
+            margin-right: 0;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0 0.5rem;
+        }
+
+        .sidebar a {
+            padding: 0.6rem 1rem;
+            text-decoration: none;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+
+        .sidebar a .icon {
+            margin-right: 1rem;
+            font-size: 1.1rem;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .sidebar.collapsed a {
+            justify-content: center;
+            padding: 0.75rem 0;
+        }
+
+        .sidebar.collapsed a .text {
+            display: none;
+        }
+
+        .sidebar.collapsed a .icon {
+            margin-right: 0;
+        }
+
+        .sidebar a:hover, .sidebar a.active {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .sidebar a:hover .icon, .sidebar a.active .icon {
+            color: var(--accent-color);
+        }
+
+        /* Topbar & Toggler */
+        .topbar {
+            height: 60px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--dark-bg);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .sidebar-toggler {
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+        }
+
+        .sidebar-toggler:hover {
+            color: var(--text-primary);
+            background-color: var(--card-bg);
+        }
+
+        /* Content Area */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            transition: margin-left 0.3s;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-wrapper.collapsed {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+
+        .content {
+            padding: 2rem;
+            flex-grow: 1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: var(--sidebar-width) !important;
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-wrapper, .main-wrapper.collapsed {
+                margin-left: 0;
+            }
+            .sidebar-toggler {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <a href="/ci/" class="sidebar-brand">
+            <i class="ph ph-rocket"></i>
+            <span class="text">ReleaseRocket</span>
+        </a>
+                <div class="sidebar-menu">
+            
+                <a href="/ci/projectslist/">
+                    <i class="ph ph-tree-structure icon"></i>
+                    <span class="text">Projects</span>
+                </a>
+                <a href="/organizations/">
+                    <i class="ph ph-buildings icon"></i>
+                    <span class="text">Organizations</span>
+                </a>
+                <a href="/ci/applications/">
+                    <i class="ph ph-cube icon"></i>
+                    <span class="text">Applications</span>
+                </a>
+                <a href="/ci/agents/">
+                    <i class="ph ph-users icon"></i>
+                    <span class="text">Agents</span>
+                </a>
+                <a href="/ci/global-credentials/">
+                    <i class="ph ph-key icon"></i>
+                    <span class="text">Credentials</span>
+                </a>
+                <a href="/ci/settings/">
+                    <i class="ph ph-gear icon"></i>
+                    <span class="text">Global Settings</span>
+                </a>
+            
+        </div>
+        <a href="/ci/documentation/" class="nav-link" title="Documentation"
+           style="display:flex; align-items:center; gap:0.75rem; padding:0.6rem 1.25rem; color:var(--text-secondary); text-decoration:none; font-size:0.875rem; transition:color 0.15s, background 0.15s; border-radius:0; margin-bottom:0.25rem;"
+           onmouseover="this.style.color='var(--text-primary)'; this.style.background='rgba(255,255,255,0.04)'"
+           onmouseout="this.style.color='var(--text-secondary)'; this.style.background=''">
+            <i class="ph ph-book-open icon"></i>
+            <span class="text">Documentation</span>
+        </a>
+        <div class="sidebar-footer">
+            <div class="user-avatar">
+                a
+            </div>
+            <div class="user-info">
+                <span class="user-name">admin</span>
+                <span class="user-role">Admin</span>
+            </div>
+            <a href="/logout/" class="logout-btn" title="Logout">
+                <i class="ph ph-sign-out" style="font-size: 1.2rem;"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="topbar">
+            <button class="sidebar-toggler" onclick="toggleSidebar()" aria-label="Toggle Sidebar">
+                <i class="ph ph-list"></i>
+            </button>
+        </header>
+
+        <main class="content">
+            
+<style>
+    /* Specific styles for Repository Header */
+    .breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-secondary);
+    }
+
+    .breadcrumbs a {
+        color: var(--accent-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .breadcrumbs .repo-name {
+        color: var(--text-primary);
+        font-weight: 700;
+    }
+    
+    .badge {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        background: var(--accent-color);
+        color: white;
+        vertical-align: middle;
+    }
+
+    /* Action Bar */
+    .action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        transition: var(--transition);
+        border: 1px solid var(--border-color);
+    }
+
+    .btn-primary {
+        background: var(--success-color);
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: #2ea043;
+        transform: translateY(-1px);
+    }
+
+    .btn-outline {
+        background: transparent;
+        color: var(--text-primary);
+    }
+
+    .btn-outline:hover {
+        background: var(--card-bg);
+        border-color: var(--accent-color);
+    }
+
+    /* Tabs */
+    .tabs {
+        display: flex;
+        gap: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 2rem;
+        overflow-x: auto;
+    }
+
+    .tab {
+        padding: 0.75rem 0.5rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.95rem;
+        border-bottom: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .tab:hover {
+        color: var(--text-primary);
+    }
+
+    .tab.active {
+        color: var(--text-primary);
+        border-bottom-color: var(--accent-color);
+    }
+
+    /* Clone Modal Shorthand */
+    .clone-box {
+        background: var(--darker-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 1rem;
+        margin-top: 1rem;
+        font-family: monospace;
+        font-size: 0.85rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+
+<div>
+    <!-- Header & Breadcrumbs -->
+    <div class="breadcrumbs">
+        <i class="ph ph-book" style="color: var(--text-secondary);"></i>
+        
+        <a href="/profile/">admin</a>
+        
+        <span>/</span>
+        <span class="repo-name">Unlockian</span>
+        <span class="badge" style="margin-left: 0.5rem;">PUBLIC</span>
+    </div>
+
+    <div class="action-bar">
+        <div class="branch-selector">
+            
+            <div class="branch-pill" style="background: var(--border-color); padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-git-branch"></i>
+                <select onchange="location = this.value;" style="background: transparent; border: none; color: var(--text-primary); cursor: pointer; outline: none; font-family: 'Inter', sans-serif;">
+                    
+                    <option value="?branch=main" selected style="background: var(--card-bg); color: var(--text-primary);">main</option>
+                    
+                </select>
+            </div>
+            
+        </div>
+
+        <div class="btn-group">
+            <a href="#" class="btn btn-outline" onclick="toggleClone()">
+                <i class="ph ph-download-simple"></i> Code
+            </a>
+            <a href="/repositories/Unlockian/pull-requests/create/" class="btn btn-primary">
+                <i class="ph ph-git-pull-request"></i> New PR
+            </a>
+        </div>
+    </div>
+
+    <div id="clonePopup" style="display: none; margin-bottom: 2rem;">
+        <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem;">
+            <h4 style="margin-top: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-download-simple"></i> Clone Repository
+            </h4>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Clone URL (HTTPS)</label>
+                <div class="clone-box">
+                    <span id="cloneUrl">http://testserver/repos/Unlockian</span>
+                    <button class="btn btn-outline" style="padding: 0.25rem 0.5rem;" onclick="copyClone()">Copy</button>
+                </div>
+            </div>
+
+            <div style="background: rgba(47,129,247,0.08); border-left: 3px solid var(--accent-color); padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.85rem;">
+                <p style="margin: 0 0 0.4rem 0;"><strong><i class="ph ph-key"></i> Authentication required</strong></p>
+                <p style="margin: 0 0 0.4rem 0; color: var(--text-secondary);">
+                    When prompted by git, use:
+                </p>
+                <ul style="margin: 0.25rem 0; padding-left: 1.25rem; color: var(--text-secondary);">
+                    <li><strong>Username:</strong> <code>admin</code></li>
+                    <li><strong>Password:</strong> your <strong>Personal Access Token</strong> (not your login password)</li>
+                </ul>
+                <p style="margin: 0.5rem 0 0 0;">
+                    <a href="/profile/" style="color: var(--accent-color); text-decoration: none; font-weight: 600;">
+                        <i class="ph ph-arrow-square-out"></i> Generate a PAT → Settings / Profile
+                    </a>
+                </p>
+            </div>
+
+            <div style="margin-top: 1rem; background: var(--darker-bg); border-radius: 6px; padding: 0.75rem; font-family: ui-monospace, monospace; font-size: 0.8rem; color: #b5cea8;">
+                git clone http://admin:&lt;YOUR_PAT&gt;@testserver/repos/Unlockian
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Tabs -->
+    <div class="tabs">
+        <a href="/repositories/Unlockian/" class="tab ">
+            <i class="ph ph-code"></i> Code
+        </a>
+        <a href="/repositories/Unlockian/issues/" class="tab ">
+            <i class="ph ph-warning-circle"></i> Issues
+        </a>
+        <a href="/repositories/Unlockian/pull-requests/" class="tab ">
+            <i class="ph ph-git-pull-request"></i> Pull Requests 
+            <span class="badge" style="background: var(--border-color);">0</span>
+        </a>
+        <a href="/repositories/Unlockian/ci/" class="tab ">
+            <i class="ph ph-rocket"></i> Rocket CI
+        </a>
+        <a href="/repositories/Unlockian/logs/?branch=main" class="tab ">
+            <i class="ph ph-clock-counter-clockwise"></i> History
+        </a>
+        <a href="/repositories/Unlockian/settings/" class="tab ">
+            <i class="ph ph-gear"></i> Settings
+        </a>
+    </div>
+
+    
+<style>
+    /* Specific styles for Repository Detail Content */
+    /* Main Layout */
+    .repo-grid {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        gap: 2rem;
+    }
+
+    @media (max-width: 992px) {
+        .repo-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .file-explorer {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .explorer-header {
+        padding: 1rem 1.5rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .file-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .file-item {
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: var(--transition);
+    }
+
+    .file-item:last-child {
+        border-bottom: none;
+    }
+
+    .file-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .file-item a {
+        color: var(--text-primary);
+        text-decoration: none;
+        flex: 1;
+        font-size: 0.95rem;
+    }
+
+    .file-item a:hover {
+        color: var(--accent-color);
+    }
+
+    /* README Card */
+    .readme-card {
+        margin-top: 2rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 2.5rem;
+    }
+
+    .readme-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .readme-content {
+        font-family: inherit;
+    }
+
+    /* Sidebar stuff */
+    .repo-sidebar-section {
+        margin-bottom: 2rem;
+    }
+
+    .repo-sidebar-section h3 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+    }
+</style>
+
+<!-- Main Content Grid -->
+<div class="repo-grid">
+    <div class="main-column">
+        <div class="file-explorer">
+            <div class="explorer-header">
+                <div class="last-commit" style="font-size: 0.9rem;">
+                    <strong>Latest:</strong> <span style="color: var(--text-secondary);">None</span>
+                </div>
+                <div style="font-family: monospace; font-size: 0.85rem; color: var(--accent-color);">
+                    None
+                </div>
+            </div>
+
+            <ul class="file-list">
+                
+            </ul>
+        </div>
+
+        
+    </div>
+
+    <div class="repo-sidebar">
+        <div class="repo-sidebar-section">
+            <h3>About</h3>
+            <p style="font-size: 0.95rem; color: var(--text-primary);">Unlockian</p>
+        </div>
+
+        <div class="repo-sidebar-section">
+            <h3>Stats</h3>
+            <div class="stat-item">
+                <span><i class="fas fa-star" style="color: var(--text-secondary); width: 16px;"></i> Stars</span>
+                <strong>0</strong>
+            </div>
+            <div class="stat-item">
+                <span><i class="fas fa-code-fork" style="color: var(--text-secondary); width: 16px;"></i> Forks</span>
+                <strong>0</strong>
+            </div>
+            <div class="stat-item">
+                <span><i class="fas fa-eye" style="color: var(--text-secondary); width: 16px;"></i> Watching</span>
+                <strong>1</strong>
+            </div>
+        </div>
+
+        <div class="repo-sidebar-section">
+            <h3>Branches</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                
+                <div style="font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-code-branch" style="color: var(--text-secondary);"></i>
+                    main
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script>
+    function toggleClone() {
+        const popup = document.getElementById('clonePopup');
+        popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function copyClone() {
+        const url = document.getElementById('cloneUrl').innerText;
+        navigator.clipboard.writeText(url);
+        alert('Clone URL copied to clipboard!');
+    }
+</script>
+
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const wrapper = document.getElementById('mainWrapper');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('show');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                wrapper.classList.toggle('collapsed');
+            }
+        }
+    </script>
+</body>
+</html>

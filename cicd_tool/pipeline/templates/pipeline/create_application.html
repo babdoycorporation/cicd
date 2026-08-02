@@ -1,27 +1,209 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Create Application for {{ project.name }}</h1>
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-group">
-            <label for="id_name">Name:</label>
-            {{ form.name }}
-        </div>
-        <div class="form-group">
-            <label for="id_global_credentials">Global Credentials:</label>
-            {{ form.global_credentials }}
-        </div>
-        <div class="form-group">
-            <label for="id_local_credentials">Local Credentials:</label>
-            {{ form.local_credentials }}
-        </div>
-        <div class="form-group">
-            <label for="id_agents">Agents:</label>
-            {{ form.agents }}
-        </div>
-        <button type="submit" class="btn btn-primary">Save</button>
-    </form>
+<style>
+  .form-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 2rem;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  .form-card h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #e6edf3;
+    margin: 0 0 0.4rem 0;
+  }
+  .form-card .subtitle {
+    color: #7d8590;
+    font-size: 0.85rem;
+    margin-bottom: 1.75rem;
+  }
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #c9d1d9;
+    margin-bottom: 0.4rem;
+  }
+  .form-group input[type="text"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #e6edf3;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.88rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-group input[type="text"]:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: #2f81f7;
+    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+  }
+  .form-hint {
+    font-size: 0.77rem;
+    color: #7d8590;
+    margin-top: 0.3rem;
+  }
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+    align-items: center;
+  }
+  .btn-primary {
+    background: #238636;
+    color: #fff;
+    border: 1px solid #2ea043;
+    border-radius: 6px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+  .btn-primary:hover { background: #2ea043; }
+  .btn-cancel {
+    background: transparent;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .btn-cancel:hover { background: #21262d; color: #e6edf3; }
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #7d8590;
+    font-size: 0.82rem;
+    margin-bottom: 1.5rem;
+  }
+  .breadcrumb a { color: #2f81f7; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+</style>
+
+<div class="breadcrumb">
+  <a href="{% url 'project_list' %}">Projects</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'project_detail' project.name %}">{{ project.name }}</a>
+  <i class="ph ph-caret-right"></i>
+  <span>New Application</span>
+</div>
+
+<div class="form-card">
+  <h2><i class="ph ph-squares-four" style="color:#2f81f7;margin-right:0.4rem;"></i>Create Application</h2>
+  <p class="subtitle">
+    Applications group pipelines under <strong style="color:#c9d1d9;">{{ project.name }}</strong>.
+    Each application maps to one deployable unit (service, microservice, or app).
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="id_name">Application Name <span style="color:#f85149;">*</span></label>
+      <input
+        type="text"
+        name="name"
+        id="id_name"
+        placeholder="e.g. api-service, frontend, worker"
+        value="{{ form.name.value|default:'' }}"
+        required
+        autofocus
+      >
+      {% if form.name.errors %}
+        <p style="color:#f85149;font-size:0.78rem;margin-top:0.3rem;">{{ form.name.errors|join:", " }}</p>
+      {% else %}
+        <p class="form-hint">Use lowercase letters, numbers and hyphens. Must be unique across all projects.</p>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_description">Description</label>
+      <textarea name="description" id="id_description" rows="2"
+        placeholder="What does this application do?">{{ form.description.value|default:'' }}</textarea>
+    </div>
+
+    <!-- Source repository -->
+    <div class="form-group">
+      <label>Source Repository</label>
+      <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
+        <label style="display:flex; align-items:flex-start; gap:0.6rem; padding:0.7rem 0.9rem; border:1px solid #30363d; border-radius:8px; cursor:pointer; font-weight:400;">
+          <input type="radio" name="repo_mode" value="create" checked style="margin-top:0.2rem;" onchange="document.getElementById('linkRepoRow').style.display='none'">
+          <span>
+            <span style="display:block; color:#e6edf3; font-weight:500; font-size:0.85rem;">Initialize a new repository <span style="color:#3fb950; font-size:0.72rem; font-weight:600;">RECOMMENDED</span></span>
+            <span style="display:block; color:#7d8590; font-size:0.78rem; margin-top:0.15rem;">Creates a Git repository named after this application, with a README, default branch, and standard labels.</span>
+          </span>
+        </label>
+        <label style="display:flex; align-items:flex-start; gap:0.6rem; padding:0.7rem 0.9rem; border:1px solid #30363d; border-radius:8px; cursor:pointer; font-weight:400;">
+          <input type="radio" name="repo_mode" value="link" style="margin-top:0.2rem;" onchange="document.getElementById('linkRepoRow').style.display='block'">
+          <span>
+            <span style="display:block; color:#e6edf3; font-weight:500; font-size:0.85rem;">Link an existing repository</span>
+            <span style="display:block; color:#7d8590; font-size:0.78rem; margin-top:0.15rem;">Attach a repository that already exists on this server.</span>
+          </span>
+        </label>
+        <label style="display:flex; align-items:flex-start; gap:0.6rem; padding:0.7rem 0.9rem; border:1px solid #30363d; border-radius:8px; cursor:pointer; font-weight:400;">
+          <input type="radio" name="repo_mode" value="none" style="margin-top:0.2rem;" onchange="document.getElementById('linkRepoRow').style.display='none'">
+          <span>
+            <span style="display:block; color:#e6edf3; font-weight:500; font-size:0.85rem;">No repository for now</span>
+            <span style="display:block; color:#7d8590; font-size:0.78rem; margin-top:0.15rem;">You can link one later in Application Settings.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group" id="linkRepoRow" style="display:none;">
+      <label for="id_existing_repository">Repository to link</label>
+      <select name="existing_repository" id="id_existing_repository">
+        <option value="">— Select a repository —</option>
+        {% for repo in form.existing_repository.field.queryset %}
+          <option value="{{ repo.pk }}">{{ repo.name }}</option>
+        {% endfor %}
+      </select>
+      {% if form.existing_repository.errors %}
+        <p style="color:#f85149;font-size:0.78rem;margin-top:0.3rem;">{{ form.existing_repository.errors|join:", " }}</p>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="id_default_branch">Default Branch</label>
+      <input type="text" name="default_branch" id="id_default_branch"
+        value="{{ form.default_branch.value|default:'main' }}">
+      <p class="form-hint">The branch pipelines will monitor by default.</p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div style="background:#2d1b1b;border:1px solid #f85149;border-radius:6px;padding:0.6rem 0.9rem;color:#f85149;font-size:0.83rem;margin-bottom:1rem;">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">
+        <i class="ph ph-plus"></i> Create Application
+      </button>
+      <a href="{% url 'project_detail' project.name %}" class="btn-cancel">Cancel</a>
+    </div>
+  </form>
 </div>
 {% endblock %}

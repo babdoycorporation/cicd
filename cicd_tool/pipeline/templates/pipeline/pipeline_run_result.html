@@ -1,0 +1,35 @@
+{% extends "pipeline/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Pipeline Run Results</h1>
+    <h2>{{ pipeline.name }}</h2>
+    <p>Overall Status: 
+        <span class="badge {% if overall_status == 'success' %}bg-success{% else %}bg-danger{% endif %}">
+            {{ overall_status|title }}
+        </span>
+    </p>
+    
+    {% for step_name, step_log in logs.items %}
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Step: {{ step_name }}</h5>
+                <span class="badge {% if step_log.status == 'success' %}bg-success{% elif step_log.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}">
+                    {{ step_log.status|title }}
+                </span>
+            </div>
+            <div class="card-body">
+                <pre><code>{% for line in step_log.output %}{{ line }}
+{% endfor %}</code></pre>
+            </div>
+        </div>
+    {% endfor %}
+    
+    {% if 'pipeline_run_error' in logs %}
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Pipeline Run Error</h4>
+            <p>{{ logs.pipeline_run_error }}</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

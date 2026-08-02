@@ -1,0 +1,287 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% block repo_content %}
+<style>
+    .issues-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .issues-tabs {
+        display: flex;
+        gap: 0;
+        background: var(--darker-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .issues-tab {
+        padding: 0.45rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: background 0.15s, color 0.15s;
+        border-right: 1px solid var(--border-color);
+    }
+
+    .issues-tab:last-child { border-right: none; }
+
+    .issues-tab.active {
+        background: var(--card-bg);
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .issues-tab:hover:not(.active) {
+        background: rgba(255,255,255,0.04);
+        color: var(--text-primary);
+    }
+
+    .issues-filters {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-select {
+        background: var(--darker-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        border-radius: 6px;
+        padding: 0.4rem 0.7rem;
+        font-size: 0.82rem;
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.15s;
+    }
+
+    .filter-select:focus { border-color: var(--accent-color); }
+
+    .search-input {
+        background: var(--darker-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        border-radius: 6px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.82rem;
+        outline: none;
+        width: 200px;
+        transition: border-color 0.15s;
+    }
+
+    .search-input:focus { border-color: var(--accent-color); }
+    .search-input::placeholder { color: var(--text-secondary); }
+
+    .issues-list {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .issue-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.15s;
+    }
+
+    .issue-row:last-child { border-bottom: none; }
+    .issue-row:hover { background: rgba(255,255,255,0.02); }
+
+    .issue-state-icon {
+        margin-top: 2px;
+        flex-shrink: 0;
+        font-size: 1rem;
+    }
+
+    .issue-state-icon.open  { color: #3fb950; }
+    .issue-state-icon.closed { color: #8b949e; }
+
+    .issue-main { flex: 1; min-width: 0; }
+
+    .issue-title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .issue-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        text-decoration: none;
+    }
+
+    .issue-title:hover { color: var(--accent-color); }
+
+    .issue-label {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.1rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 600;
+    }
+
+    .issue-meta {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        margin-top: 0.3rem;
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .issue-assignees {
+        display: flex;
+        gap: 0.3rem;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+
+    .assignee-avatar {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--accent-color);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border-color);
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+
+    .milestone-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+    }
+
+    .empty-state {
+        padding: 3.5rem 2rem;
+        text-align: center;
+        color: var(--text-secondary);
+    }
+
+    .empty-state i { font-size: 2.5rem; opacity: 0.4; margin-bottom: 1rem; display: block; }
+    .empty-state h3 { color: var(--text-primary); margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .empty-state p { margin: 0; font-size: 0.9rem; }
+</style>
+
+<div class="issues-toolbar">
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+        <div class="issues-tabs">
+            <a href="?state=open{% if request.GET.label %}&label={{ request.GET.label }}{% endif %}{% if request.GET.milestone %}&milestone={{ request.GET.milestone }}{% endif %}{% if request.GET.assignee %}&assignee={{ request.GET.assignee }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+               class="issues-tab {% if state == 'open' %}active{% endif %}">
+                <i class="ph ph-dot-outline"></i> Open <span style="font-weight:400;">({{ open_count }})</span>
+            </a>
+            <a href="?state=closed{% if request.GET.label %}&label={{ request.GET.label }}{% endif %}{% if request.GET.milestone %}&milestone={{ request.GET.milestone }}{% endif %}{% if request.GET.assignee %}&assignee={{ request.GET.assignee }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}"
+               class="issues-tab {% if state == 'closed' %}active{% endif %}">
+                <i class="ph ph-check-circle"></i> Closed <span style="font-weight:400;">({{ closed_count }})</span>
+            </a>
+        </div>
+
+        <form method="get" style="display:contents;">
+            <input type="hidden" name="state" value="{{ state }}">
+            <input class="search-input" type="text" name="q" value="{{ request.GET.q }}" placeholder="Search issues…">
+
+            <select class="filter-select" name="label" onchange="this.form.submit()">
+                <option value="">Label</option>
+                {% for lbl in repository.labels.all %}
+                <option value="{{ lbl.name }}" {% if request.GET.label == lbl.name %}selected{% endif %}>{{ lbl.name }}</option>
+                {% endfor %}
+            </select>
+
+            <select class="filter-select" name="milestone" onchange="this.form.submit()">
+                <option value="">Milestone</option>
+                {% for ms in repository.milestones.all %}
+                <option value="{{ ms.id }}" {% if request.GET.milestone == ms.id|stringformat:"s" %}selected{% endif %}>{{ ms.title }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" style="display:none;"></button>
+        </form>
+    </div>
+
+    <a href="{% url 'create_issue' repository.name %}" class="btn btn-primary" style="white-space:nowrap;">
+        <i class="ph ph-plus"></i> New Issue
+    </a>
+</div>
+
+<div class="issues-list">
+    {% if issues %}
+        {% for issue in issues %}
+        <div class="issue-row">
+            <div class="issue-state-icon {{ issue.state }}">
+                {% if issue.state == 'open' %}
+                    <i class="ph ph-dot-outline"></i>
+                {% else %}
+                    <i class="ph ph-check-circle"></i>
+                {% endif %}
+            </div>
+
+            <div class="issue-main">
+                <div class="issue-title-row">
+                    <a href="{% url 'issue_detail' repository.name issue.number %}" class="issue-title">
+                        {{ issue.title }}
+                    </a>
+                    {% for label in issue.labels.all %}
+                    <span class="issue-label" style="background:{{ label.color }}22; color:{{ label.color }}; border:1px solid {{ label.color }}44;">
+                        {{ label.name }}
+                    </span>
+                    {% endfor %}
+                </div>
+                <div class="issue-meta">
+                    <span>#{{ issue.number }}</span>
+                    {% if issue.state == 'open' %}
+                    <span>opened {{ issue.created_at|timesince }} ago by <strong style="color:var(--text-primary);">{{ issue.author.username }}</strong></span>
+                    {% else %}
+                    <span>closed {{ issue.closed_at|timesince }} ago</span>
+                    {% endif %}
+                    {% if issue.milestone %}
+                    <span class="milestone-tag"><i class="ph ph-flag"></i> {{ issue.milestone.title }}</span>
+                    {% endif %}
+                    {% if issue.comments.count %}
+                    <span><i class="ph ph-chat-dots"></i> {{ issue.comments.count }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if issue.assignees.exists %}
+            <div class="issue-assignees">
+                {% for user in issue.assignees.all|slice:":3" %}
+                <div class="assignee-avatar" title="{{ user.username }}">{{ user.username|first }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="ph ph-warning-circle"></i>
+            <h3>No {% if state == 'closed' %}closed{% else %}open{% endif %} issues</h3>
+            <p>{% if state == 'open' %}Great — nothing to fix right now. <a href="{% url 'create_issue' repository.name %}" style="color:var(--accent-color);">Open a new issue</a> if you find something.{% else %}No closed issues yet.{% endif %}</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

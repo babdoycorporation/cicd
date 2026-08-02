@@ -2,43 +2,205 @@
 
 {% block content %}
 <style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-family: 'Outfit', sans-serif;
+        color: var(--text-primary);
+    }
+    .page-title i { color: var(--brand); font-size: 1.25rem; }
+
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.42rem 0.85rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.78rem;
+        text-decoration: none;
+        background-color: var(--btn-dark);
+        color: #ffffff;
+        transition: var(--transition);
+        border: 1px solid var(--btn-dark);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--btn-dark-hover);
+        border-color: var(--btn-dark-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Table Styles */
+    .table-container {
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 2rem;
+    }
+
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .modern-table th {
+        padding: 0.65rem 1rem;
+        background-color: #f8fafc;
+        color: var(--text-muted);
+        font-weight: 800;
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modern-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        font-size: 0.78rem;
+    }
+
+    .modern-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .modern-table tr:hover td {
+        background-color: #f8fafc;
+    }
+
+    .agent-name {
+        font-weight: 800;
+        color: var(--text-primary);
+        font-family: 'Outfit', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        text-decoration: none;
+    }
+
+    .agent-name:hover { color: var(--brand); }
+
+    .monospace {
+        font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.12rem 0.45rem;
+        border-radius: 4px;
+        font-size: 0.68rem;
+        font-weight: 700;
+    }
+
     .status-live {
-    color: green;
-}
+        background: rgba(5, 150, 105, 0.1);
+        color: var(--brand);
+        border: 1px solid rgba(5, 150, 105, 0.2);
+    }
 
-.status-offline {
-    color: red;
-}
+    .status-offline {
+        background: #f1f5f9;
+        color: var(--text-muted);
+        border: 1px solid var(--border-color);
+    }
 
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        background-color: #ffffff;
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+        color: var(--text-muted);
+    }
 </style>
-<h2>Agent List</h2>
-<a class="nav-link" href="{% url 'add_agent' %}" class="btn btn-primary">Add Agent</a>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Hostname</th>
-            <th>IP Address</th>
-            <th>Operating System</th>
-            <th>Last Heartbeat</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for agent in agents %}
-        <tr>
-            <td>{{ agent.hostname }}</td>
-            <td>{{ agent.ip_address }}</td>
-            <td>{{ agent.operating_system }}</td>
-            <td>{{ agent.last_heartbeat|date:"DATETIME_FORMAT" }}</td>
-            <td class="{% if agent.live %}status-live{% else %}status-offline{% endif %}">
-                {% if agent.live %}
-                    Live
-                {% else %}
-                    Offline
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+
+<div>
+    <div class="page-header">
+        <h1 class="page-title"><i class="ph ph-cpu"></i> Agent Runners</h1>
+        <a href="{% url 'add_agent' %}" class="btn-primary">
+            <i class="ph ph-plus"></i> Add New Agent
+        </a>
+    </div>
+
+    {% if agents %}
+    <div class="table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Hostname</th>
+                    <th>IP Address</th>
+                    <th>Operating System</th>
+                    <th>Last Heartbeat</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for agent in agents %}
+                <tr>
+                    <td>
+                        <a href="{% url 'agent_detail' agent.hostname %}" class="agent-name">
+                            <i class="ph ph-desktop" style="color:var(--brand);"></i>
+                            {{ agent.hostname }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="monospace">{{ agent.ip_address }}</span>
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.35rem; color:var(--text-secondary);">
+                            <i class="ph ph-terminal-window"></i>
+                            {{ agent.operating_system|default:"Unknown" }}
+                        </div>
+                    </td>
+                    <td style="color:var(--text-muted);">
+                        {{ agent.last_heartbeat|date:"Y-m-d H:i:s"|default:"Never" }}
+                    </td>
+                    <td>
+                        {% if agent.live %}
+                            <span class="status-badge status-live"><i class="ph ph-check-circle"></i> Online</span>
+                        {% else %}
+                            <span class="status-badge status-offline"><i class="ph ph-x-circle"></i> Offline</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="ph ph-cpu" style="font-size: 2.5rem; color: var(--brand); margin-bottom: 0.75rem; display:block;"></i>
+        <h3 style="margin: 0 0 0.25rem; font-size: 0.95rem; color: var(--text-primary);">No agents registered</h3>
+        <p style="margin: 0 0 1rem; font-size: 0.78rem;">Register your first CI/CD runner to start executing pipeline tasks.</p>
+        <a href="{% url 'add_agent' %}" class="btn-primary">
+            <i class="ph ph-plus"></i> Add Agent
+        </a>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

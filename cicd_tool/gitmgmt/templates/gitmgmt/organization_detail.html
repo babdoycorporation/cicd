@@ -1,0 +1,347 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+  .org-layout {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 1rem;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .org-layout { grid-template-columns: 1fr; }
+  }
+
+  .pcard {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .pcard:last-child { margin-bottom: 0; }
+  .pcard-head {
+    font-size: 0.95rem; font-weight: 800;
+    margin: 0 0 0.85rem; padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .btn-primary {
+    background: var(--btn-dark); color: #fff; border: 1px solid var(--btn-dark);
+    border-radius: 6px; padding: 0.38rem 0.75rem; font-size: 0.78rem;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    transition: var(--transition); text-decoration: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover { background: var(--btn-dark-hover); border-color: var(--btn-dark-hover); }
+
+  .btn-outline {
+    background: #ffffff; color: var(--text-primary);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    padding: 0.38rem 0.75rem; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    transition: var(--transition); text-decoration: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-outline:hover { background: var(--canvas-bg); border-color: var(--btn-dark); color: var(--btn-dark); }
+
+  .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 0.85rem;
+  }
+
+  .tile-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+  }
+  .tile-card:hover {
+    border-color: var(--brand);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .tile-name {
+    font-size: 0.92rem;
+    font-weight: 800;
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .tile-card:hover .tile-name { color: var(--brand); }
+
+  .badge-public {
+    background: rgba(5, 150, 105, 0.1);
+    color: var(--brand);
+    border: 1px solid rgba(5, 150, 105, 0.2);
+    font-size: 0.62rem; font-weight: 700;
+    padding: 0.1rem 0.4rem; border-radius: 4px;
+  }
+  .badge-private {
+    background: #f1f5f9; color: #475569;
+    border: 1px solid #cbd5e1;
+    font-size: 0.62rem; font-weight: 700;
+    padding: 0.1rem 0.4rem; border-radius: 4px;
+  }
+
+  .list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.78rem;
+  }
+  .list-item:last-child { border-bottom: none; }
+
+  .form-row { margin-bottom: 0.6rem; }
+  .form-row input, .form-row select {
+    width: 100%; background: var(--input-bg);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    color: var(--text-primary); padding: 0.4rem 0.6rem;
+    font-size: 0.78rem; font-family: inherit; box-sizing: border-box;
+    outline: none; transition: border-color 0.15s;
+  }
+  .form-row input:focus, .form-row select:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.14);
+  }
+
+  .empty-box {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    padding: 1.25rem 0;
+    text-align: center;
+  }
+</style>
+
+<!-- Breadcrumb -->
+<div style="display:flex; align-items:center; gap:0.35rem; font-size:0.78rem; color:var(--text-muted); margin-bottom:1rem;">
+  <a href="{% url 'organization_list' %}" style="color:var(--brand); text-decoration:none; font-weight:600;">Organizations</a>
+  <i class="ph ph-caret-right"></i>
+  <span style="color:var(--text-primary); font-weight:700;">{{ org.name }}</span>
+  {% if is_owner %}<span class="badge-public" style="margin-left:0.25rem;">Owner</span>{% endif %}
+</div>
+
+<div class="org-layout">
+  <!-- Main Column -->
+  <div>
+    <!-- Overview Header Card -->
+    <div class="pcard">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.75rem;">
+        <div>
+          <h1 style="font-size:1.2rem; font-family:'Outfit', sans-serif; font-weight:800; margin:0 0 0.35rem; color:var(--text-primary); display:flex; align-items:center; gap:0.45rem;">
+            <i class="ph ph-buildings" style="color:var(--brand);"></i> {{ org.name }}
+          </h1>
+          <p style="color:var(--text-secondary); margin:0; font-size:0.8rem; line-height:1.45;">
+            {{ org.description|default:"Organization workspace for collaborative projects and code repositories." }}
+          </p>
+        </div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+          <a href="{% url 'project_create' %}?org={{ org.id }}" class="btn-primary">
+            <i class="ph ph-plus"></i> New Project
+          </a>
+          <a href="{% url 'create_repository' %}?org={{ org.id }}" class="btn-outline">
+            <i class="ph ph-plus"></i> New Repo
+          </a>
+          {% if my_role == 'owner' or my_role == 'admin' %}
+          <a href="{% url 'organization_settings' org.name %}" class="btn-outline">
+            <i class="ph ph-gear"></i> Settings
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Projects Section (Azure DevOps Style) -->
+    <div class="pcard" id="projects">
+      <div class="pcard-head">
+        <span><i class="ph ph-tree-structure" style="color:var(--brand);"></i> Projects ({{ projects|length }})</span>
+        <a href="{% url 'project_create' %}?org={{ org.id }}" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
+          <i class="ph ph-plus"></i> Add Project
+        </a>
+      </div>
+      {% if projects %}
+        <div class="tile-grid">
+          {% for p in projects %}
+          <a href="{% url 'project_detail' p.name %}" class="tile-card">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                <span class="tile-name">
+                  <i class="ph ph-folder" style="color:var(--brand);"></i> {{ p.name }}
+                </span>
+                <i class="ph ph-arrow-up-right" style="color:var(--text-muted); font-size:0.85rem;"></i>
+              </div>
+              <p style="color:var(--text-secondary); font-size:0.75rem; margin:0 0 0.65rem; line-height:1.4;">
+                {{ p.description|default:"No project description."|truncatewords:12 }}
+              </p>
+            </div>
+            <div style="font-size:0.7rem; color:var(--text-muted); border-top:1px solid #f1f5f9; padding-top:0.45rem; display:flex; justify-content:space-between; align-items:center;">
+              <span><i class="ph ph-git-branch"></i> {{ p.repository_url|default:"Linked Repo"|truncatechars:22 }}</span>
+              {% if p.notifications_enabled %}
+                <span style="color:var(--brand); font-weight:700;"><i class="ph ph-bell"></i> Alerts</span>
+              {% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-box">
+          <i class="ph ph-tree-structure" style="font-size:1.8rem; color:var(--brand); display:block; margin-bottom:0.35rem;"></i>
+          No projects configured under {{ org.name }}.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Repositories Section -->
+    <div class="pcard" id="repositories">
+      <div class="pcard-head">
+        <span><i class="ph ph-git-branch" style="color:var(--brand);"></i> Repositories ({{ repositories|length }})</span>
+        <a href="{% url 'create_repository' %}" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
+          <i class="ph ph-plus"></i> New Repository
+        </a>
+      </div>
+      {% if repositories %}
+        <div class="tile-grid">
+          {% for r in repositories %}
+          <a href="{% url 'repository_detail' r.name %}" class="tile-card">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                <span class="tile-name">
+                  <i class="ph ph-git-branch" style="color:var(--brand);"></i> {{ r.name }}
+                </span>
+                <span class="{% if r.visibility == 'public' %}badge-public{% else %}badge-private{% endif %}">
+                  {{ r.visibility }}
+                </span>
+              </div>
+              <p style="color:var(--text-secondary); font-size:0.75rem; margin:0 0 0.65rem; line-height:1.4;">
+                {{ r.description|default:"No repository description."|truncatewords:12 }}
+              </p>
+            </div>
+            <div style="font-size:0.7rem; color:var(--text-muted); border-top:1px solid #f1f5f9; padding-top:0.45rem; display:flex; justify-content:space-between; align-items:center;">
+              <span><i class="ph ph-code"></i> {{ r.language|default:"Text" }}</span>
+              <span><i class="ph ph-clock"></i> {{ r.updated_at|date:"Y-m-d" }}</span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-box">
+          <i class="ph ph-git-branch" style="font-size:1.8rem; color:var(--brand); display:block; margin-bottom:0.35rem;"></i>
+          No repositories created in this organization yet.
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Teams Section -->
+    <div class="pcard" id="teams">
+      <div class="pcard-head">
+        <span><i class="ph ph-users-three" style="color:var(--brand);"></i> Teams ({{ teams|length }})</span>
+        {% if my_role == 'owner' or my_role == 'admin' %}
+        <button onclick="document.getElementById('createTeamModal').style.display='block'" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
+          <i class="ph ph-plus"></i> Create Team
+        </button>
+        {% endif %}
+      </div>
+      {% if teams %}
+        <div class="tile-grid">
+          {% for t in teams %}
+          <div class="tile-card">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                <span class="tile-name">
+                  <i class="ph ph-users-three" style="color:var(--brand);"></i> {{ t.name }}
+                </span>
+                <span class="badge-public">{{ t.members.count }} Members</span>
+              </div>
+              <p style="color:var(--text-secondary); font-size:0.75rem; margin:0 0 0.5rem; line-height:1.4;">
+                {{ t.description|default:"Team workspace group." }}
+              </p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-box">
+          <i class="ph ph-users-three" style="font-size:1.8rem; color:var(--brand); display:block; margin-bottom:0.35rem;"></i>
+          No teams configured for this organization.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Sidebar Column: Members & Quick Tools -->
+  <div>
+    <!-- Members Card -->
+    <div class="pcard">
+      <div class="pcard-head" style="margin-bottom:0.5rem;">
+        <span><i class="ph ph-user-list" style="color:var(--brand);"></i> Members ({{ members|length }})</span>
+      </div>
+      {% for m in members %}
+        <div class="list-item">
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <i class="ph ph-user-circle" style="color:var(--text-muted); font-size:1rem;"></i>
+            <strong style="font-size:0.78rem;">{{ m.username }}</strong>
+          </div>
+          <span class="badge-public">{{ m.organizationmember_set.first.role|default:"Member"|upper }}</span>
+        </div>
+      {% endfor %}
+
+      {% if my_role == 'owner' or my_role == 'admin' %}
+      <div style="margin-top:1rem; border-top:1px solid var(--border-color); padding-top:0.75rem;">
+        <h4 style="margin:0 0 0.4rem; font-size:0.75rem; color:var(--text-secondary); font-weight:700;">Add Member</h4>
+        <form method="post" action="{% url 'add_org_member' org.name %}">
+          {% csrf_token %}
+          <div class="form-row">
+            <input type="text" name="username" placeholder="Username" required>
+          </div>
+          <div class="form-row">
+            <select name="role">
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Add Member</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Inline Create Team Modal -->
+<div id="createTeamModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.5); backdrop-filter:blur(4px); z-index:1200; align-items:center; justify-content:center;">
+  <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:10px; padding:1.5rem; max-width:420px; width:90%; margin:10vh auto; box-shadow:var(--shadow-lg);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:1px solid var(--border-color);">
+      <h3 style="margin:0; font-size:1rem; font-family:'Outfit', sans-serif; font-weight:800;">Create New Team</h3>
+      <button onclick="document.getElementById('createTeamModal').style.display='none'" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+    </div>
+    <form method="post" action="{% url 'create_team' org.name %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <label style="display:block; font-size:0.75rem; font-weight:700; margin-bottom:0.3rem;">Team Name</label>
+        <input type="text" name="name" placeholder="e.g. Engineering Team" required>
+      </div>
+      <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1.25rem;">
+        <button type="button" onclick="document.getElementById('createTeamModal').style.display='none'" class="btn-outline">Cancel</button>
+        <button type="submit" class="btn-primary">Create Team</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

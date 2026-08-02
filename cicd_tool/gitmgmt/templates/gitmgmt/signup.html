@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Join Release Rocket - Start Shipping</title>
+    <style>
+        :root {
+            --primary: #6e44ff;
+            --secondary: #b892ff;
+            --dark: #0f0e17;
+            --light: #fffffe;
+            --accent: #ff8906;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--dark);
+            color: var(--light);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .hero-section {
+            flex: 1;
+            background: linear-gradient(135deg, var(--dark) 0%, #1a1a2e 100%);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline-block;
+        }
+        
+        .tagline {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: var(--light);
+        }
+        
+        .login-section {
+            width: 450px;
+            background: #16161a;
+            padding: 3rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: -5px 0 30px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            overflow-y: auto;
+        }
+        
+        .login-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .login-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #a7a9be;
+        }
+        
+        .form-group input {
+            background: #242629;
+            border: 2px solid #36383d;
+            border-radius: 8px;
+            padding: 0.7rem 1rem;
+            color: var(--light);
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .helptext {
+            font-size: 0.75rem;
+            color: #72757e;
+            margin-top: 2px;
+        }
+        
+        .login-button {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(110, 68, 255, 0.3);
+        }
+        
+        .footer-link {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #a7a9be;
+        }
+        
+        .footer-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="hero-content">
+            <div class="logo">Release Rocket</div>
+            <h1 class="tagline">Your journey to greatness starts here.</h1>
+            <p style="color: #a7a9be;">Join thousands of developers building the future. Secure, fast, and remarkably intuitive.</p>
+        </div>
+    </div>
+    
+    <div class="login-section">
+        <div class="login-header">
+            <h2 class="login-title">Create your account</h2>
+            <p style="color: #a7a9be; font-size: 0.9rem;">Join the elite developer community</p>
+        </div>
+        
+        <form method="post" class="login-form">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <div class="helptext">{{ field.help_text|safe }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div style="color: #ff3860; font-size: 0.8rem;">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="login-button">Create Account →</button>
+        </form>
+        
+        <div class="footer-link">
+            Already have an account? <a href="{% url 'login' %}">Sign in</a>
+        </div>
+    </div>
+</body>
+</html>

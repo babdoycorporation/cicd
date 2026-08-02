@@ -1,0 +1,48 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% block repo_content %}
+<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 2rem;">
+    <h2 style="margin-top: 0; color: var(--text-primary); display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+        <i class="fas fa-clock-rotate-left" style="color: var(--accent-color);"></i> Commit History
+    </h2>
+    
+    {% if error_message %}
+        <div style="background: rgba(218, 54, 51, 0.1); border: 1px solid #da3633; color: #da3633; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+            {{ error_message }}
+        </div>
+    {% endif %}
+
+    {% if logs %}
+        <div style="position: relative; padding-left: 2rem;">
+            <!-- Vertical line -->
+            <div style="position: absolute; left: 7px; top: 10px; bottom: 0; width: 2px; background: var(--border-color);"></div>
+            
+            {% for log in logs %}
+            <div style="position: relative; margin-bottom: 2rem;">
+                <!-- Node dot -->
+                <div style="position: absolute; left: -2rem; top: 0.35rem; width: 16px; height: 16px; border-radius: 50%; background: var(--card-bg); border: 2px solid var(--accent-color); z-index: 1;"></div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">
+                            {{ log.message }}
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                            <span style="font-weight: 600; color: var(--text-primary);">{{ log.author }}</span> committed on {{ log.date }}
+                        </div>
+                    </div>
+                    <div style="font-family: monospace; background: var(--darker-bg); border: 1px solid var(--border-color); padding: 0.25rem 0.5rem; border-radius: 6px; color: var(--accent-color); font-size: 0.85rem;">
+                        {{ log.hash }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem 0; color: var(--text-secondary);">
+            <i class="fas fa-code-commit" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem;"></i>
+            <h3>No commits found</h3>
+            <p>This repository doesn't have any commits on this branch yet.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

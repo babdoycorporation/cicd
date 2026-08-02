@@ -1,44 +1,176 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<div class="container mt-4">
-    <style>
-        .application-list-container {
-            width: 150px; /* Fixed width */
-            height: 150px; /* Fixed height */
-            overflow-y: auto; /* Add scrollbar if content exceeds height */
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            padding: 20px;
-        }
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .page-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-family: 'Outfit', sans-serif;
+        color: var(--text-primary);
+    }
+    .page-title i { color: var(--brand); font-size: 1.25rem; }
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.42rem 0.85rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.78rem;
+        text-decoration: none;
+        background-color: var(--btn-dark);
+        color: #ffffff;
+        transition: var(--transition);
+        border: 1px solid var(--btn-dark);
+        box-shadow: var(--shadow-sm);
+    }
+    .btn-primary:hover {
+        background-color: var(--btn-dark-hover);
+        border-color: var(--btn-dark-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
 
-        .application-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
+    .app-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 2rem;
+    }
+    .app-card {
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.1rem;
+        transition: var(--transition);
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        text-decoration: none;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+    }
+    .app-card:hover {
+        border-color: var(--brand);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .app-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        flex-shrink: 0;
+        color: white;
+    }
+    .app-info {
+        flex-grow: 1;
+        min-width: 0;
+    }
+    .app-name {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0 0 0.25rem;
+        font-family: 'Outfit', sans-serif;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .app-card:hover .app-name {
+        color: var(--brand);
+    }
+    .project-tag {
+        font-size: 0.65rem;
+        font-weight: 700;
+        background: rgba(5, 150, 105, 0.1);
+        color: var(--brand);
+        border: 1px solid rgba(5, 150, 105, 0.2);
+        padding: 0.1rem 0.45rem;
+        border-radius: 4px;
+        display: inline-block;
+        margin-bottom: 0.35rem;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        background-color: #ffffff;
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+        color: var(--text-muted);
+    }
+</style>
 
-        .application-list li {
-            margin-bottom: 10px;
-        }
-
-        .application-list li a {
-            text-decoration: none;
-            color: #333;
-            font-weight: bold;
-        }
-
-        .application-list li a:hover {
-            color: #007bff;
-        }
-    </style>
-    <div class="application-list-container">
-        <ul class="application-list">
-            {% for application in applications %}
-                <li><a href="{% url 'application_detail' application.id %}">{{ application.name }}</a></li>
-            {% endfor %}
-        </ul>
+<div>
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="ph ph-cube"></i>
+            {% if project %}
+                Applications — {{ project.name }}
+            {% else %}
+                All Applications
+            {% endif %}
+        </h1>
+        {% if project %}
+            <a href="{% url 'create_application_project' project.name %}" class="btn-primary">
+                <i class="ph ph-plus"></i> New Application
+            </a>
+        {% else %}
+            <a href="{% url 'create_application' %}" class="btn-primary">
+                <i class="ph ph-plus"></i> New Application
+            </a>
+        {% endif %}
     </div>
+
+    {% if applications %}
+    <div class="app-grid">
+        {% for app in applications %}
+        <a href="{% url 'application_detail' app.name %}" class="app-card">
+            <div class="app-icon" style="background: linear-gradient(135deg, {{ app.color|default:'#059669' }}, #0f172a);">
+                <i class="{{ app.icon|default:'ph ph-cube' }}"></i>
+            </div>
+            <div class="app-info">
+                {% if app.project %}
+                    <span class="project-tag">{{ app.project.name }}</span>
+                {% endif %}
+                <h3 class="app-name">{{ app.name }}</h3>
+                <p style="margin:0; font-size:0.75rem; color:var(--text-muted);">
+                    {{ app.pipelines.count }} Pipeline{% if app.pipelines.count != 1 %}s{% endif %}
+                </p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="ph ph-cube" style="font-size: 2.5rem; color: var(--brand); margin-bottom: 0.75rem; display:block;"></i>
+        <h3 style="margin: 0 0 0.25rem; font-size: 0.95rem; color: var(--text-primary);">No applications configured yet</h3>
+        <p style="margin: 0 0 1rem; font-size: 0.78rem;">Create your first application to link code repositories and build pipelines.</p>
+        {% if project %}
+            <a href="{% url 'create_application_project' project.name %}" class="btn-primary">
+                <i class="ph ph-plus"></i> Create Application
+            </a>
+        {% else %}
+            <a href="{% url 'create_application' %}" class="btn-primary">
+                <i class="ph ph-plus"></i> Create Application
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

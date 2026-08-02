@@ -1,0 +1,188 @@
+{% extends 'pipeline/base.html' %}
+{% block content %}
+<style>
+    .page-header {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 1.25rem; padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .page-title {
+        font-size: 1.15rem; font-weight: 800; color: var(--text-primary);
+        display: flex; align-items: center; gap: 0.45rem; margin: 0;
+        font-family: 'Outfit', sans-serif;
+    }
+    .page-title i { color: var(--brand); font-size: 1.25rem; }
+
+    .btn-primary {
+        display: inline-flex; align-items: center; gap: 0.35rem;
+        background-color: var(--btn-dark); color: #ffffff;
+        border: 1px solid var(--btn-dark); border-radius: 6px; padding: 0.42rem 0.85rem;
+        font-size: 0.78rem; font-weight: 700; cursor: pointer;
+        text-decoration: none; transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+    }
+    .btn-primary:hover {
+        background-color: var(--btn-dark-hover);
+        border-color: var(--btn-dark-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .targets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 2rem;
+    }
+
+    .target-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.05rem;
+        text-decoration: none;
+        transition: var(--transition);
+        display: flex; flex-direction: column; gap: 0.75rem;
+        box-shadow: var(--shadow-sm);
+    }
+    .target-card:hover {
+        border-color: var(--brand);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .target-card-head {
+        display: flex; align-items: flex-start; gap: 0.75rem;
+    }
+
+    .target-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.15rem; flex-shrink: 0;
+    }
+    .icon-kubernetes      { background: rgba(5, 150, 105, 0.1); color: var(--brand); }
+    .icon-aws_ecs, .icon-aws_eks, .icon-aws_lambda { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+    .icon-azure_aks, .icon-azure_appservice { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+    .icon-gcp_gke, .icon-gcp_cloudrun { background: rgba(66, 133, 244, 0.1); color: #2563eb; }
+    .icon-docker_registry { background: rgba(14, 165, 233, 0.1); color: #0284c7; }
+    .icon-ssh             { background: rgba(100, 116, 139, 0.1); color: #475569; }
+
+    .target-name {
+        font-size: 0.95rem; font-weight: 800; color: var(--text-primary);
+        font-family: 'Outfit', sans-serif; margin: 0 0 0.15rem;
+    }
+    .target-type-badge {
+        display: inline-block; font-size: 0.65rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.04em;
+        padding: 0.1rem 0.45rem; border-radius: 4px;
+        background: rgba(5, 150, 105, 0.1); color: var(--brand);
+        border: 1px solid rgba(5, 150, 105, 0.2);
+    }
+
+    .target-meta {
+        font-size: 0.75rem; color: var(--text-muted);
+        display: flex; flex-wrap: wrap; gap: 0.5rem 1rem;
+    }
+    .target-meta span { display: flex; align-items: center; gap: 0.3rem; }
+
+    .target-actions {
+        display: flex; gap: 0.35rem; margin-top: auto; padding-top: 0.65rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    .btn-action {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        font-size: 0.75rem; font-weight: 600;
+        padding: 0.28rem 0.6rem; border-radius: 5px; cursor: pointer;
+        text-decoration: none; border: 1px solid var(--border-color);
+        color: var(--text-primary); background: #ffffff;
+        transition: var(--transition); box-shadow: var(--shadow-sm);
+    }
+    .btn-action:hover { background: var(--canvas-bg); border-color: var(--brand); color: var(--brand); }
+    .btn-action.danger { color: var(--text-muted); }
+    .btn-action.danger:hover { background: #fef2f2; border-color: #fca5a5; color: var(--danger-color); }
+
+    .empty-state {
+        background: #ffffff; border: 1px dashed var(--border-color);
+        border-radius: 8px; padding: 3rem 1.5rem;
+        text-align: center; color: var(--text-muted);
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title"><i class="ph ph-cloud-arrow-up"></i> Deployment Targets</h1>
+    <a href="{% url 'deployment_target_create' %}" class="btn-primary">
+        <i class="ph ph-plus"></i> Add Target
+    </a>
+</div>
+
+{% if targets %}
+<div class="targets-grid">
+    {% for t in targets %}
+    {% with ttype=t.target_type %}
+    <div class="target-card">
+        <div class="target-card-head">
+            <div class="target-icon icon-{{ ttype }}">
+                {% if 'kubernetes' in ttype or 'eks' in ttype or 'gke' in ttype or 'aks' in ttype %}
+                    <i class="ph ph-circles-three"></i>
+                {% elif 'aws' in ttype or 'azure' in ttype or 'gcp' in ttype %}
+                    <i class="ph ph-cloud"></i>
+                {% elif ttype == 'docker_registry' %}
+                    <i class="ph ph-package"></i>
+                {% else %}
+                    <i class="ph ph-terminal"></i>
+                {% endif %}
+            </div>
+            <div>
+                <div class="target-name">{{ t.name }}</div>
+                <span class="target-type-badge">{{ t.get_target_type_display }}</span>
+            </div>
+        </div>
+
+        {% if t.description %}
+        <div style="font-size:0.78rem; color:var(--text-secondary); line-height:1.4;">{{ t.description }}</div>
+        {% endif %}
+
+        <div class="target-meta">
+            {% if t.endpoint %}
+            <span><i class="ph ph-link"></i> {{ t.endpoint|truncatechars:35 }}</span>
+            {% endif %}
+            {% if t.region %}
+            <span><i class="ph ph-globe-hemisphere-west"></i> {{ t.region }}</span>
+            {% endif %}
+            {% if t.namespace %}
+            <span><i class="ph ph-folder"></i> {{ t.namespace }}</span>
+            {% endif %}
+            {% if t.environment %}
+            <span><i class="ph ph-stack"></i> {{ t.environment.name }}</span>
+            {% endif %}
+            {% if t.credential %}
+            <span><i class="ph ph-key"></i> {{ t.credential.service_name }}</span>
+            {% endif %}
+        </div>
+
+        <div class="target-actions">
+            <a href="{% url 'deployment_target_detail' t.pk %}" class="btn-action">
+                <i class="ph ph-eye"></i> View
+            </a>
+            <a href="{% url 'deployment_target_update' t.pk %}" class="btn-action">
+                <i class="ph ph-pencil"></i> Edit
+            </a>
+            <a href="{% url 'deployment_target_delete' t.pk %}" class="btn-action danger" style="margin-left:auto;">
+                <i class="ph ph-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="ph ph-cloud-arrow-up" style="font-size: 2.5rem; color: var(--brand); margin-bottom: 0.75rem; display:block;"></i>
+    <h3 style="margin: 0 0 0.25rem; font-size: 0.95rem; color: var(--text-primary);">No deployment targets yet</h3>
+    <p style="margin: 0 0 1rem; font-size: 0.78rem;">Add your first target to start deploying to cloud or server environments.</p>
+    <a href="{% url 'deployment_target_create' %}" class="btn-primary">
+        <i class="ph ph-plus"></i> Add Target
+    </a>
+</div>
+{% endif %}
+{% endblock %}

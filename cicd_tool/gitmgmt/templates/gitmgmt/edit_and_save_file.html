@@ -1,0 +1,175 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+  .edit-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem; padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .edit-title {
+    font-size: 1.2rem; font-weight: 600; color: var(--text-primary);
+    display: flex; align-items: center; gap: 0.5rem; margin: 0;
+  }
+  .branch-pill {
+    font-size: 0.78rem; background: rgba(163,113,247,0.15);
+    color: #a371f7; border: 1px solid rgba(163,113,247,0.3);
+    padding: 0.2rem 0.6rem; border-radius: 20px; font-family: ui-monospace, monospace;
+  }
+  .editor-wrapper {
+    background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 8px; overflow: hidden; margin-bottom: 1rem;
+  }
+  .editor-titlebar {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem;
+    background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border-color);
+    font-size: 0.82rem; color: var(--text-secondary);
+  }
+  #editor { height: 520px; }
+  .commit-section {
+    background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 8px; padding: 1.25rem;
+  }
+  .commit-section h3 {
+    font-size: 0.95rem; font-weight: 600; margin: 0 0 1rem;
+    color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;
+  }
+  .form-row { margin-bottom: 1rem; }
+  .form-row label {
+    display: block; font-size: 0.8rem; font-weight: 500;
+    color: var(--text-secondary); margin-bottom: 0.35rem;
+  }
+  .form-row input[type="text"] {
+    width: 100%; background: var(--dark-bg);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    color: var(--text-primary); padding: 0.5rem 0.75rem;
+    font-size: 0.88rem; font-family: inherit; box-sizing: border-box;
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-row input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+  }
+  .commit-actions { display: flex; gap: 0.75rem; align-items: center; }
+  .btn-commit {
+    background: #238636; color: #fff; border: 1px solid #2ea043;
+    border-radius: 6px; padding: 0.5rem 1.25rem; font-size: 0.88rem;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s;
+  }
+  .btn-commit:hover { background: #2ea043; }
+  .btn-cancel {
+    background: transparent; color: var(--text-secondary);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    padding: 0.5rem 1rem; font-size: 0.88rem; font-weight: 500;
+    cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s;
+  }
+  .btn-cancel:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+  .alert-msg {
+    padding: 0.75rem 1rem; border-radius: 6px;
+    font-size: 0.85rem; margin-bottom: 1rem; display: none;
+  }
+  .alert-success { background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.3); color: #3fb950; }
+  .alert-error   { background: rgba(248,81,73,0.1);  border: 1px solid rgba(248,81,73,0.3);  color: #f85149; }
+</style>
+
+<div class="edit-header">
+  <h1 class="edit-title">
+    <i class="ph ph-pencil-simple" style="color:var(--accent-color);"></i>
+    {{ file_path }}
+  </h1>
+  <div style="display:flex; align-items:center; gap:0.75rem;">
+    <span class="branch-pill"><i class="ph ph-git-branch"></i> {{ current_branch }}</span>
+    <a href="{% url 'repository_detail' repository_name=repository.name %}?branch={{ current_branch }}" class="btn-cancel">
+      <i class="ph ph-arrow-left"></i> Cancel
+    </a>
+  </div>
+</div>
+
+<div id="alert" class="alert-msg"></div>
+
+<div class="editor-wrapper">
+  <div class="editor-titlebar">
+    <i class="ph ph-file-code"></i>
+    <span>{{ file_path }}</span>
+  </div>
+  <div id="editor"></div>
+</div>
+
+<div class="commit-section">
+  <h3><i class="ph ph-git-commit"></i> Commit changes</h3>
+  <input type="hidden" id="repository-id" value="{{ repository.name }}">
+  <input type="hidden" id="file-path" value="{{ file_path }}">
+  <input type="hidden" id="current-branch" value="{{ current_branch }}">
+
+  <div class="form-row">
+    <label for="commit_message">Commit Message</label>
+    <input type="text" id="commit_message" name="commit_message"
+      placeholder="Update {{ file_path }}" value="Update {{ file_path }}">
+  </div>
+  <div class="commit-actions">
+    <button type="button" id="save-btn" class="btn-commit">
+      <i class="ph ph-git-commit"></i> Commit changes
+    </button>
+    <a href="{% url 'repository_detail' repository_name=repository.name %}?branch={{ current_branch }}" class="btn-cancel">
+      <i class="ph ph-x"></i> Cancel
+    </a>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs/loader.min.js"></script>
+<script>
+  require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs' }});
+  require(['vs/editor/editor.main'], function() {
+    var editor = monaco.editor.create(document.getElementById('editor'), {
+      value: `{{ file_content|safe }}`,
+      language: 'python',
+      theme: 'vs-dark',
+      automaticLayout: true,
+      fontSize: 13,
+      minimap: { enabled: true },
+      scrollBeyondLastLine: false,
+    });
+
+    document.getElementById('save-btn').addEventListener('click', function() {
+      var repositoryId = document.getElementById('repository-id').value;
+      var filePath = document.getElementById('file-path').value;
+      var currentBranch = document.getElementById('current-branch').value;
+      var fileContent = editor.getValue();
+      var commitMessage = document.getElementById('commit_message').value;
+
+      fetch('/gitmgmt/repositories/' + repositoryId + '/edit/' + filePath + '/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+          code: fileContent,
+          commit_message: commitMessage,
+          branch: currentBranch
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'success') {
+          showAlert('Changes committed successfully.', 'success');
+          editor.setValue(data.updated_content || fileContent);
+        } else {
+          showAlert('Failed to commit: ' + (data.error || 'Unknown error'), 'error');
+        }
+      })
+      .catch(() => showAlert('Network error — could not save file.', 'error'));
+    });
+
+    function showAlert(message, type) {
+      var el = document.getElementById('alert');
+      el.textContent = message;
+      el.className = 'alert-msg alert-' + type;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 5000);
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends 'gitmgmt/repository_base.html' %}
+
+{% block repo_content %}
+<style>
+    /* Specific styles for Repository Detail Content */
+    /* Main Layout */
+    .repo-grid {
+        display: grid;
+        grid-template-columns: 3fr 1fr;
+        gap: 2rem;
+    }
+
+    @media (max-width: 992px) {
+        .repo-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .file-explorer {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .explorer-header {
+        padding: 1rem 1.5rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .file-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .file-item {
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: var(--transition);
+    }
+
+    .file-item:last-child {
+        border-bottom: none;
+    }
+
+    .file-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .file-item a {
+        color: var(--text-primary);
+        text-decoration: none;
+        flex: 1;
+        font-size: 0.95rem;
+    }
+
+    .file-item a:hover {
+        color: var(--accent-color);
+    }
+
+    /* README Card */
+    .readme-card {
+        margin-top: 2rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 2.5rem;
+    }
+
+    .readme-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .readme-content {
+        font-family: inherit;
+    }
+
+    /* Sidebar stuff */
+    .repo-sidebar-section {
+        margin-bottom: 2rem;
+    }
+
+    .repo-sidebar-section h3 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+    }
+</style>
+
+<!-- Main Content Grid -->
+<div class="repo-grid">
+    <div class="main-column">
+        <div class="file-explorer">
+            <div class="explorer-header">
+                <div class="last-commit" style="font-size: 0.9rem;">
+                    <strong>Latest:</strong> <span style="color: var(--text-secondary);">{{ last_commit_message|truncatechars:100 }}</span>
+                </div>
+                <div style="font-family: monospace; font-size: 0.85rem; color: var(--accent-color);">
+                    {{ last_commit_hash|slice:":7" }}
+                </div>
+            </div>
+
+            <ul class="file-list">
+                {% for file in files %}
+                <li class="file-item">
+                    <i class="fas fa-file-code" style="color: var(--text-secondary);"></i>
+                    <a href="{% url 'edit_and_save_file' repository.name file.path %}">{{ file.path }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+
+        </div>
+
+        {% if readme_content %}
+        <div class="readme-card">
+            <div class="readme-header">
+                <i class="fas fa-list"></i> README.md
+            </div>
+            <div class="readme-content">
+                <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">{{ readme_content }}</pre>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="repo-sidebar">
+        <div class="repo-sidebar-section">
+            <h3>About</h3>
+            <p style="font-size: 0.95rem; color: var(--text-primary);">{{ repository.description|default:"No description provided." }}</p>
+        </div>
+
+        <div class="repo-sidebar-section">
+            <h3>Stats</h3>
+            <div class="stat-item">
+                <span><i class="fas fa-star" style="color: var(--text-secondary); width: 16px;"></i> Stars</span>
+                <strong>0</strong>
+            </div>
+            <div class="stat-item">
+                <span><i class="fas fa-code-fork" style="color: var(--text-secondary); width: 16px;"></i> Forks</span>
+                <strong>0</strong>
+            </div>
+            <div class="stat-item">
+                <span><i class="fas fa-eye" style="color: var(--text-secondary); width: 16px;"></i> Watching</span>
+                <strong>1</strong>
+            </div>
+        </div>
+
+        <div class="repo-sidebar-section">
+            <h3>Branches</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for branch in branches|slice:":5" %}
+                <div style="font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-code-branch" style="color: var(--text-secondary);"></i>
+                    {{ branch }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

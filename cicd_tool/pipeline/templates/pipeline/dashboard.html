@@ -1,66 +1,639 @@
 {% extends 'pipeline/base.html' %}
+
 {% block content %}
-<div class="container">
-    <div class="content mt-4">
-        <h1 class="mb-4">Dashboard</h1>
-        <div class="row">
-            <div class="col-md-3 mb-4">
-                <div class="card text-center shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Projects</h5>
-                        <p class="card-text display-4">{{ total_projects }}</p>
-                    </div>
+<style>
+    .page-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        margin-top: 0;
+        margin-bottom: 1.15rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .page-title i {
+        color: var(--brand);
+    }
+
+    /* ── Metric Cards Grid (Centering & 5-Digit Capacity) ── */
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 1.65rem;
+    }
+
+    .metric-card-link {
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+    }
+
+    .metric-card {
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 1.1rem 0.85rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        width: 100%;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background-color: var(--border-color);
+        transition: var(--transition);
+    }
+
+    .metric-card-link:hover .metric-card {
+        transform: translateY(-2px);
+        border-color: var(--brand);
+        box-shadow: var(--shadow-md);
+    }
+
+    .metric-card-link:hover .metric-card::before {
+        background-color: var(--brand);
+    }
+
+    .metric-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background-color: rgba(5, 150, 105, 0.08);
+        color: var(--brand);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        flex-shrink: 0;
+        transition: var(--transition);
+    }
+
+    .metric-title {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 0.25rem 0;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1.1;
+        text-align: center;
+        letter-spacing: -0.02em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+
+    .metric-card-link:hover .metric-value {
+        color: var(--brand);
+    }
+
+    /* Specific card accent themes */
+    .card-success .metric-icon { color: var(--success-color); background-color: rgba(5, 150, 105, 0.1); }
+    .metric-card-link:hover .card-success { border-color: var(--success-color); }
+    .metric-card-link:hover .card-success::before { background-color: var(--success-color); }
+    .metric-card-link:hover .card-success .metric-value { color: var(--success-color); }
+
+    .card-danger .metric-icon { color: var(--danger-color); background-color: rgba(239, 68, 68, 0.1); }
+    .metric-card-link:hover .card-danger { border-color: var(--danger-color); }
+    .metric-card-link:hover .card-danger::before { background-color: var(--danger-color); }
+    .metric-card-link:hover .card-danger .metric-value { color: var(--danger-color); }
+
+    /* ── Executive Charts Section ── */
+    .charts-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.15rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 900px) {
+        .charts-row { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 1.35rem;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chart-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.15rem;
+    }
+
+    .chart-card-title {
+        font-size: 0.82rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .chart-filters {
+        display: flex;
+        gap: 0.3rem;
+    }
+
+    .chart-filter-btn {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        border-radius: 6px;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: var(--transition);
+        line-height: 1.3;
+    }
+
+    .chart-filter-btn:hover {
+        border-color: var(--btn-dark);
+        color: var(--btn-dark);
+    }
+
+    .chart-filter-btn.active {
+        background-color: var(--btn-dark);
+        border-color: var(--btn-dark);
+        color: #ffffff;
+    }
+
+    .chart-wrap {
+        position: relative;
+        height: 240px;
+        width: 100%;
+    }
+
+    /* ── Runs Table Section ── */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .section-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .runs-table-container {
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .runs-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .runs-table th {
+        padding: 0.85rem 1.25rem;
+        background-color: var(--canvas-bg);
+        color: var(--text-muted);
+        font-weight: 700;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .runs-table td {
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+        font-size: 0.82rem;
+    }
+
+    .runs-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .runs-table tr:hover td {
+        background-color: rgba(0, 0, 0, 0.015);
+    }
+
+    .run-id {
+        font-family: monospace;
+        color: var(--brand);
+        text-decoration: none;
+        font-weight: 700;
+    }
+
+    .run-id:hover {
+        text-decoration: underline;
+    }
+
+    .pipeline-name {
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .status-success {
+        background-color: rgba(5, 150, 105, 0.1);
+        color: var(--success-color);
+        border: 1px solid rgba(5, 150, 105, 0.25);
+    }
+
+    .status-failed {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--danger-color);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    .status-pending, .status-running {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: var(--warning-color);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .timestamp {
+        color: var(--text-muted);
+        font-size: 0.78rem;
+    }
+
+    .empty-state {
+        padding: 3rem;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .empty-state i {
+        font-size: 2.2rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.4;
+    }
+</style>
+
+<div>
+    <h1 class="page-title"><i class="ph ph-gauge"></i> Executive Dashboard</h1>
+
+    <!-- ── Centered Metric Cards Grid (Handles 5-Digit Counts) ── -->
+    <div class="metric-grid">
+        <a href="{% url 'project_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-tree-structure"></i></div>
+                <h3 class="metric-title">Projects</h3>
+                <p class="metric-value">{{ total_projects }}</p>
+            </div>
+        </a>
+
+        <a href="{% url 'application_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-cube"></i></div>
+                <h3 class="metric-title">Applications</h3>
+                <p class="metric-value">{{ total_applications }}</p>
+            </div>
+        </a>
+
+        <a href="{% url 'global_pipeline_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-list-dashes"></i></div>
+                <h3 class="metric-title">Pipelines</h3>
+                <p class="metric-value">{{ total_pipelines }}</p>
+            </div>
+        </a>
+
+        <a href="{% url 'global_pipeline_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-play-circle"></i></div>
+                <h3 class="metric-title">Total Runs</h3>
+                <p class="metric-value">{{ total_pipeline_runs }}</p>
+            </div>
+        </a>
+
+        <a href="{% url 'agent_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-hard-drives"></i></div>
+                <h3 class="metric-title">Agents</h3>
+                <p class="metric-value">{{ total_agents }}</p>
+            </div>
+        </a>
+
+        <a href="{% url 'global_pipeline_list' %}" class="metric-card-link">
+            <div class="metric-card card-success">
+                <div class="metric-icon"><i class="ph ph-check-circle"></i></div>
+                <h3 class="metric-title">Successful Runs</h3>
+                <p class="metric-value">{{ successful_runs }}</p>
+            </div>
+        </a>
+
+        <a href="{% url 'global_pipeline_list' %}" class="metric-card-link">
+            <div class="metric-card card-danger">
+                <div class="metric-icon"><i class="ph ph-x-circle"></i></div>
+                <h3 class="metric-title">Failed Runs</h3>
+                <p class="metric-value">{{ failed_runs }}</p>
+            </div>
+        </a>
+
+        <a href="{% url 'repository_list' %}" class="metric-card-link">
+            <div class="metric-card">
+                <div class="metric-icon"><i class="ph ph-git-branch"></i></div>
+                <h3 class="metric-title">Repositories</h3>
+                <p class="metric-value">{{ total_repos }}</p>
+            </div>
+        </a>
+    </div>
+
+    <!-- ── Modern Executive Charts Row ── -->
+    <div class="charts-row">
+        <div class="chart-card">
+            <div class="chart-card-header">
+                <p class="chart-card-title"><i class="ph ph-chart-bar" style="color:var(--brand);"></i> Pipeline Runs Analytics</p>
+                <div class="chart-filters">
+                    <button class="chart-filter-btn" data-days="7">7D</button>
+                    <button class="chart-filter-btn" data-days="30">30D</button>
+                    <button class="chart-filter-btn" data-days="90">90D</button>
+                    <button class="chart-filter-btn active" data-days="0">All</button>
                 </div>
             </div>
-            <div class="col-md-3 mb-4">
-                <div class="card text-center shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Applications</h5>
-                        <p class="card-text display-4">{{ total_applications }}</p>
-                    </div>
-                </div>
+            <div class="chart-wrap">
+                <canvas id="runsBarChart"></canvas>
             </div>
-            <div class="col-md-3 mb-4">
-                <div class="card text-center shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Pipelines</h5>
-                        <p class="card-text display-4">{{ total_pipelines }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-4">
-                <div class="card text-center shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Pipeline Runs</h5>
-                        <p class="card-text display-4">{{ total_pipeline_runs }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-4">
-                <div class="card text-center shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Agents</h5>
-                        <p class="card-text display-4">{{ total_agents }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-4">
-                <div class="card text-center shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Successful Pipeline Runs</h5>
-                        <p class="card-text display-4">{{ successful_runs }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-4">
-                <div class="card text-center shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Failed Pipeline Runs</h5>
-                        <p class="card-text display-4">{{ failed_runs }}</p>
-                    </div>
-                </div>
+        </div>
+        <div class="chart-card">
+            <p class="chart-card-title" style="margin-bottom:1.15rem;"><i class="ph ph-chart-pie" style="color:var(--brand);"></i> Run Status Breakdown</p>
+            <div class="chart-wrap">
+                <canvas id="statusDonutChart"></canvas>
             </div>
         </div>
     </div>
+
+    <!-- ── Recent Pipeline Activity Table ── -->
+    <div class="section-header">
+        <h2 class="section-title"><i class="ph ph-clock-counter-clockwise"></i> Latest Pipeline Runs</h2>
+    </div>
+
+    <div class="runs-table-container">
+        {% if latest_pipeline_runs %}
+        <table class="runs-table">
+            <thead>
+                <tr>
+                    <th>Pipeline</th>
+                    <th>Run ID</th>
+                    <th>Status</th>
+                    <th>Date / Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in latest_pipeline_runs %}
+                <tr>
+                    <td>
+                        <div class="pipeline-name">
+                            <i class="ph ph-list-checks" style="color:var(--brand);"></i>
+                            {{ run.pipeline.name }}
+                        </div>
+                    </td>
+                    <td>
+                        <a href="{% url 'pipeline_run_detail' run.run_id %}" class="run-id">
+                            {{ run.run_id|truncatechars:12 }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if run.status == 'success' %}
+                            <span class="status-badge status-success"><i class="ph ph-check-circle"></i> Success</span>
+                        {% elif run.status == 'failed' %}
+                            <span class="status-badge status-failed"><i class="ph ph-x-circle"></i> Failed</span>
+                        {% elif run.status == 'running' %}
+                            <span class="status-badge status-running"><i class="ph ph-spinner-gap ph-spin"></i> Running</span>
+                        {% else %}
+                            <span class="status-badge status-pending"><i class="ph ph-clock"></i> Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="timestamp">
+                        {{ run.started_at|date:"Y-m-d H:i:s" }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <i class="ph ph-clock-counter-clockwise"></i>
+            <h3 style="margin:0 0 0.3rem 0; font-size:0.95rem; font-weight:700; color:var(--text-primary);">No pipeline runs yet</h3>
+            <p style="margin:0; font-size:0.8rem;">Trigger your first pipeline build to view execution metrics here.</p>
+        </div>
+        {% endif %}
+    </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const allLabels  = {{ chart_labels|safe }};
+    const allSuccess = {{ chart_success|safe }};
+    const allFailed  = {{ chart_failed|safe }};
+
+    const gridColor  = 'rgba(226, 232, 240, 0.6)';
+    const textColor  = '#64748b';
+    Chart.defaults.color = textColor;
+    Chart.defaults.font.family = "'Plus Jakarta Sans','Inter',system-ui,sans-serif";
+
+    /* ── filter helper ────────────────────────────── */
+    function filterByDays(days) {
+        if (!days) return { labels: allLabels, success: allSuccess, failed: allFailed };
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cut = cutoff.toISOString().slice(0, 10);
+        const labels = [], success = [], failed = [];
+        allLabels.forEach((d, i) => {
+            if (d >= cut) { labels.push(d); success.push(allSuccess[i]); failed.push(allFailed[i]); }
+        });
+        return { labels, success, failed };
+    }
+
+    /* ── Sleek Bar Chart ────────────────────────────── */
+    const initial = filterByDays(0);
+    const barChart = new Chart(document.getElementById('runsBarChart'), {
+        type: 'bar',
+        data: {
+            labels: initial.labels.map(d => d.slice(5)),
+            datasets: [
+                {
+                    label: 'Success',
+                    data: initial.success,
+                    backgroundColor: 'rgba(5, 150, 105, 0.85)',
+                    borderColor: '#059669',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    maxBarThickness: 32,
+                },
+                {
+                    label: 'Failed',
+                    data: initial.failed,
+                    backgroundColor: 'rgba(239, 68, 68, 0.85)',
+                    borderColor: '#ef4444',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    maxBarThickness: 32,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 8,
+                        padding: 16,
+                        font: { size: 12, weight: '600' }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleFont: { size: 12, weight: '700' },
+                    bodyFont: { size: 12 },
+                    padding: 10,
+                    cornerRadius: 8,
+                    mode: 'index',
+                    intersect: false
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: textColor, font: { size: 11, weight: '600' }, maxTicksLimit: 14 }
+                },
+                y: {
+                    grid: { color: gridColor, drawBorder: false },
+                    ticks: { color: textColor, font: { size: 11, weight: '600' }, precision: 0 },
+                    beginAtZero: true,
+                },
+            },
+        },
+    });
+
+    /* ── Filter buttons ────────────────────────────── */
+    document.querySelectorAll('.chart-filter-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.chart-filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            const days = parseInt(this.dataset.days, 10);
+            const { labels, success, failed } = filterByDays(days);
+            barChart.data.labels = labels.map(d => d.slice(5));
+            barChart.data.datasets[0].data = success;
+            barChart.data.datasets[1].data = failed;
+            barChart.update();
+        });
+    });
+
+    /* ── Sleek Donut Chart ─────────────────────────── */
+    new Chart(document.getElementById('statusDonutChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Success', 'Failed', 'Pending', 'Running'],
+            datasets: [{
+                data: [{{ successful_runs }}, {{ failed_runs }}, {{ pending_runs }}, {{ running_runs }}],
+                backgroundColor: [
+                    '#059669',
+                    '#ef4444',
+                    '#f59e0b',
+                    '#3b82f6',
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                hoverOffset: 6,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 8,
+                        padding: 14,
+                        font: { size: 11, weight: '600' }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    padding: 10,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: ctx => {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+                            return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                        }
+                    }
+                },
+            },
+        },
+    });
+})();
+</script>
 {% endblock %}

@@ -1,0 +1,235 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+  .profile-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+  .profile-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+  .sidebar-link:hover, .sidebar-link.active {
+    background: rgba(47,129,247,0.1);
+    color: var(--accent-color);
+  }
+  .profile-main { display: flex; flex-direction: column; gap: 1.5rem; }
+  .pcard {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.75rem;
+  }
+  .pcard h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 1.25rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-primary);
+  }
+  .avatar-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2f81f7, #a371f7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .form-row { margin-bottom: 1rem; }
+  .form-row label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+  }
+  .form-row input, .form-row textarea {
+    width: 100%;
+    background: var(--dark-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.88rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-row input:focus, .form-row textarea:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+  }
+  .form-row textarea { resize: vertical; min-height: 80px; }
+  .token-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .token-item:last-child { border-bottom: none; }
+  .token-name { font-weight: 600; color: var(--text-primary); font-size: 0.9rem; }
+  .token-meta { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.2rem; }
+  .new-token-alert {
+    background: rgba(255,171,0,0.1);
+    border: 1px solid #e3b341;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+    color: #e3b341;
+    font-size: 0.88rem;
+  }
+  .token-code {
+    font-family: ui-monospace, monospace;
+    background: #000;
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    display: block;
+    margin-top: 0.5rem;
+    word-break: break-all;
+    color: #7ee787;
+    font-size: 0.82rem;
+  }
+  .btn-primary {
+    background: #238636; color: #fff; border: 1px solid #2ea043;
+    border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    transition: background 0.2s; text-decoration: none;
+  }
+  .btn-primary:hover { background: #2ea043; }
+  .btn-danger {
+    background: transparent; color: #f85149; border: 1px solid #f85149;
+    border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.82rem;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    transition: background 0.2s;
+  }
+  .btn-danger:hover { background: rgba(248,81,73,0.1); }
+  .inline-form { display: flex; gap: 0.5rem; align-items: flex-end; }
+  .inline-form .form-row { flex: 1; margin-bottom: 0; }
+</style>
+
+<div class="profile-layout">
+  <!-- Sidebar -->
+  <div class="profile-sidebar">
+    <div class="pcard" style="padding: 1.25rem; text-align: center; margin-bottom: 0.5rem;">
+      <div class="avatar-circle" style="margin: 0 auto 0.75rem;">{{ request.user.username|slice:":1"|upper }}</div>
+      <div style="font-weight: 700; color: var(--text-primary);">{{ request.user.username }}</div>
+      <div style="font-size: 0.82rem; color: var(--text-secondary);">{{ request.user.email }}</div>
+    </div>
+    <a href="{% url 'profile' %}" class="sidebar-link active"><i class="ph ph-user"></i> Public Profile</a>
+    <a href="{% url 'repository_list' %}" class="sidebar-link"><i class="ph ph-book-bookmark"></i> Repositories</a>
+    <a href="{% url 'organization_list' %}" class="sidebar-link"><i class="ph ph-buildings"></i> Organizations</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="profile-main">
+
+    <!-- Profile Info Card -->
+    <div class="pcard">
+      <h2><i class="ph ph-user-circle"></i> Public Profile</h2>
+      <form method="post" action="">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+        <div class="form-row">
+          <label>Username</label>
+          <input type="text" value="{{ request.user.username }}" disabled style="opacity:0.6;">
+        </div>
+        <div class="form-row">
+          <label>Bio</label>
+          <textarea name="bio" placeholder="Tell us about yourself">{{ profile.bio|default:'' }}</textarea>
+        </div>
+        <div class="form-row">
+          <label>Company</label>
+          <input type="text" name="company" value="{{ profile.company|default:'' }}" placeholder="Your company or organization">
+        </div>
+        <div class="form-row">
+          <label>Twitter / X handle</label>
+          <input type="text" name="twitter_handle" value="{{ profile.twitter_handle|default:'' }}" placeholder="@username">
+        </div>
+        <div style="margin-top: 1.25rem;">
+          <button type="submit" class="btn-primary"><i class="ph ph-floppy-disk"></i> Update Profile</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Personal Access Tokens -->
+    <div class="pcard">
+      <h2><i class="ph ph-key"></i> Personal Access Tokens</h2>
+
+      {% if new_token %}
+      <div class="new-token-alert">
+        <strong><i class="ph ph-warning-circle"></i> Copy your new token now — you won't see it again!</strong>
+        <code class="token-code">{{ new_token }}</code>
+      </div>
+      {% endif %}
+
+      <form method="post" style="margin-bottom: 1.75rem;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_token">
+        <div class="inline-form">
+          <div class="form-row">
+            <label>Token Name</label>
+            <input type="text" name="token_name" placeholder="e.g. CLI, Jenkins, GitHub Actions" required>
+          </div>
+          <button type="submit" class="btn-primary" style="white-space:nowrap; margin-bottom:0;">
+            <i class="ph ph-plus"></i> Generate Token
+          </button>
+        </div>
+      </form>
+
+      <div>
+        {% for token in tokens %}
+        <div class="token-item">
+          <div>
+            <div class="token-name"><i class="ph ph-key"></i> {{ token.name }}</div>
+            <div class="token-meta">
+              Prefix: <code style="color:var(--accent-color);">{{ token.prefix }}…</code>
+              &nbsp;·&nbsp; Created {{ token.created_at|timesince }} ago
+              {% if token.expires_at %}&nbsp;·&nbsp; Expires {{ token.expires_at|date:"M d, Y" }}{% endif %}
+            </div>
+          </div>
+          <form method="post" style="margin:0;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete_token">
+            <input type="hidden" name="token_id" value="{{ token.id }}">
+            <button type="submit" class="btn-danger"><i class="ph ph-trash"></i></button>
+          </form>
+        </div>
+        {% empty %}
+        <div style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+          <i class="ph ph-key" style="font-size:2rem; opacity:0.4; display:block; margin-bottom:0.5rem;"></i>
+          No active tokens. Generate one above to use with Git over HTTP.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,487 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+    .repo-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+        flex-wrap: wrap;
+        gap: 0.85rem;
+    }
+
+    .repo-page-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .repo-page-title i {
+        color: var(--brand);
+        font-size: 1.25rem;
+    }
+
+    .repo-action-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .repo-search-box {
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-width: 220px;
+    }
+
+    .repo-search-box i {
+        position: absolute;
+        left: 10px;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        pointer-events: none;
+    }
+
+    .repo-search-box input {
+        width: 100%;
+        padding: 0.38rem 0.75rem 0.38rem 2.1rem;
+        background-color: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 0.78rem;
+        font-family: inherit;
+        outline: none;
+        transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .repo-search-box input:focus {
+        background-color: #ffffff;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.38rem 0.75rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.78rem;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary {
+        background-color: var(--btn-dark);
+        color: #ffffff;
+        border-color: var(--btn-dark);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--btn-dark-hover);
+        border-color: var(--btn-dark-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-outline {
+        background-color: #ffffff;
+        color: var(--text-primary);
+    }
+
+    .btn-outline:hover {
+        background-color: var(--canvas-bg);
+        border-color: var(--brand);
+        color: var(--brand);
+    }
+
+    /* Filter Pills */
+    .filter-pills {
+        display: flex;
+        gap: 0.35rem;
+        margin-bottom: 1.1rem;
+    }
+
+    .filter-pill {
+        padding: 0.25rem 0.65rem;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        cursor: pointer;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .filter-pill.active, .filter-pill:hover {
+        background: var(--accent-light);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: var(--brand);
+        font-weight: 700;
+    }
+
+    /* Repository Cards Grid */
+    .repo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 2rem;
+    }
+
+    .repo-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.9rem 1.05rem;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+    }
+
+    .repo-card:hover {
+        border-color: var(--brand);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .repo-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .repo-title-area {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-width: 0;
+    }
+
+    .repo-name-link {
+        color: var(--brand);
+        text-decoration: none;
+        font-weight: 800;
+        font-size: 0.95rem;
+        font-family: 'Outfit', sans-serif;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: var(--transition);
+    }
+
+    .repo-name-link:hover {
+        color: var(--brand-hover);
+        text-decoration: underline;
+    }
+
+    .badge-vis {
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        text-transform: capitalize;
+        line-height: 1.2;
+        flex-shrink: 0;
+    }
+
+    .badge-public {
+        background: rgba(5, 150, 105, 0.1);
+        color: var(--brand);
+        border: 1px solid rgba(5, 150, 105, 0.2);
+    }
+
+    .badge-private {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+    }
+
+    .favorite-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: var(--transition);
+        padding: 0.15rem;
+        font-size: 1rem;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .favorite-btn:hover {
+        transform: scale(1.15);
+        color: #f59e0b;
+    }
+
+    .favorite-btn i.ph-fill {
+        color: #f59e0b;
+    }
+
+    .repo-description {
+        color: var(--text-secondary);
+        font-size: 0.78rem;
+        line-height: 1.45;
+        margin: 0 0 0.85rem 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.2rem;
+    }
+
+    .repo-card-footer {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        border-top: 1px solid #f1f5f9;
+        padding-top: 0.6rem;
+    }
+
+    .repo-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .lang-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+        background-color: var(--brand);
+    }
+
+    .section-label-header {
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin: 1.1rem 0 0.6rem;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        background-color: #ffffff;
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+        color: var(--text-muted);
+        box-shadow: var(--shadow-sm);
+    }
+</style>
+
+<div>
+    <!-- Page Header -->
+    <div class="repo-page-header">
+        <h1 class="repo-page-title">
+            <i class="ph ph-git-branch"></i> Repositories
+        </h1>
+        
+        <div class="repo-action-bar">
+            <div class="repo-search-box">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="text" id="repoSearchInput" placeholder="Find a repository..." oninput="filterRepos(this.value)">
+            </div>
+
+            <a href="{% url 'create_repository' %}" class="btn btn-primary">
+                <i class="ph ph-plus"></i> New Repository
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="filter-pills">
+        <span class="filter-pill active" onclick="setFilter('all', this)">All</span>
+        <span class="filter-pill" onclick="setFilter('public', this)">Public</span>
+        <span class="filter-pill" onclick="setFilter('private', this)">Private</span>
+        {% if favorites %}
+        <span class="filter-pill" onclick="setFilter('favorites', this)">⭐ Favorites ({{ favorites|length }})</span>
+        {% endif %}
+    </div>
+    
+    <!-- Favorites Section if any -->
+    {% if favorites %}
+    <div id="favoritesSection">
+        <div class="section-label-header">
+            <i class="ph ph-star" style="color:#f59e0b;"></i> Favorites
+        </div>
+        <div class="repo-grid">
+            {% for repository in favorites %}
+            <div class="repo-card repo-item" data-name="{{ repository.name|lower }}" data-vis="{{ repository.visibility|lower }}" data-fav="true">
+                <div>
+                    <div class="repo-card-top">
+                        <div class="repo-title-area">
+                            <i class="ph ph-git-branch" style="color:var(--brand); font-size:1.05rem; flex-shrink:0;"></i>
+                            <a href="{% url 'repository_detail' repository.name %}" class="repo-name-link">
+                                {{ repository.name }}
+                            </a>
+                            <span class="badge-vis {% if repository.visibility == 'public' %}badge-public{% else %}badge-private{% endif %}">
+                                {{ repository.visibility }}
+                            </span>
+                        </div>
+                        <form method="post" action="{% url 'toggle_favorite' repository.name %}" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="favorite-btn" title="Remove from favorites">
+                                <i class="ph-fill ph-star"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <p class="repo-description">
+                        {{ repository.description|default:"No description provided for this repository." }}
+                    </p>
+                </div>
+                <div class="repo-card-footer">
+                    <span class="repo-meta-item">
+                        <span class="lang-dot"></span>
+                        {{ repository.language|default:"Text" }}
+                    </span>
+                    <span class="repo-meta-item">
+                        <i class="ph ph-git-fork"></i>
+                        {{ repository.branch|default:"main" }}
+                    </span>
+                    <span class="repo-meta-item" style="margin-left:auto;">
+                        <i class="ph ph-clock"></i>
+                        {{ repository.updated_at|date:"Y-m-d" }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Repositories Grid -->
+    <div id="allReposSection">
+        {% if favorites %}
+        <div class="section-label-header">
+            <i class="ph ph-folder-open"></i> All Repositories
+        </div>
+        {% endif %}
+
+        {% if repositories %}
+        <div class="repo-grid">
+            {% for repository in repositories %}
+            <div class="repo-card repo-item" data-name="{{ repository.name|lower }}" data-vis="{{ repository.visibility|lower }}" data-fav="{% if repository.is_favorite %}true{% else %}false{% endif %}">
+                <div>
+                    <div class="repo-card-top">
+                        <div class="repo-title-area">
+                            <i class="ph ph-git-branch" style="color:var(--brand); font-size:1.05rem; flex-shrink:0;"></i>
+                            <a href="{% url 'repository_detail' repository.name %}" class="repo-name-link">
+                                {{ repository.name }}
+                            </a>
+                            <span class="badge-vis {% if repository.visibility == 'public' %}badge-public{% else %}badge-private{% endif %}">
+                                {{ repository.visibility }}
+                            </span>
+                        </div>
+                        <form method="post" action="{% url 'toggle_favorite' repository.name %}" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="favorite-btn" title="{% if repository.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}">
+                                {% if repository.is_favorite %}
+                                    <i class="ph-fill ph-star"></i>
+                                {% else %}
+                                    <i class="ph ph-star"></i>
+                                {% endif %}
+                            </button>
+                        </form>
+                    </div>
+                    <p class="repo-description">
+                        {{ repository.description|default:"No description provided for this repository." }}
+                    </p>
+                </div>
+                <div class="repo-card-footer">
+                    <span class="repo-meta-item">
+                        <span class="lang-dot"></span>
+                        {{ repository.language|default:"Text" }}
+                    </span>
+                    <span class="repo-meta-item">
+                        <i class="ph ph-git-fork"></i>
+                        {{ repository.branch|default:"main" }}
+                    </span>
+                    <span class="repo-meta-item" style="margin-left:auto;">
+                        <i class="ph ph-clock"></i>
+                        {{ repository.updated_at|date:"Y-m-d" }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="ph ph-git-branch" style="font-size: 2.2rem; color:var(--brand); margin-bottom: 0.5rem; display:block;"></i>
+            <h3 style="margin:0 0 0.25rem; font-size:0.95rem; color:var(--text-primary);">No repositories found</h3>
+            <p style="margin:0 0 1rem; font-size:0.78rem;">Create your first repository to get started with code management and CI/CD pipelines.</p>
+            <a href="{% url 'create_repository' %}" class="btn btn-primary">
+                <i class="ph ph-plus"></i> Create Repository
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+let currentFilter = 'all';
+
+function setFilter(type, el) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-pill').forEach(pill => pill.classList.remove('active'));
+    el.classList.add('active');
+    applyFilters();
+}
+
+function filterRepos(q) {
+    applyFilters();
+}
+
+function applyFilters() {
+    const q = document.getElementById('repoSearchInput').value.toLowerCase().strip ? document.getElementById('repoSearchInput').value.toLowerCase().trim() : '';
+    const cards = document.querySelectorAll('.repo-item');
+
+    cards.forEach(card => {
+        const name = card.getAttribute('data-name') || '';
+        const vis = card.getAttribute('data-vis') || '';
+        const isFav = card.getAttribute('data-fav') === 'true';
+
+        let matchesFilter = true;
+        if (currentFilter === 'public' && vis !== 'public') matchesFilter = false;
+        if (currentFilter === 'private' && vis !== 'private') matchesFilter = false;
+        if (currentFilter === 'favorites' && !isFav) matchesFilter = false;
+
+        let matchesSearch = true;
+        if (q && !name.includes(q)) matchesSearch = false;
+
+        if (matchesFilter && matchesSearch) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

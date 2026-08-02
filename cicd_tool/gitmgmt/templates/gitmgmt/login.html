@@ -1,0 +1,446 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sign In – CogFocus One™ CI/CD</title>
+  <link rel="icon" href="{% static 'gitmgmt/images/logo/cogfocus_favicon_180x180.png' %}" type="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --brand:     #059669;
+      --brand-hover: #047857;
+      --brand-bg:  #f8fafc;
+      --brand-nav: #0f172a;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+      background: var(--brand-bg);
+      min-height: 100vh;
+      width: 100vw;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    .login-container {
+      display: flex;
+      width: 100vw;
+      min-height: 100vh;
+    }
+
+    /* ── Left hero panel ────────────────────────── */
+    .hero {
+      flex: 1;
+      background: var(--brand-nav);
+      padding: 4rem;
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center;
+      color: #ffffff; 
+      position: relative; 
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; right: -80px; bottom: -80px;
+      width: 380px; height: 380px; border-radius: 50%;
+      background: color-mix(in srgb, var(--brand) 22%, transparent);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; left: -60px; top: -60px;
+      width: 260px; height: 260px; border-radius: 50%;
+      background: color-mix(in srgb, var(--brand) 12%, transparent);
+      pointer-events: none;
+    }
+
+    .hero-brand, .form-brand {
+      display: flex; 
+      align-items: center; 
+      gap: 0.75rem;
+      margin-bottom: 2.5rem; 
+      position: relative; 
+      z-index: 1;
+    }
+    .brand-icon {
+      width: 36px; 
+      height: 36px; 
+      object-fit: contain; 
+      flex-shrink: 0;
+    }
+    .brand-text-col {
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center;
+    }
+    .brand-title-light {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem; 
+      font-weight: 700; 
+      color: #ffffff; 
+      letter-spacing: -0.01em; 
+      line-height: 1.15;
+    }
+    .brand-title-dark {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem; 
+      font-weight: 700; 
+      color: #0f172a; 
+      letter-spacing: -0.01em; 
+      line-height: 1.15;
+    }
+    .brand-subtitle-light {
+      font-size: 0.6rem; 
+      font-weight: 700; 
+      color: #34d399; 
+      text-transform: uppercase; 
+      letter-spacing: 0.12em; 
+      margin-top: 2px; 
+      line-height: 1;
+    }
+    .brand-subtitle-green {
+      font-size: 0.6rem; 
+      font-weight: 700; 
+      color: #059669; 
+      text-transform: uppercase; 
+      letter-spacing: 0.12em; 
+      margin-top: 2px; 
+      line-height: 1;
+    }
+
+    .hero h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.6rem; 
+      font-weight: 800;
+      color: #ffffff; 
+      margin: 0 0 1rem;
+      letter-spacing: -0.03em; 
+      line-height: 1.15;
+      position: relative; 
+      z-index: 1;
+    }
+    .hero p { 
+      font-size: 1.05rem; 
+      color: rgba(255,255,255,0.7); 
+      margin: 0 0 2.5rem; 
+      position: relative; 
+      z-index: 1;
+      max-width: 520px;
+      line-height: 1.6;
+    }
+
+    .hero-features { 
+      list-style: none; 
+      padding: 0; 
+      margin: 0 0 3rem; 
+      position: relative; 
+      z-index: 1; 
+    }
+    .hero-features li {
+      display: flex; 
+      align-items: center; 
+      gap: 0.85rem;
+      font-size: 0.95rem; 
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 1rem; 
+      font-weight: 500;
+    }
+    .hero-features li span.dot {
+      width: 24px; 
+      height: 24px; 
+      border-radius: 50%;
+      background: var(--brand);
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-size: 0.75rem; 
+      color: #fff; 
+      font-weight: 800; 
+      flex-shrink: 0;
+    }
+
+    .hero-footer {
+      position: relative;
+      z-index: 1;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.45);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hero-footer a {
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      margin-left: 1rem;
+      transition: color 0.2s ease;
+    }
+    .hero-footer a:hover {
+      color: #34d399;
+    }
+
+    /* ── Right login panel (Fixed Width 540px) ── */
+    .login-panel {
+      width: 540px;
+      flex-shrink: 0;
+      background: #ffffff;
+      padding: 4rem 3.5rem;
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center;
+      box-shadow: -4px 0 30px rgba(0,0,0,0.06);
+    }
+
+    .form-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.75rem; 
+      font-weight: 800; 
+      color: #0f172a;
+      margin: 0 0 0.35rem; 
+      letter-spacing: -0.025em;
+    }
+    .form-sub { 
+      font-size: 0.9rem; 
+      color: #64748b; 
+      margin: 0 0 2.25rem; 
+    }
+
+    /* Alerts */
+    .alert-error {
+      background: #fef2f2; 
+      border: 1px solid #fecaca; 
+      border-radius: 10px;
+      padding: 0.85rem 1rem; 
+      color: #991b1b; 
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Form fields */
+    .field-group { 
+      margin-bottom: 1.35rem; 
+    }
+    .field-label {
+      display: block; 
+      font-weight: 600; 
+      color: #334155;
+      font-size: 0.85rem; 
+      margin-bottom: 0.45rem;
+    }
+    .field-input {
+      width: 100%; 
+      padding: 0.85rem 1rem;
+      border: 1.5px solid #e2e8f0; 
+      border-radius: 10px;
+      font-size: 0.95rem; 
+      font-family: inherit;
+      background: #f8fafc; 
+      color: #0f172a;
+      outline: none; 
+      transition: all 0.18s ease;
+    }
+    .field-input:focus {
+      border-color: var(--brand);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%; 
+      padding: 0.95rem 1.5rem;
+      background: var(--brand); 
+      color: #ffffff;
+      font-family: inherit; 
+      font-weight: 700; 
+      font-size: 1rem;
+      border: none; 
+      border-radius: 11px; 
+      cursor: pointer;
+      transition: all 0.18s ease; 
+      margin-top: 0.5rem;
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 35%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .submit-btn:hover { 
+      background: var(--brand-hover);
+      transform: translateY(-1px); 
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 45%, transparent);
+    }
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Divider & Extra Links */
+    .divider {
+      display: flex; 
+      align-items: center; 
+      text-align: center;
+      margin: 1.75rem 0 1.25rem; 
+      color: #94a3b8; 
+      font-size: 0.75rem;
+      font-weight: 600; 
+      text-transform: uppercase; 
+      letter-spacing: 0.05em;
+    }
+    .divider::before, .divider::after {
+      content: ''; 
+      flex: 1; 
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .divider:not(:empty)::before { margin-right: 0.75rem; }
+    .divider:not(:empty)::after { margin-left: 0.75rem; }
+
+    .sso-btn {
+      width: 100%; 
+      padding: 0.85rem 1.25rem;
+      background: #ffffff; 
+      color: #334155;
+      font-family: inherit; 
+      font-weight: 600; 
+      font-size: 0.9rem;
+      border: 1.5px solid #e2e8f0; 
+      border-radius: 11px; 
+      cursor: pointer;
+      transition: all 0.18s ease; 
+      display: flex; 
+      align-items: center;
+      justify-content: center; 
+      gap: 0.6rem; 
+      text-decoration: none;
+    }
+    .sso-btn:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+      background: #f8fafc;
+    }
+
+    .footer-note { 
+      margin-top: 2.25rem; 
+      text-align: center; 
+      color: #94a3b8; 
+      font-size: 0.82rem; 
+    }
+    .footer-note span { 
+      color: #64748b; 
+      font-weight: 600; 
+    }
+
+    @media (max-width: 900px) {
+      .hero { display: none; }
+      .login-panel { width: 100%; max-width: 540px; margin: 0 auto; box-shadow: none; padding: 3rem 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+
+    <!-- ── Left Hero panel ────────────────────────── -->
+    <div class="hero">
+      <div class="hero-brand">
+        <img src="{% static 'images/logo/cogfocus_favicon_180x180.png' %}" onerror="this.onerror=null; this.src='{% static 'gitmgmt/images/logo/cogfocus_favicon_180x180.png' %}';" alt="CogFocus" class="brand-icon">
+        <div class="brand-text-col">
+          <span class="brand-title-light">CogFocus One™</span>
+          <span class="brand-subtitle-light">CI/CD &amp; DEVOPS</span>
+        </div>
+      </div>
+
+      <h1>Enterprise Git Hosting &amp; CI/CD Pipelines</h1>
+      <p>Your organization's dedicated self-hosted code management platform — built for speed, real-time log streaming, and automated pipeline execution.</p>
+
+      <ul class="hero-features">
+        <li><span class="dot">✓</span> Self-hosted Git repositories &amp; Smart HTTP protocol</li>
+        <li><span class="dot">✓</span> Real-time pipeline log streaming via SSE</li>
+        <li><span class="dot">✓</span> AI-powered build failure prediction</li>
+        <li><span class="dot">✓</span> HMAC-SHA256 authenticated build runners</li>
+      </ul>
+
+      <div class="hero-footer">
+        <span>&copy; {% now "Y" %} CogFocus Technologies</span>
+        <div>
+          <a href="#">Privacy</a>
+          <a href="#">Docs</a>
+          <a href="#">Status</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Right Login form panel (Fixed 540px width) ───────────────────── -->
+    <div class="login-panel">
+
+      <!-- Brand logo in form panel -->
+      <div class="form-brand">
+        <img src="{% static 'images/logo/cogfocus_favicon_180x180.png' %}" onerror="this.onerror=null; this.src='{% static 'gitmgmt/images/logo/cogfocus_favicon_180x180.png' %}';" alt="CogFocus" class="brand-icon">
+        <div class="brand-text-col">
+          <span class="brand-title-dark">CogFocus One™</span>
+          <span class="brand-subtitle-green">CI/CD</span>
+        </div>
+      </div>
+
+      <h2 class="form-heading">Sign in</h2>
+      <p class="form-sub">Access your CogFocus One™ CI/CD workspace</p>
+
+      {% if form.errors %}
+        <div class="alert-error">
+          <i class="ph-bold ph-warning-circle"></i>
+          <span>Invalid username or password. Please try again.</span>
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="field-group">
+          <label class="field-label" for="login-username">Username or Email</label>
+          <input id="login-username" class="field-input" type="text" name="username"
+                 placeholder="Enter your username" autocomplete="username" required autofocus>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="login-pass">Password</label>
+          <input id="login-pass" class="field-input" type="password" name="password"
+                 placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="submit-btn">
+          <span>Sign in</span>
+          <i class="ph-bold ph-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="divider">or</div>
+
+      <a href="{% url 'keycloak_login' %}" class="sso-btn" style="display:flex; align-items:center; justify-content:center; gap:0.5rem; background:#ffffff; border:1px solid #e2e8f0; padding:0.65rem 1rem; border-radius:6px; font-weight:700; color:#0f172a; text-decoration:none; margin-top:0.75rem; box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+        <i class="ph-bold ph-keyhole" style="color:#ea580c; font-size:1.1rem;"></i>
+        <span>Sign in with Keycloak SSO</span>
+      </a>
+
+      <p class="footer-note">
+        &copy; {% now "Y" %} <span>CogFocus™ Executive Suite</span>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>

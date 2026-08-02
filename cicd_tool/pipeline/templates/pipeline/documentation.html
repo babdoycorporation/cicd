@@ -1,0 +1,850 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+    /* ── Docs layout ─────────────────────────────────────────── */
+    .docs-layout {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 2.5rem;
+        align-items: start;
+    }
+    @media (max-width: 1000px) {
+        .docs-layout { grid-template-columns: 1fr; }
+        .docs-nav { display: none; }
+    }
+
+    /* ── In-page navigation ──────────────────────────────────── */
+    .docs-nav {
+        position: sticky;
+        top: 1.5rem;
+        border-right: 1px solid var(--border-color);
+        padding-right: 1rem;
+        max-height: calc(100vh - 3rem);
+        overflow-y: auto;
+    }
+    .docs-nav-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+        padding: 0.4rem 0.75rem;
+        margin-top: 1rem;
+    }
+    .docs-nav-label:first-child { margin-top: 0; }
+    .docs-nav a {
+        display: block;
+        padding: 0.32rem 0.75rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.82rem;
+        border-radius: 6px;
+        transition: var(--transition);
+        line-height: 1.4;
+    }
+    .docs-nav a:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+    .docs-nav a.active { color: var(--accent-color); background: rgba(47,129,247,0.08); font-weight: 500; }
+
+    /* ── Article ─────────────────────────────────────────────── */
+    .docs-article { max-width: 760px; min-width: 0; font-size: 0.875rem; }
+
+    .docs-header {
+        padding-bottom: 1.25rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .docs-header h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 0.4rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    .docs-header h1 i { color: var(--accent-color); }
+    .docs-header p { color: var(--text-secondary); margin: 0; font-size: 0.9rem; }
+
+    .docs-article section { scroll-margin-top: 1.5rem; }
+
+    .docs-article h2 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 2.75rem 0 0.75rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+    .docs-article section:first-of-type h2 { border-top: none; padding-top: 0; margin-top: 0; }
+    .docs-article h2 i { color: var(--text-secondary); font-size: 1.1rem; }
+
+    .docs-article h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 1.75rem 0 0.5rem;
+        color: var(--text-primary);
+    }
+    .docs-article p {
+        color: var(--text-primary);
+        opacity: 0.85;
+        line-height: 1.7;
+        margin: 0 0 0.85rem;
+    }
+    .docs-article ul, .docs-article ol {
+        color: var(--text-primary);
+        opacity: 0.85;
+        line-height: 1.7;
+        padding-left: 1.35rem;
+        margin: 0 0 1rem;
+    }
+    .docs-article li { margin-bottom: 0.35rem; }
+    .docs-article a { color: var(--accent-color); text-decoration: none; }
+    .docs-article a:hover { text-decoration: underline; }
+    .docs-article strong { color: var(--text-primary); font-weight: 600; }
+
+    .docs-article code {
+        font-family: ui-monospace, SFMono-Regular, 'Cascadia Mono', monospace;
+        font-size: 0.8em;
+        background: rgba(110,118,129,0.15);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 0.1em 0.4em;
+        color: var(--text-primary);
+    }
+
+    /* ── Code blocks ─────────────────────────────────────────── */
+    .code-card {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 0.85rem 0 1.5rem;
+    }
+    .code-card-title {
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.45rem 1rem;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .code-card-title i { font-size: 0.9rem; }
+    .code-card pre {
+        background: var(--darker-bg);
+        margin: 0;
+        padding: 1rem 1.15rem;
+        overflow-x: auto;
+    }
+    .code-card pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: 0.8rem;
+        line-height: 1.7;
+        color: #b5cea8;
+    }
+    .code-card pre code .c { color: #8b949e; }
+
+    /* ── Tables ──────────────────────────────────────────────── */
+    .docs-table-wrap {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 0.85rem 0 1.5rem;
+    }
+    .docs-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.83rem;
+    }
+    .docs-table th {
+        text-align: left;
+        padding: 0.6rem 1rem;
+        background: rgba(255,255,255,0.02);
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .docs-table td {
+        padding: 0.6rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+        opacity: 0.9;
+        vertical-align: top;
+    }
+    .docs-table tr:last-child td { border-bottom: none; }
+
+    /* ── Callouts ────────────────────────────────────────────── */
+    .docs-note {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        border: 1px solid var(--border-color);
+        border-left: 3px solid var(--accent-color);
+        border-radius: 6px;
+        background: var(--card-bg);
+        margin: 1rem 0 1.5rem;
+        font-size: 0.84rem;
+        line-height: 1.6;
+    }
+    .docs-note i { color: var(--accent-color); font-size: 1rem; margin-top: 0.1rem; flex-shrink: 0; }
+    .docs-note.warn { border-left-color: var(--warning-color); }
+    .docs-note.warn i { color: var(--warning-color); }
+    .docs-note.danger { border-left-color: var(--danger-color); }
+    .docs-note.danger i { color: var(--danger-color); }
+    .docs-note p { margin: 0; }
+
+    /* ── Method badge ────────────────────────────────────────── */
+    .m {
+        display: inline-block;
+        font-family: ui-monospace, monospace;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.1rem 0.45rem;
+        border-radius: 4px;
+        letter-spacing: 0.03em;
+    }
+    .m-get  { background: rgba(47,129,247,0.12); color: var(--accent-color); }
+    .m-post { background: rgba(63,185,80,0.12); color: var(--success-color); }
+
+    /* ── Status badges (matching app) ────────────────────────── */
+    .st {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.15rem 0.55rem;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        border: 1px solid;
+    }
+    .st-success { background: rgba(63,185,80,0.1); color: var(--success-color); border-color: rgba(63,185,80,0.2); }
+    .st-failed  { background: rgba(248,81,73,0.1); color: var(--danger-color); border-color: rgba(248,81,73,0.2); }
+    .st-running { background: rgba(210,153,34,0.1); color: var(--warning-color); border-color: rgba(210,153,34,0.2); }
+    .st-pending { background: rgba(125,133,144,0.1); color: var(--text-secondary); border-color: rgba(125,133,144,0.2); }
+</style>
+
+<div class="docs-layout">
+
+    <!-- ── In-page nav ── -->
+    <nav class="docs-nav" id="docsNav">
+        <div class="docs-nav-label">Getting Started</div>
+        <a href="#overview">Overview</a>
+        <a href="#quick-start">Quick Start</a>
+        <a href="#concepts">Core Concepts</a>
+
+        <div class="docs-nav-label">Platform</div>
+        <a href="#repositories">Repositories</a>
+        <a href="#pull-requests">Pull Requests</a>
+        <a href="#issues">Issues &amp; Milestones</a>
+        <a href="#pipelines">CI/CD Pipelines</a>
+        <a href="#tokens">Access Tokens</a>
+        <a href="#organizations">Organizations &amp; Teams</a>
+
+        <div class="docs-nav-label">Administration</div>
+        <a href="#agents">Build Agents</a>
+        <a href="#deploy-targets">Deployment Targets</a>
+        <a href="#artifacts">Build Artifacts</a>
+        <a href="#notifications">Notifications</a>
+        <a href="#deployment">Server Deployment</a>
+
+        <div class="docs-nav-label">Reference</div>
+        <a href="#api">API Reference</a>
+    </nav>
+
+    <!-- ── Article ── -->
+    <article class="docs-article">
+
+        <div class="docs-header">
+            <h1><i class="ph ph-book-open"></i> Documentation</h1>
+            <p>Everything you need to use and operate CogFocus One™ — from your first repository to production deployment.</p>
+        </div>
+
+        <!-- OVERVIEW -->
+        <section id="overview">
+            <h2><i class="ph ph-info"></i> Overview</h2>
+            <p>CogFocus One™ is a self-hosted DevOps platform that combines Git hosting and CI/CD automation in a single application. Your team can host repositories, review code through pull requests, track work with issues, and ship through automated pipelines — entirely on your own infrastructure.</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Capability</th><th>Description</th></tr>
+                    <tr><td><strong>Git hosting</strong></td><td>Browse code, view diffs, edit files in the browser. Compatible with every standard Git client.</td></tr>
+                    <tr><td><strong>Pull requests</strong></td><td>Code review with inline comments, approval rules, and merge protection.</td></tr>
+                    <tr><td><strong>Issue tracking</strong></td><td>Labels, milestones, assignees, and automatic closing from pull requests.</td></tr>
+                    <tr><td><strong>CI/CD pipelines</strong></td><td>Builds trigger on every push. Logs stream live to the browser.</td></tr>
+                    <tr><td><strong>Build agents</strong></td><td>Execute builds on any Linux machine in your network.</td></tr>
+                    <tr><td><strong>Deployment targets</strong></td><td>Deploy to Kubernetes, AWS, Azure, GCP, Docker registries, or SSH servers — one connector per target, no scripts.</td></tr>
+                    <tr><td><strong>Organizations</strong></td><td>Group users, teams, and repositories under a shared identity.</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- QUICK START -->
+        <section id="quick-start">
+            <h2><i class="ph ph-rocket-launch"></i> Quick Start</h2>
+
+            <h3>1. Create a repository</h3>
+            <p>Go to <strong>Repositories → New Repository</strong>. Enter a name (lowercase letters and hyphens, e.g. <code>my-api</code>), choose Public or Private visibility, and create it.</p>
+
+            <h3>2. Create an access token</h3>
+            <p>Open <strong>Profile → Personal Access Tokens</strong>, name the token, and generate it. Copy it immediately — it is shown only once. You will use this token as your Git password.</p>
+
+            <h3>3. Push your code</h3>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-terminal"></i> Terminal</div>
+                <pre><code><span class="c"># Clone the empty repository</span>
+git clone http://your-server:8001/git/username/my-api.git
+cd my-api
+
+<span class="c"># Commit and push — use your token as the password</span>
+git add .
+git commit -m "Initial commit"
+git push origin main</code></pre>
+            </div>
+
+            <h3>4. Set up a pipeline</h3>
+            <p>Add a <code>rockerci.yaml</code> file to the repository root (schema in the <a href="#pipelines">Pipelines</a> section). Then in <strong>CI Dashboard</strong>, create a Project, an Application inside it, and a Pipeline pointing at your repository and branch. Every push to that branch now triggers a build automatically.</p>
+        </section>
+
+        <!-- CONCEPTS -->
+        <section id="concepts">
+            <h2><i class="ph ph-tree-structure"></i> Core Concepts</h2>
+            <p>The CI/CD side of ReleaseRocket uses a three-level hierarchy:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Level</th><th>Purpose</th><th>Example</th></tr>
+                    <tr><td><strong>Project</strong></td><td>Top-level grouping, usually one per product or team. Holds environment variables, credentials, and notification settings.</td><td>Acme Platform</td></tr>
+                    <tr><td><strong>Application</strong></td><td>A deployable service within a project.</td><td>auth-service</td></tr>
+                    <tr><td><strong>Pipeline</strong></td><td>The automated steps that run when code changes on a monitored branch.</td><td>Build → Test → Deploy</td></tr>
+                </table>
+            </div>
+            <p>Repositories (the Git side) and Projects (the CI/CD side) are related but separate: a pipeline pulls code <em>from</em> a repository to build it. This separation lets one project build code from several repositories.</p>
+        </section>
+
+        <!-- REPOSITORIES -->
+        <section id="repositories">
+            <h2><i class="ph ph-git-branch"></i> Repositories</h2>
+
+            <h3>Browsing and editing</h3>
+            <p>The repository page shows the file tree for any branch. Click a file to view it with syntax highlighting, or click <strong>Edit</strong> to modify it in the built-in Monaco editor and commit directly from the browser. Use <strong>Upload File</strong> to add files without a local Git client.</p>
+
+            <h3>Cloning</h3>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-terminal"></i> Terminal</div>
+                <pre><code>git clone http://your-server:8001/git/username/repo-name.git
+<span class="c"># Username: your ReleaseRocket username</span>
+<span class="c"># Password: your Personal Access Token</span></code></pre>
+            </div>
+
+            <h3>Forking</h3>
+            <p>Click <strong>Fork</strong> on any repository to create your own copy. Changes in your fork do not affect the original until you open a pull request back to it.</p>
+
+            <h3>Stars and watching</h3>
+            <p><strong>Star</strong> a repository to bookmark it. <strong>Watch</strong> it to receive notifications for new issues, pull requests, and pushes.</p>
+
+            <h3>Branch protection</h3>
+            <p>Protect important branches at <strong>Repository → Settings → Branches</strong>. A protection rule can block direct pushes and require a minimum number of pull-request approvals before merging. Rules are enforced server-side — they cannot be bypassed from the UI or the API.</p>
+        </section>
+
+        <!-- PULL REQUESTS -->
+        <section id="pull-requests">
+            <h2><i class="ph ph-git-pull-request"></i> Pull Requests</h2>
+
+            <h3>Opening a pull request</h3>
+            <ol>
+                <li>Push your feature branch to ReleaseRocket.</li>
+                <li>Open <strong>Repository → Pull Requests → New Pull Request</strong>.</li>
+                <li>Choose the source branch (your changes) and the target branch (usually <code>main</code>).</li>
+                <li>Write a title and description, assign reviewers, labels, and a milestone as needed.</li>
+                <li>Click <strong>Create Pull Request</strong> — or <strong>Create as Draft</strong> if it is not ready for review.</li>
+            </ol>
+
+            <h3>Reviewing</h3>
+            <p>Reviewers can read the diff, add inline comments on specific lines (hover a line and click the <strong>+</strong> icon), and submit one of three review states:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Review</th><th>Effect</th></tr>
+                    <tr><td><span class="st st-success"><i class="ph ph-check"></i> Approve</span></td><td>Counts toward the required approvals for merge.</td></tr>
+                    <tr><td><span class="st st-failed"><i class="ph ph-x"></i> Request changes</span></td><td>Blocks the merge until the author addresses feedback.</td></tr>
+                    <tr><td><span class="st st-pending"><i class="ph ph-chat-circle"></i> Comment</span></td><td>Feedback only — neither approves nor blocks.</td></tr>
+                </table>
+            </div>
+
+            <h3>Merging</h3>
+            <p>When the target branch's protection rule is satisfied (required approvals reached, no outstanding change requests), the <strong>Merge Pull Request</strong> button becomes available. Draft pull requests cannot be merged.</p>
+        </section>
+
+        <!-- ISSUES -->
+        <section id="issues">
+            <h2><i class="ph ph-circle-dashed"></i> Issues &amp; Milestones</h2>
+
+            <h3>Creating an issue</h3>
+            <p>Open <strong>Repository → Issues → New Issue</strong>. Give it a one-line title and a detailed body (reproduction steps, expected behavior, screenshots). Add labels to categorize it, a milestone to schedule it, and assignees to own it.</p>
+
+            <h3>Labels</h3>
+            <p>Labels are repository-scoped and fully customizable at <strong>Repository → Labels</strong>. Each label has a name and a color. Typical conventions: <code>bug</code>, <code>enhancement</code>, <code>documentation</code>, <code>good first issue</code>, <code>help wanted</code>.</p>
+
+            <h3>Milestones</h3>
+            <p>A milestone groups issues toward a target — a sprint or a release. Set an optional due date; the milestone page shows completion progress as issues close.</p>
+
+            <h3>Closing issues from pull requests</h3>
+            <p>Include a closing keyword in a pull request description and the referenced issues close automatically when the PR merges into the default branch:</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-git-pull-request"></i> Pull request description</div>
+                <pre><code>Closes #42
+Fixes #17, Resolves #88</code></pre>
+            </div>
+        </section>
+
+        <!-- PIPELINES -->
+        <section id="pipelines">
+            <h2><i class="ph ph-git-merge"></i> CI/CD Pipelines</h2>
+
+            <h3>Pipeline definition</h3>
+            <p>Pipelines are defined in a <code>rockerci.yaml</code> file at the repository root:</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-file-code"></i> rockerci.yaml</div>
+                <pre><code>name: Build and Deploy
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  build:
+    steps:
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Deploy
+        run: ./scripts/deploy.sh</code></pre>
+            </div>
+            <p>Steps run in order on a build agent. If any step exits with a non-zero code, the run stops and is marked failed.</p>
+
+            <h3>Environment variables</h3>
+            <p>Every step automatically receives:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Variable</th><th>Value</th></tr>
+                    <tr><td><code>CI</code></td><td><code>true</code></td></tr>
+                    <tr><td><code>CI_COMMIT_SHA</code></td><td>Full commit hash that triggered the run</td></tr>
+                    <tr><td><code>CI_BRANCH</code></td><td>Branch name</td></tr>
+                    <tr><td><code>CI_PROJECT</code></td><td>Project name</td></tr>
+                    <tr><td><code>CI_PIPELINE</code></td><td>Pipeline name</td></tr>
+                    <tr><td><code>CI_RUN_ID</code></td><td>Unique run identifier (UUID)</td></tr>
+                </table>
+            </div>
+            <p>Custom variables are configured per project at <strong>Project → Configure → CI/CD Variables</strong> and injected into every step.</p>
+
+            <h3>Run statuses</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Status</th><th>Meaning</th></tr>
+                    <tr><td><span class="st st-pending"><i class="ph ph-clock"></i> Pending</span></td><td>Queued — waiting for a free build agent.</td></tr>
+                    <tr><td><span class="st st-running"><i class="ph ph-spinner-gap"></i> Running</span></td><td>Steps are executing; logs stream live.</td></tr>
+                    <tr><td><span class="st st-success"><i class="ph ph-check"></i> Success</span></td><td>All steps completed with exit code 0.</td></tr>
+                    <tr><td><span class="st st-failed"><i class="ph ph-x"></i> Failed</span></td><td>A step returned a non-zero exit code.</td></tr>
+                </table>
+            </div>
+
+            <h3>Handling a failed build</h3>
+            <p>Open the failed run and expand the red step to read its console output. Fix the code or configuration and push again — a new run starts automatically. To re-run without pushing, use <strong>Trigger Build</strong> on the project page.</p>
+
+            <div class="docs-note warn">
+                <i class="ph ph-warning"></i>
+                <p>Builds remain <strong>Pending</strong> indefinitely if no agent is online. Verify at least one agent is live under <strong>Agents</strong> in the sidebar.</p>
+            </div>
+        </section>
+
+        <!-- TOKENS -->
+        <section id="tokens">
+            <h2><i class="ph ph-key"></i> Access Tokens</h2>
+            <p>Personal Access Tokens authenticate Git operations and API calls in place of your account password. Each token can be named and revoked independently.</p>
+
+            <h3>Creating a token</h3>
+            <ol>
+                <li>Open <strong>Profile → Personal Access Tokens</strong>.</li>
+                <li>Name the token after where it will be used — <code>laptop</code>, <code>deploy-script</code>, <code>vs-code</code>.</li>
+                <li>Click <strong>Generate Token</strong> and copy the value immediately.</li>
+            </ol>
+
+            <div class="docs-note danger">
+                <i class="ph ph-shield-warning"></i>
+                <p>The raw token is displayed once and never again. ReleaseRocket stores only a SHA-256 hash — a lost token cannot be recovered, only replaced.</p>
+            </div>
+
+            <h3>Using a token</h3>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-terminal"></i> Terminal</div>
+                <pre><code><span class="c"># Interactive — paste the token at the password prompt</span>
+git clone http://your-server:8001/git/username/repo.git
+
+<span class="c"># Scripted — embed in the remote URL</span>
+git remote set-url origin \
+  http://username:TOKEN@your-server:8001/git/username/repo.git</code></pre>
+            </div>
+
+            <h3>Revoking</h3>
+            <p>Delete any token from your Profile page. Access is denied immediately for all clients using it.</p>
+        </section>
+
+        <!-- ORGS -->
+        <section id="organizations">
+            <h2><i class="ph ph-buildings"></i> Organizations &amp; Teams</h2>
+            <p>Organizations group users and repositories under a shared identity — typically your company or department. Within an organization, <strong>teams</strong> (e.g. Backend, DevOps) provide finer-grained grouping.</p>
+            <ul>
+                <li><strong>Create an organization</strong> — Organizations → New Organization.</li>
+                <li><strong>Add members</strong> — use the Add Member form on the organization page; select the team they join.</li>
+                <li><strong>Create teams</strong> — use Create Team on the organization page.</li>
+                <li><strong>Organization repositories</strong> — select the organization as owner when creating a repository.</li>
+            </ul>
+        </section>
+
+        <!-- AGENTS -->
+        <section id="agents">
+            <h2><i class="ph ph-hard-drives"></i> Build Agents</h2>
+            <p>Agents execute pipeline steps. Any Linux machine that can reach the ReleaseRocket server can be an agent — no dependencies beyond Python.</p>
+
+            <h3>Starting an agent</h3>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-terminal"></i> On the build machine</div>
+                <pre><code>python linux_agent.py \
+  --server http://releaserocket-host:8001 \
+  --port 9000 \
+  --hash-key "your-secret-hmac-key"</code></pre>
+            </div>
+            <p>Register the agent in the UI at <strong>Agents → Add Agent</strong> with the same host, port, and hash key. The agent sends a heartbeat every 30 seconds; if heartbeats stop, it is marked offline and receives no new jobs.</p>
+
+            <div class="docs-note">
+                <i class="ph ph-lock"></i>
+                <p>All server-to-agent requests are signed with HMAC-SHA256 using the agent's hash key. Requests with invalid signatures are rejected, so an exposed agent port cannot be used to inject jobs.</p>
+            </div>
+        </section>
+
+        <!-- DEPLOYMENT TARGETS -->
+        <section id="deploy-targets">
+            <h2><i class="ph ph-cloud-arrow-up"></i> Deployment Targets</h2>
+            <p>Deployment Targets let a pipeline push directly to cloud infrastructure or a remote server — without writing deployment shell scripts by hand. The worker detects a special <code>deploy:</code> command in a step and routes it through the right SDK/CLI automatically.</p>
+
+            <h3>Supported connector types</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Type</th><th>What it runs</th></tr>
+                    <tr><td><code>kubernetes</code></td><td><code>kubectl rollout restart deployment</code> using a kubeconfig token</td></tr>
+                    <tr><td><code>aws_ecs</code></td><td><code>aws ecs update-service --force-new-deployment</code></td></tr>
+                    <tr><td><code>aws_eks</code></td><td>Fetches kubeconfig via <code>aws eks update-kubeconfig</code>, then runs <code>kubectl rollout restart</code></td></tr>
+                    <tr><td><code>aws_lambda</code></td><td><code>aws lambda update-function-code --image-uri $IMAGE_URI</code></td></tr>
+                    <tr><td><code>azure_aks</code></td><td><code>az aks get-credentials</code> then <code>kubectl rollout restart</code></td></tr>
+                    <tr><td><code>azure_appservice</code></td><td><code>az webapp restart</code></td></tr>
+                    <tr><td><code>gcp_gke</code></td><td><code>gcloud container clusters get-credentials</code> then <code>kubectl rollout restart</code></td></tr>
+                    <tr><td><code>gcp_cloudrun</code></td><td><code>gcloud run services update --image $IMAGE_URI</code></td></tr>
+                    <tr><td><code>docker_registry</code></td><td><code>docker build</code> + <code>docker push</code> to the configured registry</td></tr>
+                    <tr><td><code>ssh</code></td><td>SSH into the target host and runs <code>./deploy.sh</code> in <code>/app</code></td></tr>
+                </table>
+            </div>
+
+            <h3>Step 1 — Create a credential</h3>
+            <p>Go to <strong>Credentials</strong> in the sidebar and add a new credential. Choose the <strong>Type</strong> that matches your cloud provider:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Cloud</th><th>Credential fields</th></tr>
+                    <tr><td>AWS</td><td><em>Username</em> = Access Key ID &nbsp;·&nbsp; <em>Token</em> = Secret Access Key &nbsp;·&nbsp; <em>Extra</em>: <code>{"region":"us-east-1"}</code></td></tr>
+                    <tr><td>Azure</td><td><em>Username</em> = Client ID &nbsp;·&nbsp; <em>Password</em> = Client Secret &nbsp;·&nbsp; <em>Token</em> = Tenant ID</td></tr>
+                    <tr><td>GCP</td><td><em>Token</em> = Service Account JSON &nbsp;·&nbsp; <em>Extra</em>: <code>{"project_id":"my-proj"}</code></td></tr>
+                    <tr><td>Kubernetes</td><td><em>Token</em> = full kubeconfig YAML</td></tr>
+                    <tr><td>SSH</td><td><em>Username</em> = remote user &nbsp;·&nbsp; <em>Password</em> = private key content</td></tr>
+                    <tr><td>Docker Registry</td><td><em>Username</em> = registry username &nbsp;·&nbsp; <em>Token</em> = token or password</td></tr>
+                </table>
+            </div>
+
+            <h3>Step 2 — Create a Deployment Target</h3>
+            <p>Go to <strong>Deploy Targets</strong> in the sidebar and click <strong>Add Target</strong>. Fill in:</p>
+            <ul>
+                <li><strong>Name</strong> — a human-readable label, e.g. <em>Production K8s</em></li>
+                <li><strong>Type</strong> — pick the connector type</li>
+                <li><strong>Endpoint / Host</strong> — cluster API URL, registry hostname, SSH IP, etc.</li>
+                <li><strong>Region</strong> — AWS/Azure/GCP region (e.g. <code>us-east-1</code>)</li>
+                <li><strong>Namespace / Cluster</strong> — K8s namespace, ECS cluster name, resource group</li>
+                <li><strong>Credential</strong> — select the credential you created in Step 1</li>
+                <li><strong>Environment</strong> — optionally tag this target as <em>production</em>, <em>staging</em>, etc.</li>
+            </ul>
+            <p>After saving, open the target's detail page and note its <strong>numeric ID</strong> in the URL (<code>/deployment-targets/<strong>3</strong>/</code>) — you need it in Step 3.</p>
+
+            <h3>Step 3 — Add a deploy step to your pipeline</h3>
+            <p>In your <code>rockerci.yaml</code>, add a step whose <code>run</code> (or <code>command</code>) is a deploy directive:</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-file-code"></i> rockerci.yaml</div>
+                <pre><code>stages:
+  - name: Build
+    steps:
+      - name: Build Docker image
+        command: docker build -t myapp:$CI_RUN_ID .
+
+  - name: Deploy
+    steps:
+      - name: Push to Production Kubernetes
+        command: deploy:kubernetes:3   <span class="c"># ← type:pk of the target</span>
+
+      - name: Update AWS Lambda
+        command: deploy:aws_lambda:7</code></pre>
+            </div>
+            <p>The format is <code>deploy:&lt;type&gt;:&lt;target_pk&gt;</code>. The worker detects this prefix, looks up the target, injects its credentials as environment variables, and runs the correct CLI command — no manual SDK setup needed on the build agent.</p>
+
+            <div class="docs-note">
+                <i class="ph ph-info"></i>
+                <p>The target's detail page shows the exact command string to copy. Go to <strong>Deploy Targets → &lt;target name&gt;</strong> and read the <em>How to use</em> box.</p>
+            </div>
+
+            <h3>Environment variables injected at deploy time</h3>
+            <p>In addition to the standard CI variables, the connector injects all credential fields under a prefixed namespace:</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-info"></i> Naming pattern</div>
+                <pre><code>DEPLOY_&lt;SERVICE_NAME&gt;_USERNAME
+DEPLOY_&lt;SERVICE_NAME&gt;_PASSWORD
+DEPLOY_&lt;SERVICE_NAME&gt;_TOKEN
+DEPLOY_&lt;SERVICE_NAME&gt;_&lt;EXTRA_KEY&gt;</code></pre>
+            </div>
+            <p>For example, a credential named <em>AWS Prod</em> exposes <code>DEPLOY_AWS_PROD_USERNAME</code> (Access Key ID) and <code>DEPLOY_AWS_PROD_TOKEN</code> (Secret Access Key). Your own shell scripts in the same pipeline can reference these variables too.</p>
+
+            <div class="docs-note warn">
+                <i class="ph ph-warning"></i>
+                <p>The build agent must have the required CLI installed (<code>kubectl</code>, <code>aws</code>, <code>az</code>, <code>gcloud</code>, <code>docker</code>, <code>ssh</code>) and available on its <code>PATH</code>. ReleaseRocket generates the command — it does not bundle the SDKs.</p>
+            </div>
+        </section>
+
+        <!-- BUILD ARTIFACTS -->
+        <section id="artifacts">
+            <h2><i class="ph ph-archive-box"></i> Build Artifacts</h2>
+            <p>Build Artifacts let a pipeline step capture output files — compiled binaries, test reports, coverage HTML, release zips — and store them in ReleaseRocket so they can be downloaded from the run detail page without SSH-ing into the agent.</p>
+
+            <h3>Saving an artifact</h3>
+            <p>Add a step whose command begins with <code>artifact:</code> followed by a glob pattern relative to the repository working directory:</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-file-code"></i> rockerci.yaml</div>
+                <pre><code>stages:
+  - name: Build
+    steps:
+      - name: Compile
+        command: npm run build
+
+      - name: Save release bundle
+        command: artifact:dist/*.zip
+
+      - name: Save coverage report
+        command: artifact:coverage/lcov-report/**</code></pre>
+            </div>
+            <p>The worker expands the glob in the checked-out workspace, copies every matched file to persistent artifact storage, and logs which files were stored. The step always exits 0 even if no files matched — it will log <em>no files matched</em> instead of failing the build.</p>
+
+            <h3>Downloading artifacts</h3>
+            <p>Open the pipeline run detail page (<strong>Pipelines → &lt;pipeline&gt; → &lt;run&gt;</strong>). An <strong>Build Artifacts</strong> card appears above the logs, listing every stored file with its size and a <strong>Download</strong> button. Files are served directly from the server with the correct MIME type.</p>
+
+            <h3>Artifact storage location</h3>
+            <p>Artifacts are written to <code>CI_ARTIFACTS_DIR</code> (default <code>D:/cicd/artifacts</code>), organised by run UUID. Set this environment variable in the server's environment to move storage to a larger volume or network share.</p>
+
+            <div class="docs-note">
+                <i class="ph ph-info"></i>
+                <p>Artifact files are kept indefinitely. Clean up old run directories under <code>CI_ARTIFACTS_DIR</code> manually or with a cron job if disk space is a concern.</p>
+            </div>
+        </section>
+
+        <!-- NOTIFICATIONS -->
+        <section id="notifications">
+            <h2><i class="ph ph-bell"></i> Notifications</h2>
+            <p>ReleaseRocket can send email notifications for pipeline and repository events. Each user independently controls which events they receive, and the email transport is configured once by an admin in Global Settings.</p>
+
+            <h3>Configuring email (admin)</h3>
+            <ol>
+                <li>Go to <strong>Global Settings → Integrations</strong>.</li>
+                <li>Click <strong>Configure</strong> on the Email card.</li>
+                <li>Enter your SMTP details:</li>
+            </ol>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Field</th><th>Example</th></tr>
+                    <tr><td>SMTP Host</td><td><code>smtp.gmail.com</code> or your corporate relay</td></tr>
+                    <tr><td>Port</td><td><code>587</code> (STARTTLS) · <code>465</code> (SSL) · <code>25</code> (plain)</td></tr>
+                    <tr><td>Username</td><td>SMTP account username or email address</td></tr>
+                    <tr><td>Password</td><td>SMTP password or app-specific password</td></tr>
+                    <tr><td>From Address</td><td><code>noreply@yourcompany.com</code></td></tr>
+                    <tr><td>Use TLS</td><td>Check for STARTTLS on port 587 (recommended)</td></tr>
+                </table>
+            </div>
+            <p>Use <strong>Test Connection</strong> to verify the settings before saving. The card shows a green <em>Connected</em> badge once an active integration is saved. Leaving the password field blank on edit keeps the existing password.</p>
+
+            <div class="docs-note">
+                <i class="ph ph-info"></i>
+                <p>Slack and Microsoft Teams integrations are coming soon. Their cards are visible in Global Settings; click <em>Coming Soon</em> to see the planned feature.</p>
+            </div>
+
+            <h3>Setting notification preferences (per user)</h3>
+            <p>Every user controls their own notification preferences. Open the user menu (top right) → <strong>Notifications</strong>. Toggle each event type on or off:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Event</th><th>Triggered when</th></tr>
+                    <tr><td>Pipeline success</td><td>A pipeline run completes with all steps passing</td></tr>
+                    <tr><td>Pipeline failure</td><td>A pipeline run fails on any step</td></tr>
+                    <tr><td>PR assigned</td><td>You are added as a reviewer on a pull request</td></tr>
+                    <tr><td>PR merged</td><td>A pull request you authored is merged</td></tr>
+                    <tr><td>Issue assigned</td><td>An issue is assigned to you</td></tr>
+                    <tr><td>Issue commented</td><td>A comment is added to an issue you created</td></tr>
+                </table>
+            </div>
+
+            <div class="docs-note warn">
+                <i class="ph ph-warning"></i>
+                <p>Email notifications require your account to have a <strong>verified email address</strong> set on your Profile. Users without an email address never receive notifications, even if their toggles are on.</p>
+            </div>
+
+            <h3>How notifications are delivered</h3>
+            <p>Pipeline notifications are sent at the end of each run to all project members who have the relevant toggle enabled. PR and issue notifications are sent to the directly affected user (reviewer or assignee). All delivery happens in the background — a failed SMTP send never blocks a build or page load, and the server logs a warning instead.</p>
+        </section>
+
+        <!-- DEPLOYMENT -->
+        <section id="deployment">
+            <h2><i class="ph ph-server"></i> Server Deployment</h2>
+
+            <h3>Requirements</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Component</th><th>Recommendation</th></tr>
+                    <tr><td>Runtime</td><td>Python 3.11+, Git installed on the server</td></tr>
+                    <tr><td>WSGI server</td><td>Gunicorn, 4 workers</td></tr>
+                    <tr><td>Reverse proxy</td><td>Nginx with SSE buffering disabled</td></tr>
+                    <tr><td>Database</td><td>SQLite (small teams) or PostgreSQL 15+</td></tr>
+                </table>
+            </div>
+
+            <h3>Required environment variables</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th>Variable</th><th>Description</th></tr>
+                    <tr><td><code>DJANGO_SECRET_KEY</code></td><td>Cryptographic secret. Generate with <code>secrets.token_hex(50)</code>.</td></tr>
+                    <tr><td><code>REPO_BASE_PATH</code></td><td>Directory where bare Git repositories are stored.</td></tr>
+                    <tr><td><code>CI_RUNS_DIR</code></td><td>Working directory for pipeline execution.</td></tr>
+                </table>
+            </div>
+
+            <h3>Nginx</h3>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-file-code"></i> nginx.conf</div>
+                <pre><code>location / {
+    proxy_pass http://127.0.0.1:8001;
+    proxy_set_header Host $host;
+    client_max_body_size 500M;   <span class="c"># large git pushes</span>
+
+    <span class="c"># Required for live build logs (SSE)</span>
+    proxy_buffering    off;
+    proxy_cache        off;
+    proxy_read_timeout 300s;
+}</code></pre>
+            </div>
+            <div class="docs-note warn">
+                <i class="ph ph-warning"></i>
+                <p><code>proxy_buffering off</code> is mandatory. With buffering enabled, live build logs appear only after the run finishes.</p>
+            </div>
+
+            <h3>Before each release</h3>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-terminal"></i> Terminal</div>
+                <pre><code>python manage.py migrate --noinput
+python manage.py collectstatic --noinput</code></pre>
+            </div>
+        </section>
+
+        <!-- API -->
+        <section id="api">
+            <h2><i class="ph ph-plugs-connected"></i> API Reference</h2>
+            <p>All endpoints accept a browser session or HTTP Basic authentication with a Personal Access Token as the password.</p>
+            <div class="code-card">
+                <div class="code-card-title"><i class="ph ph-terminal"></i> Terminal</div>
+                <pre><code>curl -u username:TOKEN http://your-server:8001/ci/metrics/</code></pre>
+            </div>
+
+            <h3>Repositories</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th style="width:70px;">Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/repositories/</code></td><td>List repositories</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/repositories/create/</code></td><td>Create a repository</td></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/repositories/&lt;name&gt;/</code></td><td>Repository detail</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/repositories/&lt;name&gt;/fork/</code></td><td>Fork a repository</td></tr>
+                </table>
+            </div>
+
+            <h3>Pull requests</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th style="width:70px;">Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/repositories/&lt;name&gt;/pull-requests/</code></td><td>List pull requests</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/repositories/&lt;name&gt;/pull-requests/create/</code></td><td>Open a pull request</td></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/pull-requests/&lt;id&gt;/</code></td><td>Detail, diff, and reviews</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/pull-requests/&lt;id&gt;/merge/</code></td><td>Merge</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/pull-requests/&lt;id&gt;/close/</code></td><td>Close without merging</td></tr>
+                </table>
+            </div>
+
+            <h3>Issues</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th style="width:70px;">Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/repositories/&lt;name&gt;/issues/</code></td><td>List issues (<code>?state=open|closed</code>)</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/repositories/&lt;name&gt;/issues/new/</code></td><td>Create an issue</td></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/repositories/&lt;name&gt;/issues/&lt;number&gt;/</code></td><td>Issue detail</td></tr>
+                </table>
+            </div>
+
+            <h3>Pipelines and runs</h3>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th style="width:70px;">Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/ci/projectslist/</code></td><td>List projects</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/ci/projects/&lt;name&gt;/trigger-build/</code></td><td>Trigger a build</td></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/ci/projects/&lt;name&gt;/build-history/</code></td><td>Build history</td></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/ci/pipeline/run/&lt;run_id&gt;/</code></td><td>Run detail with live logs (SSE)</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/ci/pipeline/run/&lt;run_id&gt;/cancel/</code></td><td>Cancel a running build</td></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/ci/metrics/</code></td><td>Pipeline metrics (JSON)</td></tr>
+                </table>
+            </div>
+
+            <h3>Git over HTTP</h3>
+            <p>Standard Git Smart HTTP — compatible with every Git client. Authenticate with username + token.</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                    <tr><th style="width:70px;">Method</th><th>Endpoint</th><th>Purpose</th></tr>
+                    <tr><td><span class="m m-get">GET</span></td><td><code>/git/&lt;owner&gt;/&lt;repo&gt;.git/info/refs</code></td><td>Clone / push negotiation</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/git/&lt;owner&gt;/&lt;repo&gt;.git/git-upload-pack</code></td><td>Clone / fetch</td></tr>
+                    <tr><td><span class="m m-post">POST</span></td><td><code>/git/&lt;owner&gt;/&lt;repo&gt;.git/git-receive-pack</code></td><td>Push</td></tr>
+                </table>
+            </div>
+        </section>
+
+    </article>
+</div>
+
+<script>
+// Scrollspy — highlight the section currently in view
+(function () {
+    const links = document.querySelectorAll('#docsNav a');
+    const sections = Array.from(links).map(a => document.querySelector(a.getAttribute('href')));
+
+    function onScroll() {
+        let current = sections[0];
+        for (const s of sections) {
+            if (s && s.getBoundingClientRect().top <= 120) current = s;
+        }
+        links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + current.id));
+    }
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+})();
+</script>
+{% endblock %}

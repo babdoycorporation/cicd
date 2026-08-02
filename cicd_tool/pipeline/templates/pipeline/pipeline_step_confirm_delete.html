@@ -14,7 +14,7 @@
         {% csrf_token %}
         <button type="submit">Delete</button>
     </form>
-    <a href="{% url 'pipeline_step_list' pipeline.id %}">Back to Steps</a>
+    <a href="{% url 'pipeline_step_list' pipeline.name %}">Back to Steps</a>
 </body>
 </html>
 {% endblock %}

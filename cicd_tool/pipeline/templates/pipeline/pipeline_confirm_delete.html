@@ -14,7 +14,7 @@
         {% csrf_token %}
         <button type="submit">Yes, delete</button>
     </form>
-    <a href="{% url 'pipeline_list' project.id %}">Cancel</a>
+    <a href="{% url 'pipeline_list' project.name %}">Cancel</a>
 </body>
 </html>
 {% endblock %}

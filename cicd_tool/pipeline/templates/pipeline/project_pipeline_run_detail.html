@@ -1,0 +1,222 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .run-title {
+        margin: 0 0 0.5rem 0;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .badge-success { background: rgba(35, 134, 54, 0.15); color: var(--success-color); border: 1px solid var(--success-color); }
+    .badge-danger { background: rgba(218, 54, 51, 0.15); color: #da3633; border: 1px solid #da3633; }
+    .badge-warning { background: rgba(210, 153, 34, 0.15); color: #d29922; border: 1px solid #d29922; }
+
+    .run-meta {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .run-meta {
+            flex-direction: column;
+            gap: 1rem;
+        }
+    }
+
+    .meta-item {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        flex: 1;
+    }
+
+    .meta-label {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .meta-value {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .terminal {
+        background: #0d1117;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        color: #c9d1d9;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .terminal-header {
+        background: #161b22;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: #8b949e;
+    }
+
+    .terminal-body {
+        padding: 1rem;
+        max-height: 600px;
+        overflow-y: auto;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .terminal-body pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-family: inherit;
+    }
+
+    .step-log {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px dashed rgba(255,255,255,0.1);
+    }
+    
+    .step-log:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .step-title {
+        color: var(--accent-color);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+
+<div>
+    <a href="{% url 'project_detail' run.project_pipeline.project.name %}" style="color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+        <i class="fas fa-arrow-left"></i> Back to {{ run.project_pipeline.project.name }}
+    </a>
+
+    <div class="page-header">
+        <div>
+            <h1 class="run-title">
+                <i class="ph ph-git-merge" style="color: var(--accent-color);"></i>
+                Orchestrator Run #{{ run.run_id|stringformat:"s"|slice:":8" }}
+            </h1>
+            <p class="run-meta">
+                <i class="ph ph-calendar-blank"></i> Started {{ run.started_at }}
+                &bull; Orchestrator: <strong>{{ run.project_pipeline.name }}</strong>
+            </p>
+        </div>
+        <div class="actions">
+            {% if run.status|lower == 'success' %}
+                <span class="badge badge-success"><i class="fas fa-check"></i> {{ run.status|title }}</span>
+            {% elif run.status|lower == 'failed' %}
+                <span class="badge badge-danger"><i class="fas fa-xmark"></i> {{ run.status|title }}</span>
+            {% else %}
+                <span class="badge badge-warning"><i class="fas fa-spinner fa-spin"></i> {{ run.status|title }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="run-meta">
+        <div class="meta-item">
+            <div class="meta-label">Started At</div>
+            <div class="meta-value"><i class="fas fa-clock" style="color: var(--text-secondary);"></i> {{ run.started_at }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Finished At</div>
+            <div class="meta-value">
+                {% if run.finished_at %}
+                    <i class="fas fa-flag-checkered" style="color: var(--text-secondary);"></i> {{ run.finished_at }}
+                {% else %}
+                    <i class="fas fa-minus" style="color: var(--text-secondary);"></i> In Progress
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="terminal">
+        <div class="terminal-header">
+            <div><i class="ph ph-terminal"></i> Orchestrator Logs</div>
+            <div>
+                <a href="#" style="color: inherit; text-decoration: none; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.1); border-radius: 4px;">
+                    <i class="fas fa-download"></i> Download
+                </a>
+            </div>
+        </div>
+        <div class="terminal-body">
+            <div class="step-log">
+                <pre id="log-pre-block">{% if pipeline_run.log %}{{ pipeline_run.log }}{% else %}Waiting for logs...{% endif %}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const runStatus = "{{ run.status|upper }}";
+    const terminalBody = document.getElementById('log-pre-block');
+    const apiUrl = "{% url 'project_pipeline_run_api' run.run_id %}";
+    
+    // Check if we need to poll
+    if (['PENDING', 'RUNNING'].includes(runStatus)) {
+        const intervalId = setInterval(async () => {
+            try {
+                const response = await fetch(apiUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update log content
+                    if (terminalBody) {
+                        terminalBody.textContent = data.log || 'Waiting for logs...';
+                        terminalBody.parentElement.parentElement.scrollTop = terminalBody.parentElement.parentElement.scrollHeight;
+                    }
+                    
+                    // Stop polling if done
+                    const currentStatus = data.status.toUpperCase();
+                    if (['SUCCESS', 'FAILED'].includes(currentStatus)) {
+                        clearInterval(intervalId);
+                        window.location.reload(); // Reload to update badges/UI
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch log updates", err);
+            }
+        }, 2000);
+    }
+});
+</script>
+{% endblock %}

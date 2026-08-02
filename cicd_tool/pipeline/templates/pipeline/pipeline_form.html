@@ -1,23 +1,157 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{% if pipeline %}Update{% else %}Create{% endif %} Pipeline for {{ project.name }}</title>
-</head>
-<body>
-    <h1>{% if pipeline %}Update{% else %}Create{% endif %} Pipeline</h1>
-    <form method="post">
-        {% csrf_token %}
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" value="{% if pipeline %}{{ pipeline.name }}{% endif %}" required><br>
-        <label for="description">Description:</label>
-        <textarea id="description" name="description">{% if pipeline %}{{ pipeline.description }}{% endif %}</textarea><br>
-        <button type="submit">Save</button>
-    </form>
-    <a href="{% url 'pipeline_list' project.id %}">Back to Pipelines</a>
-</body>
-</html>
+<style>
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin-bottom: 1.25rem;
+  }
+  .breadcrumb a { color: var(--brand); text-decoration: none; font-weight: 600; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  
+  .form-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.75rem;
+    max-width: 580px;
+    margin: 0 auto;
+    box-shadow: var(--shadow-sm);
+  }
+  .form-card h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-primary);
+    margin: 0 0 0.35rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .form-card .subtitle {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.45;
+  }
+  .form-group { margin-bottom: 1.15rem; }
+  .form-group label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+  }
+  .form-group input[type="text"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    padding: 0.48rem 0.75rem;
+    font-size: 0.82rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: var(--transition);
+    outline: none;
+  }
+  .form-group input[type="text"]:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(5,150,105,0.12);
+  }
+  .form-group select option { background: #ffffff; color: var(--text-primary); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem; }
+  .form-actions { display: flex; gap: 0.65rem; margin-top: 1.5rem; align-items: center; }
+  .btn-primary {
+    background: var(--btn-dark); color: #ffffff; border: 1px solid var(--btn-dark);
+    border-radius: 6px; padding: 0.42rem 0.95rem; font-size: 0.78rem;
+    font-weight: 700; cursor: pointer; text-decoration: none;
+    transition: var(--transition); font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover { background: var(--btn-dark-hover); border-color: var(--btn-dark-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-cancel {
+    background: #ffffff; color: var(--text-primary);
+    border: 1px solid var(--border-color); border-radius: 6px;
+    padding: 0.42rem 0.95rem; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; text-decoration: none; transition: var(--transition);
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-cancel:hover { background: var(--canvas-bg); border-color: var(--btn-dark); color: var(--btn-dark); }
+</style>
+
+<div class="breadcrumb">
+  <a href="{% url 'project_list' %}">Projects</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'project_detail' project.name %}">{{ project.name }}</a>
+  <i class="ph ph-caret-right"></i>
+  <a href="{% url 'pipeline_list' project.name %}">Pipelines</a>
+  <i class="ph ph-caret-right"></i>
+  <span>{% if pipeline %}Edit{% else %}New Pipeline{% endif %}</span>
+</div>
+
+<div class="form-card">
+  <h2>
+    <i class="ph ph-git-branch" style="color:var(--brand);"></i>
+    {% if pipeline %}Edit Pipeline{% else %}Create Pipeline{% endif %}
+  </h2>
+  <p class="subtitle">
+    Pipelines define CI/CD steps for an application under
+    <strong style="color:var(--text-primary);">{{ project.name }}</strong>.
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="id_name">Pipeline Name <span style="color:var(--danger-color);">*</span></label>
+      <input type="text" name="name" id="id_name"
+        placeholder="e.g. build-and-deploy"
+        value="{% if pipeline %}{{ pipeline.name }}{% endif %}"
+        required autofocus>
+      <p class="form-hint">Use lowercase letters, numbers and hyphens.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="id_description">Description</label>
+      <textarea name="description" id="id_description"
+        placeholder="What does this pipeline do?">{% if pipeline %}{{ pipeline.description }}{% endif %}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="id_application">Application <span style="color:var(--danger-color);">*</span></label>
+      <select name="application" id="id_application" required>
+        <option value="">— Select an application —</option>
+        {% for application in applications %}
+          <option value="{{ application.name }}"
+            {% if pipeline and application.name in pipeline_application_ids %} selected {% endif %}>
+            {{ application.name }}
+          </option>
+        {% endfor %}
+      </select>
+      <p class="form-hint">The application this pipeline belongs to.</p>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">
+        <i class="ph ph-floppy-disk"></i>
+        {% if pipeline %}Update Pipeline{% else %}Create Pipeline{% endif %}
+      </button>
+      <a href="{% url 'pipeline_list' project.name %}" class="btn-cancel">
+        <i class="ph ph-x"></i> Cancel
+      </a>
+    </div>
+  </form>
+</div>
 {% endblock %}

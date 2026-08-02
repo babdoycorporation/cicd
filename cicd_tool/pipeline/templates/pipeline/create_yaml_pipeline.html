@@ -1,0 +1,275 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+<!-- Add a dark theme for CodeMirror -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material-darker.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/yaml/yaml.min.js"></script>
+
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary);
+    }
+    
+    .page-title i {
+        color: var(--accent-color);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid transparent;
+        font-size: 0.9rem;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .btn-primary {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2ea043;
+    }
+    
+    .btn-secondary {
+        background-color: transparent;
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--card-bg);
+        border-color: var(--text-secondary);
+    }
+
+    .btn-danger {
+        background-color: transparent;
+        border-color: rgba(248, 81, 73, 0.3);
+        color: var(--danger-color);
+    }
+    
+    .btn-danger:hover {
+        background-color: rgba(248, 81, 73, 0.1);
+        border-color: var(--danger-color);
+    }
+
+    .editor-container {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .editor-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .editor-title {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* CodeMirror Overrides */
+    .CodeMirror {
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        height: 600px;
+        font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+    
+    .cm-s-material-darker.CodeMirror {
+        background-color: var(--darker-bg);
+    }
+    
+    .cm-s-material-darker .CodeMirror-gutters {
+        background-color: var(--darker-bg);
+        border-right: 1px solid var(--border-color);
+    }
+
+    .editor-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1.5rem;
+    }
+    
+    .toast-notification {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background-color: var(--success-color);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        opacity: 0;
+        transform: translateY(1rem);
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        z-index: 1000;
+        pointer-events: none;
+    }
+    
+    .toast-notification.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+
+<div>
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="ph ph-file-code"></i> JSON/YAML Editor
+        </h1>
+    </div>
+
+    <form id="pipelineForm" method="post">
+        {% csrf_token %}
+        <div class="editor-container">
+            <div class="editor-header">
+                <div class="editor-title">
+                    <i class="ph ph-brackets-curly"></i> Pipeline Configuration
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" id="saveDraft" class="btn btn-secondary btn-sm" title="Save Draft">
+                        <i class="ph ph-floppy-disk"></i> Save Draft
+                    </button>
+                    <button type="button" id="clearDraft" class="btn btn-danger btn-sm" title="Clear Draft">
+                        <i class="ph ph-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+            
+            <div id="yaml_editor"></div>
+            
+            <div class="editor-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-rocket-launch"></i> Create Pipeline
+                </button>
+            </div>
+        </div>
+        <textarea id="yaml_data" name="yaml_data" style="display: none;"></textarea>
+    </form>
+</div>
+
+<div id="toast" class="toast-notification">
+    <i class="ph ph-check-circle"></i> <span id="toast-message">Action successful</span>
+</div>
+
+<script>
+    // Initialize CodeMirror editor
+    var editor = CodeMirror(document.getElementById('yaml_editor'), {
+        value: `project_name: ExampleProject
+pipeline_name: test_pipeline
+description: Test pipeline description
+global_cred:
+  - my_service_name
+local_cred:
+  - same_as_above
+agent: laptop123
+steps:
+  - name: step1
+    condition: null
+    command: python runserver --cred=my_service_name; ls; ls -la
+  - name: step2
+    condition: null
+    command: echo "Second step"`,
+        mode: 'yaml',
+        lineNumbers: true,
+        theme: 'material-darker',
+        indentUnit: 2,
+        matchBrackets: true,
+        autoCloseBrackets: true
+    });
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        document.getElementById('toast-message').textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // Form validation and error handling
+    document.getElementById('pipelineForm').addEventListener('submit', function(event) {
+        let yamlData = editor.getValue();
+
+        if (!yamlData.trim()) {
+            event.preventDefault();
+            alert('YAML data cannot be empty.');
+        } else {
+            document.getElementById('yaml_data').value = yamlData;
+        }
+    });
+
+    // Save Draft functionality
+    document.getElementById('saveDraft').addEventListener('click', function() {
+        let yamlData = editor.getValue();
+        localStorage.setItem('yamlDraft', yamlData);
+        showToast('Draft saved successfully!');
+    });
+
+    // Clear Draft functionality
+    document.getElementById('clearDraft').addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear the draft? This action cannot be undone.')) {
+            localStorage.removeItem('yamlDraft');
+            editor.setValue('');
+            showToast('Draft cleared!');
+        }
+    });
+
+    // Load saved draft on page load
+    window.addEventListener('load', function() {
+        let savedDraft = localStorage.getItem('yamlDraft');
+        if (savedDraft) {
+            editor.setValue(savedDraft);
+            // Quietly load without annoying alert
+        }
+    });
+</script>
+{% endblock %}

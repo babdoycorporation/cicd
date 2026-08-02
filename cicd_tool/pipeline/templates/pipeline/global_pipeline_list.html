@@ -1,0 +1,209 @@
+{% extends 'pipeline/base.html' %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid transparent;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2ea043;
+    }
+    
+    .btn-secondary {
+        background-color: transparent;
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--card-bg);
+        border-color: var(--text-secondary);
+    }
+
+    .btn-danger {
+        background-color: transparent;
+        border-color: rgba(248, 81, 73, 0.3);
+        color: var(--danger-color);
+    }
+    
+    .btn-danger:hover {
+        background-color: rgba(248, 81, 73, 0.1);
+        border-color: var(--danger-color);
+    }
+
+    .pipeline-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .pipeline-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pipeline-card:hover {
+        border-color: var(--accent-color);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .pipeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .pipeline-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--accent-color);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .pipeline-name:hover {
+        text-decoration: underline;
+    }
+
+    .pipeline-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .pipeline-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .pipeline-meta i {
+        color: var(--text-secondary);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        background-color: var(--card-bg);
+        border: 1px dashed var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background-color: rgba(47, 129, 247, 0.1);
+        color: var(--accent-color);
+        border: 1px solid rgba(47, 129, 247, 0.3);
+    }
+</style>
+
+<div>
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="ph ph-list-dashes"></i> Global Pipelines
+        </h1>
+        <a href="{% url 'create_yaml_pipeline' %}" class="btn btn-primary">
+            <i class="ph ph-file-code"></i> JSON/YAML Editor
+        </a>
+    </div>
+
+    {% if pipelines %}
+    <div class="pipeline-grid">
+        {% for pipeline in pipelines %}
+        <div class="pipeline-card">
+            <div class="pipeline-header">
+                <a href="{% url 'pipeline_detail' pipeline.name %}" class="pipeline-name">
+                    <i class="ph ph-git-merge"></i> {{ pipeline.name }}
+                </a>
+                <div class="pipeline-actions">
+                    <a href="{% url 'pipeline_update' pipeline.application.project.name pipeline.name %}" class="btn btn-secondary btn-sm" title="Edit">
+                        <i class="ph ph-pencil-simple"></i>
+                    </a>
+                    <a href="{% url 'run_pipeline' pipeline.name %}" class="btn btn-primary btn-sm" title="Run Pipeline">
+                        <i class="ph ph-play"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="pipeline-meta">
+                <span><i class="ph ph-tree-structure"></i> {{ pipeline.application.project.name }}</span>
+            </div>
+            
+            {% if pipeline.applications.exists %}
+            <div style="margin-bottom: 1rem;">
+                {% for app in pipeline.applications.all %}
+                <span class="badge"><i class="ph ph-cube" style="margin-right: 0.25rem;"></i> {{ app.name }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-top: auto;">
+                <p style="margin: 0;"><i class="ph ph-info"></i> {{ pipeline.description|default:"No description provided." }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="ph ph-list-dashes" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+        <h3>No pipelines found</h3>
+        <p>You haven't created any pipelines across your projects yet.</p>
+        <a href="{% url 'create_yaml_pipeline' %}" class="btn btn-primary" style="margin-top: 1rem;">
+            <i class="ph ph-file-code"></i> Create Pipeline via YAML
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

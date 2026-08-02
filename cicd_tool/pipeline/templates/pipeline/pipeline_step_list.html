@@ -1,93 +1,161 @@
 {% extends 'pipeline/base.html' %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Pipeline Steps</title>
-    <style>
-        .container{
-            margin-top: 50px;;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        li {
-            background: #e9ecef;
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        li:nth-child(odd) {
-            background: #f8f9fa;
-        }
-        .actions {
-            display: flex;
-            gap: 10px;
-        }
-        .actions a, .actions button {
-            background: #007bff;
-            color: #fff;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .actions button {
-            background: #dc3545;
-        }
-        .actions a:hover, .actions button:hover {
-            opacity: 0.8;
-        }
-        .add-step, .back-to-pipelines {
-            width: fit-content;
-            margin: 20px auto;
-            padding: 10px 20px;
-            background: #28a745;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-            text-align: center;
-        }
-        .back-to-pipelines {
-            background: #6c757d;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Steps for Pipeline: {{ pipeline.name }}</h1>
-        <a class="back-to-pipelines" href="{% url 'pipeline_list' pipeline.project.id %}">Back to Pipelines</a>
-        <a class="add-step" href="{% url 'pipeline_step_create' pipeline.id %}">Add Step</a>
-        <ul>
-            {% for step in steps %}
-                <li>
-                    <div>
-                        <strong>{{ step.name }}</strong> - {{ step.description }}
-                    </div>
-                    <div class="actions">
-                        <a href="{% url 'pipeline_step_update' pipeline.id step.id %}">Edit</a>
-                        <form action="{% url 'pipeline_step_delete' pipeline.id step.id %}" method="post" style="display:inline;">
-                            {% csrf_token %}
-                            <button type="submit">Delete</button>
-                        </form>
-                    </div>
-                </li>
-            {% endfor %}
-        </ul>
-        
-        
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .pipeline-title {
+        margin: 0 0 0.5rem 0;
+        color: var(--text-primary);
+        font-size: 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 1px solid transparent;
+        font-size: 0.95rem;
+    }
+
+    .btn-primary {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2ea043;
+    }
+
+    .btn-secondary {
+        background-color: var(--card-bg);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--text-secondary);
+    }
+
+    .btn-danger {
+        background-color: transparent;
+        border-color: rgba(248, 81, 73, 0.3);
+        color: var(--danger-color);
+        padding: 0.5rem 1.25rem;
+    }
+
+    .btn-danger:hover {
+        background-color: rgba(248, 81, 73, 0.1);
+        border-color: var(--danger-color);
+    }
+
+    .step-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .step-item {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: var(--transition);
+    }
+
+    .step-item:hover {
+        border-color: var(--accent-color);
+    }
+
+    .step-info strong {
+        display: block;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .step-info span {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .step-actions {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+</style>
+
+<div>
+    <a href="{% url 'pipeline_detail' pipeline.name %}" style="color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+        <i class="fas fa-arrow-left"></i> Back to Pipeline
+    </a>
+
+    <div class="page-header">
+        <div>
+            <h1 class="pipeline-title"><i class="fas fa-list-ol" style="color: var(--accent-color);"></i> Steps for {{ pipeline.name }}</h1>
+            <p style="color: var(--text-secondary); margin: 0;">Configure the sequence of actions for this pipeline.</p>
+        </div>
+        <div>
+            <a class="btn btn-primary" href="{% url 'pipeline_step_create' pipeline.name %}">
+                <i class="fas fa-plus"></i> Add Step
+            </a>
+        </div>
     </div>
-</body>
-</html>
+
+    {% if steps %}
+    <ul class="step-list">
+        {% for step in steps %}
+            <li class="step-item">
+                <div class="step-info">
+                    <strong><i class="fas fa-circle-play" style="color: var(--text-secondary); margin-right: 0.5rem;"></i> {{ step.name }}</strong>
+                    <span>{{ step.description|default:"No description provided." }}</span>
+                </div>
+                <div class="step-actions">
+                    <a href="{% url 'pipeline_step_update' pipeline.name step.id %}" class="btn btn-secondary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <form action="{% url 'pipeline_step_delete' pipeline.name step.id %}" method="post" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </form>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div style="text-align: center; padding: 4rem; background: var(--card-bg); border: 1px dashed var(--border-color); border-radius: 8px;">
+        <i class="fas fa-list-ol" style="font-size: 3rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 1rem;"></i>
+        <h3 style="color: var(--text-primary);">No steps configured</h3>
+        <p style="color: var(--text-secondary);">Add steps to define what this pipeline should do.</p>
+        <a class="btn btn-primary" href="{% url 'pipeline_step_create' pipeline.name %}" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Add Step
+        </a>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

@@ -10,6 +10,18 @@ class Command(BaseCommand):
     help = 'Run a build'
 
     def handle(self, *args, **kwargs):
+        # Cleanup stale 'running' builds
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        stale_threshold = timezone.now() - timedelta(minutes=30)
+        stale_builds = Build.objects.filter(status='running', updated_at__lt=stale_threshold)
+        for stale_build in stale_builds:
+            stale_build.status = 'failed'
+            stale_build.log += '\n[System] Build timed out or process aborted unexpectedly.\n'
+            stale_build.save(update_fields=['status', 'log'])
+            self.stdout.write(f"Cleaned up stale build #{stale_build.id}")
+
         builds = Build.objects.filter(status='pending')
         for build in builds:
             build.status = 'running'

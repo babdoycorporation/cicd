@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReleaseRocket — Developer Guide</title>
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --muted: #4a5568;
+    --accent: #2563eb;
+    --accent2: #7c3aed;
+    --success: #16a34a;
+    --warn: #d97706;
+    --danger: #dc2626;
+    --border: #e2e8f0;
+    --code-bg: #f1f5f9;
+    --tag-bg: #eff6ff;
+    --tag-color: #1d4ed8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--ink);
+    background: #fff;
+  }
+
+  /* ── Cover ── */
+  .cover {
+    background: linear-gradient(135deg, #1e3a5f 0%, #1a1a2e 50%, #2d1b69 100%);
+    color: white;
+    padding: 80px 64px 60px;
+    page-break-after: always;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .cover-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px; padding: 4px 14px; font-size: 12px;
+    font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    margin-bottom: 32px; width: fit-content;
+  }
+  .cover h1 { font-size: 52px; font-weight: 800; line-height: 1.1; margin-bottom: 8px; }
+  .cover h1 span { color: #60a5fa; }
+  .cover .subtitle { font-size: 20px; color: rgba(255,255,255,0.7); margin-bottom: 48px; }
+  .cover-meta { display: flex; gap: 40px; flex-wrap: wrap; }
+  .cover-meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .cover-meta-item label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); }
+  .cover-meta-item span { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.9); }
+  .cover-logo {
+    position: absolute; top: 40px; right: 64px;
+    font-size: 28px; font-weight: 900;
+    background: linear-gradient(90deg,#60a5fa,#a78bfa);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* ── TOC ── */
+  .toc-page { padding: 64px; page-break-after: always; }
+  .toc-page h2 { font-size: 28px; font-weight: 700; margin-bottom: 32px; color: var(--ink); }
+  .toc-section { margin-bottom: 6px; }
+  .toc-section a {
+    display: flex; align-items: center; justify-content: space-between;
+    text-decoration: none; color: var(--ink);
+    padding: 8px 0; border-bottom: 1px dotted var(--border); font-size: 14px;
+  }
+  .toc-section a:hover { color: var(--accent); }
+  .toc-section a .toc-num {
+    font-weight: 700; color: var(--accent); min-width: 28px;
+  }
+  .toc-section a .toc-page-num { color: var(--muted); font-size: 12px; }
+  .toc-sub { padding-left: 28px; }
+  .toc-sub a { font-size: 13px; color: var(--muted); border-bottom: 1px dotted #f1f5f9; }
+
+  /* ── Content ── */
+  .page { padding: 56px 64px; page-break-inside: avoid; }
+  .section { margin-bottom: 56px; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 2px solid var(--accent); padding-bottom: 12px; margin-bottom: 28px;
+  }
+  .section-number {
+    background: var(--accent); color: white;
+    border-radius: 8px; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px; flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 24px; font-weight: 700; color: var(--ink); }
+
+  h3 { font-size: 17px; font-weight: 700; margin: 28px 0 12px; color: var(--ink); }
+  h4 { font-size: 14px; font-weight: 700; margin: 20px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  p { margin-bottom: 14px; color: #334155; }
+
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+    font-size: 12.5px; background: var(--code-bg);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 6px; color: #be185d;
+  }
+  pre {
+    background: #0f172a; border-radius: 10px; padding: 20px 24px;
+    overflow-x: auto; margin: 16px 0; border: 1px solid #1e293b;
+  }
+  pre code {
+    background: none; border: none; padding: 0; color: #e2e8f0;
+    font-size: 12.5px; line-height: 1.8;
+  }
+  .hl-comment { color: #64748b; }
+  .hl-key    { color: #93c5fd; }
+  .hl-str    { color: #86efac; }
+  .hl-num    { color: #fda4af; }
+  .hl-fn     { color: #fbbf24; }
+  .hl-kw     { color: #c084fc; }
+
+  /* ── Info boxes ── */
+  .box {
+    border-radius: 8px; padding: 16px 20px; margin: 16px 0;
+    border-left: 4px solid;
+  }
+  .box-info  { background: #eff6ff; border-color: var(--accent); }
+  .box-warn  { background: #fffbeb; border-color: var(--warn); }
+  .box-ok    { background: #f0fdf4; border-color: var(--success); }
+  .box-danger{ background: #fef2f2; border-color: var(--danger); }
+  .box-title { font-weight: 700; margin-bottom: 4px; font-size: 13px; }
+  .box-info  .box-title { color: var(--accent); }
+  .box-warn  .box-title { color: var(--warn); }
+  .box-ok    .box-title { color: var(--success); }
+  .box-danger .box-title{ color: var(--danger); }
+  .box p { margin: 0; font-size: 13px; color: #374151; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  thead tr { background: var(--ink); color: white; }
+  thead th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 12px; letter-spacing: 0.04em; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: #374151; vertical-align: top; }
+  tbody td code { background: #f1f5f9; }
+
+  /* ── Tags / badges ── */
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    border: 1px solid;
+  }
+  .tag-blue   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .tag-green  { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+  .tag-purple { background: #faf5ff; color: #7e22ce; border-color: #e9d5ff; }
+  .tag-orange { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+  .tag-red    { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
+  /* ── Architecture diagram ── */
+  .arch-diagram {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px; margin: 24px 0;
+  }
+  .arch-box {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .arch-box .arch-icon { font-size: 28px; margin-bottom: 8px; }
+  .arch-box h4 { font-size: 13px; font-weight: 700; color: var(--ink); margin: 0 0 4px; text-transform: none; letter-spacing: 0; }
+  .arch-box p { font-size: 11px; color: var(--muted); margin: 0; line-height: 1.5; }
+  .arch-arrow {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: var(--muted); margin: 0 -8px;
+  }
+
+  /* ── Model table ── */
+  .model-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .model-card {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px;
+  }
+  .model-card h4 {
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    margin: 0 0 8px; text-transform: none; letter-spacing: 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .model-card ul { list-style: none; padding: 0; }
+  .model-card li { font-size: 12px; color: var(--muted); padding: 2px 0; border-bottom: 1px solid var(--border); }
+  .model-card li:last-child { border: none; }
+  .model-card li code { background: white; }
+
+  /* ── Endpoint list ── */
+  .endpoint { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .method {
+    font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px;
+    min-width: 46px; text-align: center; letter-spacing: 0.05em; flex-shrink: 0;
+  }
+  .method-get    { background: #dcfce7; color: #15803d; }
+  .method-post   { background: #fef9c3; color: #854d0e; }
+  .method-delete { background: #fef2f2; color: #b91c1c; }
+  .endpoint-path { font-family: monospace; font-size: 12px; color: var(--ink); flex: 1; }
+  .endpoint-desc { font-size: 12px; color: var(--muted); }
+
+  /* ── Steps ── */
+  .steps { list-style: none; padding: 0; counter-reset: steps; }
+  .steps li {
+    counter-increment: steps; display: flex; gap: 16px;
+    align-items: flex-start; padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .steps li::before {
+    content: counter(steps);
+    background: var(--accent); color: white; border-radius: 50%;
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px; flex-shrink: 0; margin-top: 2px;
+  }
+  .steps li p { margin: 0; font-size: 13px; color: #374151; }
+
+  /* ── Print ── */
+  @media print {
+    .cover { page-break-after: always; }
+    .section { page-break-inside: avoid; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ COVER ══════════════ -->
+<div class="cover" style="position:relative;">
+  <div class="cover-logo">⚡ ReleaseRocket</div>
+  <div class="cover-badge">📘 Technical Documentation</div>
+  <h1>Developer<br><span>Reference Guide</span></h1>
+  <div class="subtitle">Architecture · Models · APIs · Deployment · Contribution</div>
+  <div class="cover-meta">
+    <div class="cover-meta-item"><label>Version</label><span>2.0.0</span></div>
+    <div class="cover-meta-item"><label>Stack</label><span>Django 5.0 · Python 3.11 · SQLite / PostgreSQL</span></div>
+    <div class="cover-meta-item"><label>Audience</label><span>Backend Developers · DevOps Engineers</span></div>
+    <div class="cover-meta-item"><label>Updated</label><span>July 2026</span></div>
+  </div>
+</div>
+
+<!-- ══════════════ TOC ══════════════ -->
+<div class="toc-page">
+  <h2>Table of Contents</h2>
+  <div class="toc-section"><a href="#s1"><span class="toc-num">1</span> <span>System Overview</span> <span class="toc-page-num">3</span></a></div>
+  <div class="toc-section toc-sub"><a href="#s1-1"><span class="toc-num" style="opacity:0">·</span> <span>Architecture</span></a></div>
+  <div class="toc-section toc-sub"><a href="#s1-2"><span class="toc-num" style="opacity:0">·</span> <span>Technology Stack</span></a></div>
+  <div class="toc-section"><a href="#s2"><span class="toc-num">2</span> <span>Project Structure</span> <span class="toc-page-num">4</span></a></div>
+  <div class="toc-section"><a href="#s3"><span class="toc-num">3</span> <span>Data Models</span> <span class="toc-page-num">5</span></a></div>
+  <div class="toc-section toc-sub"><a href="#s3-1"><span class="toc-num" style="opacity:0">·</span> <span>gitmgmt Models</span></a></div>
+  <div class="toc-section toc-sub"><a href="#s3-2"><span class="toc-num" style="opacity:0">·</span> <span>pipeline Models</span></a></div>
+  <div class="toc-section"><a href="#s4"><span class="toc-num">4</span> <span>API & URL Reference</span> <span class="toc-page-num">7</span></a></div>
+  <div class="toc-section"><a href="#s5"><span class="toc-num">5</span> <span>Authentication & Security</span> <span class="toc-page-num">9</span></a></div>
+  <div class="toc-section"><a href="#s6"><span class="toc-num">6</span> <span>CI/CD Pipeline Engine</span> <span class="toc-page-num">10</span></a></div>
+  <div class="toc-section"><a href="#s7"><span class="toc-num">7</span> <span>Git HTTP Smart Protocol</span> <span class="toc-page-num">11</span></a></div>
+  <div class="toc-section"><a href="#s8"><span class="toc-num">8</span> <span>Local Development Setup</span> <span class="toc-page-num">12</span></a></div>
+  <div class="toc-section"><a href="#s9"><span class="toc-num">9</span> <span>Environment Variables</span> <span class="toc-page-num">13</span></a></div>
+  <div class="toc-section"><a href="#s10"><span class="toc-num">10</span> <span>Production Deployment</span> <span class="toc-page-num">14</span></a></div>
+  <div class="toc-section"><a href="#s11"><span class="toc-num">11</span> <span>Contributing Guidelines</span> <span class="toc-page-num">15</span></a></div>
+</div>
+
+<!-- ══════════════ CONTENT ══════════════ -->
+<div class="page">
+
+  <!-- §1 OVERVIEW -->
+  <div class="section" id="s1">
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <h2>System Overview</h2>
+    </div>
+
+    <p>ReleaseRocket is a self-hosted, open-source DevOps platform combining Git repository hosting, pull request workflows, issue tracking, and a CI/CD pipeline execution engine — all in a single Django application. It is designed to replace external dependencies on GitHub, GitLab, and Jenkins for teams that require on-premises control.</p>
+
+    <h3 id="s1-1">Architecture</h3>
+    <div class="arch-diagram">
+      <div class="arch-box">
+        <div class="arch-icon">🌐</div>
+        <h4>Browser / Git Client</h4>
+        <p>Web UI · git push/pull · REST API calls · SSE log streams</p>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">
+        <div class="arch-icon">🐍</div>
+        <h4>Django Application</h4>
+        <p>gitmgmt app · pipeline app · Background worker thread · SSE views</p>
+      </div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box">
+        <div class="arch-icon">🗄️</div>
+        <h4>Storage Layer</h4>
+        <p>SQLite / PostgreSQL · Bare git repos on disk · Media files</p>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+      <div class="arch-box">
+        <div class="arch-icon">🤖</div>
+        <h4>Linux Agent (linux_agent.py)</h4>
+        <p>Standalone Python HTTP server deployed on build machines. Receives signed job commands, executes shell scripts, streams output back.</p>
+      </div>
+      <div class="arch-box">
+        <div class="arch-icon">⚙️</div>
+        <h4>Pipeline Worker Thread</h4>
+        <p>Daemon thread started in <code>PipelineConfig.ready()</code>. Polls for pending runs every 10 s, dispatches to available agents.</p>
+      </div>
+    </div>
+
+    <h3 id="s1-2">Technology Stack</h3>
+    <table>
+      <thead><tr><th>Layer</th><th>Technology</th><th>Version</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Web Framework</td><td>Django</td><td>5.0.6</td><td>MVC, ORM, auth, migrations</td></tr>
+        <tr><td>Language</td><td>Python</td><td>3.11+</td><td>—</td></tr>
+        <tr><td>Database (dev)</td><td>SQLite</td><td>3.x</td><td>Zero-config local storage</td></tr>
+        <tr><td>Database (prod)</td><td>PostgreSQL</td><td>15+</td><td>Recommended for production</td></tr>
+        <tr><td>Git library</td><td>GitPython</td><td>3.x</td><td>Repo manipulation, diffs, commits</td></tr>
+        <tr><td>Icon library</td><td>Phosphor Icons</td><td>CDN</td><td>UI iconography</td></tr>
+        <tr><td>Font</td><td>Inter (Google Fonts)</td><td>CDN</td><td>UI typography</td></tr>
+        <tr><td>Real-time logs</td><td>Server-Sent Events</td><td>native</td><td>Streaming pipeline output</td></tr>
+        <tr><td>Agent comms</td><td>HTTP + HMAC-SHA256</td><td>—</td><td>Signed job dispatch</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- §2 STRUCTURE -->
+  <div class="section" id="s2">
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <h2>Project Structure</h2>
+    </div>
+    <pre><code><span class="hl-comment"># Root layout</span>
+cicd_tool/
+├── cicd_tool/              <span class="hl-comment"># Django project config</span>
+│   ├── settings.py         <span class="hl-comment"># All settings — reads from env vars</span>
+│   ├── urls.py             <span class="hl-comment"># Root URL config</span>
+│   └── wsgi.py
+│
+├── gitmgmt/                <span class="hl-comment"># Git hosting app (GitHub-like)</span>
+│   ├── models.py           <span class="hl-comment"># 20+ models: Repo, PR, Issue, etc.</span>
+│   ├── views.py            <span class="hl-comment"># ~60 view functions</span>
+│   ├── urls.py             <span class="hl-comment"># All /repositories/* routes</span>
+│   ├── forms.py
+│   ├── admin.py
+│   └── migrations/
+│
+├── pipeline/               <span class="hl-comment"># CI/CD execution app</span>
+│   ├── models.py           <span class="hl-comment"># Project, Application, Pipeline, PipelineRun…</span>
+│   ├── views.py            <span class="hl-comment"># Dashboard, triggers, SSE stream, metrics</span>
+│   ├── urls.py
+│   ├── utils.py            <span class="hl-comment"># execute_step(), prepare_credentials()</span>
+│   ├── worker.py           <span class="hl-comment"># Background daemon thread</span>
+│   ├── apps.py             <span class="hl-comment"># Starts worker in ready()</span>
+│   └── templates/pipeline/
+│
+├── templates/              <span class="hl-comment"># Shared base templates</span>
+├── linux_agent.py          <span class="hl-comment"># Standalone build agent</span>
+└── manage.py</code></pre>
+
+    <div class="box box-info">
+      <div class="box-title">Two Django Apps, One Platform</div>
+      <p><strong>gitmgmt</strong> handles everything git-related (repos, branches, PRs, issues, reviews). <strong>pipeline</strong> handles CI/CD execution (projects, applications, pipelines, runs, agents). Both share the same Django auth system and <code>pipeline/base.html</code> layout.</p>
+    </div>
+  </div>
+
+  <!-- §3 MODELS -->
+  <div class="section" id="s3">
+    <div class="section-header">
+      <div class="section-number">3</div>
+      <h2>Data Models</h2>
+    </div>
+
+    <h3 id="s3-1">gitmgmt Models</h3>
+    <div class="model-grid">
+      <div class="model-card">
+        <h4>🗂️ Repository</h4>
+        <ul>
+          <li><code>name</code>, <code>description</code>, <code>visibility</code></li>
+          <li><code>owner</code> → User FK</li>
+          <li><code>organization</code> → Org FK (nullable)</li>
+          <li><code>default_branch</code> (default: <em>main</em>)</li>
+          <li><code>stars</code> M2M → User</li>
+          <li><code>watchers</code> M2M → User</li>
+          <li><code>forked_from</code> → Repository (self-ref)</li>
+          <li>Properties: <code>star_count</code>, <code>fork_count</code>, <code>open_issues_count</code></li>
+        </ul>
+      </div>
+      <div class="model-card">
+        <h4>🔀 PullRequest</h4>
+        <ul>
+          <li><code>number</code> (sequential per-repo)</li>
+          <li><code>title</code>, <code>description</code>, <code>status</code></li>
+          <li><code>source_branch</code>, <code>target_branch</code> → Branch</li>
+          <li><code>author</code> → User</li>
+          <li><code>is_draft</code>, <code>merge_commit_sha</code></li>
+          <li><code>assignees</code>, <code>reviewers</code> M2M → User</li>
+          <li><code>labels</code> M2M → Label</li>
+          <li><code>milestone</code> → Milestone FK</li>
+        </ul>
+      </div>
+      <div class="model-card">
+        <h4>🐛 Issue</h4>
+        <ul>
+          <li><code>number</code> (sequential per-repo)</li>
+          <li><code>title</code>, <code>body</code>, <code>state</code></li>
+          <li><code>author</code>, <code>assignees</code> M2M</li>
+          <li><code>labels</code> M2M, <code>milestone</code> FK</li>
+          <li><code>closed_at</code>, <code>closed_by</code></li>
+        </ul>
+      </div>
+      <div class="model-card">
+        <h4>🔐 PersonalAccessToken</h4>
+        <ul>
+          <li><code>name</code>, <code>prefix</code> (first 8 chars)</li>
+          <li><code>token_hash</code> — SHA-256 of raw token</li>
+          <li><code>scopes</code>, <code>expires_at</code></li>
+          <li><code>create_token()</code> → returns raw token once</li>
+          <li><code>verify(raw)</code> → constant-time compare</li>
+        </ul>
+      </div>
+      <div class="model-card">
+        <h4>🏷️ Label / Milestone</h4>
+        <ul>
+          <li>Label: <code>name</code>, <code>color</code> (hex), <code>description</code></li>
+          <li>Unique per repository</li>
+          <li>Milestone: <code>title</code>, <code>due_date</code>, <code>state</code></li>
+          <li>Milestone: <code>progress_pct</code> property (open vs closed issues)</li>
+        </ul>
+      </div>
+      <div class="model-card">
+        <h4>🛡️ BranchProtectionRule</h4>
+        <ul>
+          <li>OneToOne → Branch</li>
+          <li><code>require_pull_request</code></li>
+          <li><code>required_approvals</code> count</li>
+          <li><code>dismiss_stale_reviews</code></li>
+          <li><code>require_status_checks</code></li>
+          <li><code>allow_force_push</code></li>
+        </ul>
+      </div>
+      <div class="model-card">
+        <h4>📢 Notification / ActivityEvent</h4>
+        <ul>
+          <li><code>notification_type</code>: mention, review_requested, push…</li>
+          <li><code>title</code>, <code>content</code>, <code>link</code>, <code>is_read</code></li>
+          <li>ActivityEvent: <code>event_type</code>, <code>description</code>, <code>metadata</code> JSON</li>
+          <li>Helper: <code>log_activity(user, repo, type, desc)</code></li>
+          <li>Helper: <code>notify(user, repo, type, title, content, link)</code></li>
+        </ul>
+      </div>
+      <div class="model-card">
+        <h4>🚀 Release / Reaction / PRReview</h4>
+        <ul>
+          <li>Release: tied to a git tag, supports pre-release/draft flags</li>
+          <li>Reaction: emoji choices on Issues, IssueComments, PRComments</li>
+          <li>PRReview: <em>approved / changes_requested / commented / dismissed</em></li>
+          <li>PRReviewComment: inline diff comments with <code>file_path</code>, <code>line_number</code>, <code>diff_hunk</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 id="s3-2">pipeline Models</h3>
+    <table>
+      <thead><tr><th>Model</th><th>Key Fields</th><th>Relationship</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Project</strong></td><td>name, organization, repository_url, notifications_enabled, environment_variables (JSON)</td><td>Top-level grouping</td></tr>
+        <tr><td><strong>Application</strong></td><td>name</td><td>Belongs to Project; has many Pipelines</td></tr>
+        <tr><td><strong>Pipeline</strong></td><td>name, description, yaml_path, monitored_branch</td><td>Belongs to Application; has many PipelineRuns</td></tr>
+        <tr><td><strong>PipelineRun</strong></td><td>run_id (UUID), status, started_at, finished_at, log (text)</td><td>Belongs to Pipeline; assigned to Agent</td></tr>
+        <tr><td><strong>PipelineStep</strong></td><td>name, status, log, started_at, finished_at</td><td>Belongs to PipelineRun</td></tr>
+        <tr><td><strong>Agent</strong></td><td>hostname, ip_address, port, hash_key, live, scope_level, last_heartbeat</td><td>Executes PipelineRuns</td></tr>
+        <tr><td><strong>Credential</strong></td><td>service_name, username, password, token, scope_level</td><td>Project-scoped or global</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- §4 API -->
+  <div class="section" id="s4">
+    <div class="section-header">
+      <div class="section-number">4</div>
+      <h2>API &amp; URL Reference</h2>
+    </div>
+
+    <h3>gitmgmt Routes <code>/repositories/</code></h3>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/repositories/</span><span class="endpoint-desc">List all accessible repositories</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/repositories/create/</span><span class="endpoint-desc">Create new repository</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/repositories/&lt;name&gt;/</span><span class="endpoint-desc">Repository detail / file tree</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/repositories/&lt;name&gt;/pulls/</span><span class="endpoint-desc">List pull requests</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/repositories/&lt;name&gt;/pulls/create/</span><span class="endpoint-desc">Open a pull request</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/repositories/&lt;name&gt;/pulls/&lt;id&gt;/merge/</span><span class="endpoint-desc">Merge PR (enforces branch protection rules)</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/repositories/&lt;name&gt;/issues/</span><span class="endpoint-desc">List issues</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/repositories/&lt;name&gt;/issues/create/</span><span class="endpoint-desc">Open an issue</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/repositories/&lt;name&gt;/releases/</span><span class="endpoint-desc">List releases</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/repositories/&lt;name&gt;/fork/</span><span class="endpoint-desc">Fork repository (bare clone)</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/repositories/&lt;name&gt;/star/</span><span class="endpoint-desc">Toggle star</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/reactions/toggle/</span><span class="endpoint-desc">Toggle emoji reaction (JSON: issue_id, emoji)</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/search/</span><span class="endpoint-desc">Global search across repos, issues, PRs</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/notifications/</span><span class="endpoint-desc">List user notifications</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/notifications/count/</span><span class="endpoint-desc">Unread count (JSON) — used by topbar badge</span></div>
+
+    <h3>Git Smart HTTP <code>/git/</code></h3>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/git/&lt;owner&gt;/&lt;repo&gt;.git/info/refs?service=git-upload-pack</span><span class="endpoint-desc">Clone / fetch advertisement</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/git/&lt;owner&gt;/&lt;repo&gt;.git/git-upload-pack</span><span class="endpoint-desc">Clone / fetch pack</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/git/&lt;owner&gt;/&lt;repo&gt;.git/git-receive-pack</span><span class="endpoint-desc">Push (requires PAT authentication)</span></div>
+
+    <h3>pipeline Routes <code>/ci/</code></h3>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/ci/dashboard/</span><span class="endpoint-desc">Main dashboard with metrics</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/ci/projects/</span><span class="endpoint-desc">Project list</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/ci/projects/&lt;name&gt;/trigger-build/</span><span class="endpoint-desc">Trigger a pipeline run (async thread)</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/ci/runs/&lt;run_id&gt;/stream/</span><span class="endpoint-desc">SSE stream of live log output</span></div>
+    <div class="endpoint"><span class="method method-post">POST</span><span class="endpoint-path">/ci/runs/&lt;run_id&gt;/cancel/</span><span class="endpoint-desc">Cancel a running pipeline</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/ci/metrics/</span><span class="endpoint-desc">Pipeline metrics JSON (success rate, duration avg)</span></div>
+    <div class="endpoint"><span class="method method-get">GET</span><span class="endpoint-path">/ci/applications/</span><span class="endpoint-desc">All applications (filter: ?project=name)</span></div>
+  </div>
+
+  <!-- §5 AUTH -->
+  <div class="section" id="s5">
+    <div class="section-header">
+      <div class="section-number">5</div>
+      <h2>Authentication &amp; Security</h2>
+    </div>
+
+    <h3>Web UI Authentication</h3>
+    <p>Standard Django session authentication. All views are protected with <code>@login_required</code>. CSRF middleware is enabled on all POST endpoints.</p>
+
+    <h3>Git HTTP Authentication</h3>
+    <p>Git push/clone over HTTP uses <strong>HTTP Basic Auth</strong>. The <code>GitService</code> class-based view intercepts the <code>Authorization</code> header and validates credentials against <code>PersonalAccessToken</code>:</p>
+    <pre><code><span class="hl-comment"># Secure token verification flow</span>
+<span class="hl-kw">def</span> <span class="hl-fn">_authenticate</span>(self, request, repository):
+    auth = request.META.get(<span class="hl-str">'HTTP_AUTHORIZATION'</span>, <span class="hl-str">''</span>)
+    <span class="hl-comment"># Decode Basic Auth header</span>
+    username, password = base64.b64decode(auth[<span class="hl-num">6</span>:]).decode().split(<span class="hl-str">':'</span>, <span class="hl-num">1</span>)
+    token_hash = PersonalAccessToken.hash_token(password)
+    <span class="hl-comment"># Constant-time comparison via DB lookup</span>
+    token = PersonalAccessToken.objects.filter(
+        user__username=username,
+        token_hash=token_hash,
+        expires_at__gt=now()   <span class="hl-comment"># or expires_at is None</span>
+    ).first()
+    <span class="hl-kw">return</span> token <span class="hl-kw">is not</span> None</code></pre>
+
+    <div class="box box-danger">
+      <div class="box-title">⚠️ Token Storage Policy</div>
+      <p>Raw tokens are <strong>never stored</strong>. Only the SHA-256 hash is persisted. The raw token is shown exactly once at creation time. Tokens can optionally have an expiry date.</p>
+    </div>
+
+    <h3>Agent Security</h3>
+    <p>Each <code>Agent</code> record stores a <code>hash_key</code>. All commands sent to <code>linux_agent.py</code> must include an HMAC-SHA256 signature in the <code>X-Hash-Key</code> header. Agents can optionally use TLS (pass <code>--ssl-cert</code> / <code>--ssl-key</code>).</p>
+
+    <h3>Security Checklist</h3>
+    <table>
+      <thead><tr><th>Control</th><th>Status</th><th>Implementation</th></tr></thead>
+      <tbody>
+        <tr><td>CSRF protection</td><td><span class="tag tag-green">✓ Active</span></td><td><code>CsrfViewMiddleware</code> enabled</td></tr>
+        <tr><td>Session auth</td><td><span class="tag tag-green">✓ Active</span></td><td>Django sessions + <code>@login_required</code></td></tr>
+        <tr><td>PAT hashing</td><td><span class="tag tag-green">✓ Active</span></td><td>SHA-256, never stored in plaintext</td></tr>
+        <tr><td>Secret key</td><td><span class="tag tag-green">✓ Active</span></td><td>Read from <code>DJANGO_SECRET_KEY</code> env var</td></tr>
+        <tr><td>Agent auth</td><td><span class="tag tag-green">✓ Active</span></td><td>HMAC-SHA256 signed requests</td></tr>
+        <tr><td>Branch protection</td><td><span class="tag tag-green">✓ Active</span></td><td><code>BranchProtectionRule</code> model, enforced in <code>PR.can_merge()</code></td></tr>
+        <tr><td>SSL/TLS</td><td><span class="tag tag-orange">Optional</span></td><td>Configure via env or reverse proxy (nginx/caddy)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- §6 PIPELINE ENGINE -->
+  <div class="section" id="s6">
+    <div class="section-header">
+      <div class="section-number">6</div>
+      <h2>CI/CD Pipeline Engine</h2>
+    </div>
+
+    <h3>Execution Flow</h3>
+    <ol class="steps">
+      <li><p><strong>Trigger:</strong> A build is triggered via the UI (<em>Trigger Build</em> button) or automatically when a push arrives on a monitored branch. A <code>PipelineRun</code> record is created with <code>status='pending'</code>.</p></li>
+      <li><p><strong>Worker polling:</strong> <code>pipeline/worker.py</code> runs in a daemon thread, polling every 10 seconds for pending runs. It calls <code>get_available_agent()</code> to find an online, non-busy agent.</p></li>
+      <li><p><strong>Dispatch:</strong> The agent is marked <code>is_busy=True</code>. A new thread is spawned per run calling <code>_execute_run(run_pk, agent_pk)</code>.</p></li>
+      <li><p><strong>Step execution:</strong> <code>execute_step()</code> in <code>utils.py</code> sends each YAML-defined step to the agent via its HTTP API, streaming stdout back and writing to <code>PipelineStep.log</code>.</p></li>
+      <li><p><strong>Completion:</strong> <code>PipelineRun.status</code> is set to <code>success</code> or <code>failed</code>. The agent is released (<code>is_busy=False</code>). Notifications are sent if enabled.</p></li>
+    </ol>
+
+    <h3>rockerci.yaml Format</h3>
+    <pre><code><span class="hl-key">name</span>: <span class="hl-str">Build and Deploy</span>
+<span class="hl-key">on</span>:
+  <span class="hl-key">push</span>:
+    <span class="hl-key">branches</span>: [<span class="hl-str">main</span>, <span class="hl-str">staging</span>]
+
+<span class="hl-key">jobs</span>:
+  <span class="hl-key">build</span>:
+    <span class="hl-key">steps</span>:
+      - <span class="hl-key">name</span>: <span class="hl-str">Install dependencies</span>
+        <span class="hl-key">run</span>: <span class="hl-str">npm install</span>
+      - <span class="hl-key">name</span>: <span class="hl-str">Run tests</span>
+        <span class="hl-key">run</span>: <span class="hl-str">npm test</span>
+      - <span class="hl-key">name</span>: <span class="hl-str">Build Docker image</span>
+        <span class="hl-key">run</span>: <span class="hl-str">docker build -t myapp:$CI_COMMIT_SHA .</span>
+      - <span class="hl-key">name</span>: <span class="hl-str">Deploy</span>
+        <span class="hl-key">run</span>: <span class="hl-str">./scripts/deploy.sh</span></code></pre>
+
+    <h3>Built-in Environment Variables</h3>
+    <table>
+      <thead><tr><th>Variable</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td><code>CI_COMMIT_SHA</code></td><td>Full Git commit hash</td></tr>
+        <tr><td><code>CI_BRANCH</code></td><td>Branch name that triggered the run</td></tr>
+        <tr><td><code>CI_PROJECT</code></td><td>Project name</td></tr>
+        <tr><td><code>CI_PIPELINE</code></td><td>Pipeline name</td></tr>
+        <tr><td><code>CI_RUN_ID</code></td><td>UUID of the current PipelineRun</td></tr>
+      </tbody>
+    </table>
+    <p>Project-level environment variables defined in <em>Project Settings → CI/CD Variables</em> are also injected at runtime.</p>
+  </div>
+
+  <!-- §7 GIT PROTOCOL -->
+  <div class="section" id="s7">
+    <div class="section-header">
+      <div class="section-number">7</div>
+      <h2>Git HTTP Smart Protocol</h2>
+    </div>
+    <p>The <code>GitService</code> CBV in <code>gitmgmt/views.py</code> implements the full Git Smart HTTP protocol, enabling any standard Git client to clone, fetch, and push using the hosted repositories.</p>
+    <pre><code><span class="hl-comment"># Clone a repository</span>
+git clone http://localhost:8001/git/alice/my-repo.git
+
+<span class="hl-comment"># Push using a Personal Access Token</span>
+git remote set-url origin http://alice:&lt;PAT&gt;@localhost:8001/git/alice/my-repo.git
+git push origin main</code></pre>
+    <p>The server stores bare repositories under <code>REPO_BASE_PATH</code> (configured via env var, default <code>/repos</code>). On a git-push, the server updates the <code>Commit</code>, <code>Branch</code>, and <code>ActivityEvent</code> records and triggers any pipelines watching the pushed branch.</p>
+  </div>
+
+  <!-- §8 DEV SETUP -->
+  <div class="section" id="s8">
+    <div class="section-header">
+      <div class="section-number">8</div>
+      <h2>Local Development Setup</h2>
+    </div>
+    <pre><code><span class="hl-comment"># 1. Clone and enter the project</span>
+git clone &lt;repo-url&gt; releaserocket
+cd releaserocket/cicd_tool
+
+<span class="hl-comment"># 2. Create virtual environment</span>
+python -m venv .venv
+source .venv/bin/activate          <span class="hl-comment"># Windows: .venv\Scripts\activate</span>
+
+<span class="hl-comment"># 3. Install dependencies</span>
+pip install django gitpython pillow
+
+<span class="hl-comment"># 4. Set required environment variables</span>
+export DJANGO_SECRET_KEY="dev-secret-change-in-production"
+export REPO_BASE_PATH="/tmp/repos"
+export CI_RUNS_DIR="/tmp/ci-runs"
+
+<span class="hl-comment"># 5. Run migrations</span>
+python manage.py migrate
+
+<span class="hl-comment"># 6. Create superuser</span>
+python manage.py createsuperuser
+
+<span class="hl-comment"># 7. Start development server</span>
+python manage.py runserver 0.0.0.0:8001</code></pre>
+    <div class="box box-info">
+      <div class="box-title">Migration Note</div>
+      <p>If you see <em>"conflicting migrations"</em>, run <code>python manage.py makemigrations --merge</code> then <code>migrate</code> again. This resolves the merge migration between the auto-generated initial and the new-models migration.</p>
+    </div>
+  </div>
+
+  <!-- §9 ENV VARS -->
+  <div class="section" id="s9">
+    <div class="section-header">
+      <div class="section-number">9</div>
+      <h2>Environment Variables</h2>
+    </div>
+    <table>
+      <thead><tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>DJANGO_SECRET_KEY</code></td><td><span class="tag tag-red">Required</span></td><td>—</td><td>Django cryptographic secret. Generate with <code>python -c "import secrets; print(secrets.token_hex(50))"</code></td></tr>
+        <tr><td><code>REPO_BASE_PATH</code></td><td><span class="tag tag-red">Required</span></td><td><code>/repos</code></td><td>Filesystem path where bare git repositories are stored</td></tr>
+        <tr><td><code>CI_RUNS_DIR</code></td><td><span class="tag tag-orange">Recommended</span></td><td><code>/tmp/ci-runs</code></td><td>Working directory for pipeline run execution</td></tr>
+        <tr><td><code>DATABASE_URL</code></td><td><span class="tag tag-green">Optional</span></td><td>SQLite</td><td>PostgreSQL connection string for production</td></tr>
+        <tr><td><code>ALLOWED_HOSTS</code></td><td><span class="tag tag-orange">Recommended</span></td><td><code>*</code></td><td>Comma-separated list of allowed hostnames</td></tr>
+        <tr><td><code>MEDIA_ROOT</code></td><td><span class="tag tag-green">Optional</span></td><td><code>BASE_DIR/media</code></td><td>Filesystem path for uploaded media files</td></tr>
+        <tr><td><code>DEBUG</code></td><td><span class="tag tag-green">Optional</span></td><td><code>True</code></td><td>Set to <code>False</code> in production</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- §10 DEPLOYMENT -->
+  <div class="section" id="s10">
+    <div class="section-header">
+      <div class="section-number">10</div>
+      <h2>Production Deployment</h2>
+    </div>
+
+    <h3>Recommended Stack</h3>
+    <table>
+      <thead><tr><th>Component</th><th>Recommendation</th></tr></thead>
+      <tbody>
+        <tr><td>WSGI Server</td><td>Gunicorn (<code>gunicorn cicd_tool.wsgi -w 4 -b 0.0.0.0:8001</code>)</td></tr>
+        <tr><td>Reverse Proxy</td><td>Nginx or Caddy (handles TLS, static files, large git packs)</td></tr>
+        <tr><td>Database</td><td>PostgreSQL 15+ (set <code>DATABASE_URL</code>)</td></tr>
+        <tr><td>Repo Storage</td><td>NFS mount or S3-backed FUSE for multi-node deployments</td></tr>
+        <tr><td>Process Manager</td><td>systemd or Docker Compose</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Nginx Config Snippet</h3>
+    <pre><code>server {
+    listen 443 ssl;
+    server_name git.example.com;
+
+    <span class="hl-comment"># Allow large git push payloads</span>
+    client_max_body_size 500M;
+
+    location /static/ { alias /var/www/releaserocket/static/; }
+    location /media/  { alias /var/www/releaserocket/media/; }
+
+    location / {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        <span class="hl-comment"># Required for SSE (Server-Sent Events) log streaming</span>
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+    }
+}</code></pre>
+
+    <div class="box box-warn">
+      <div class="box-title">⚡ SSE / Streaming</div>
+      <p>Set <code>proxy_buffering off</code> in nginx. Without this, live pipeline log streams will not reach the browser until the response is fully buffered.</p>
+    </div>
+  </div>
+
+  <!-- §11 CONTRIBUTING -->
+  <div class="section" id="s11">
+    <div class="section-header">
+      <div class="section-number">11</div>
+      <h2>Contributing Guidelines</h2>
+    </div>
+
+    <h3>Branch Strategy</h3>
+    <table>
+      <thead><tr><th>Branch</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>main</code></td><td>Production-ready releases only</td></tr>
+        <tr><td><code>develop</code></td><td>Integration branch for features</td></tr>
+        <tr><td><code>feature/&lt;name&gt;</code></td><td>New features — branch from <code>develop</code></td></tr>
+        <tr><td><code>fix/&lt;name&gt;</code></td><td>Bug fixes — branch from <code>develop</code> or <code>main</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Adding a New Feature Checklist</h3>
+    <ol class="steps">
+      <li><p>Add the <strong>Django model</strong> in <code>models.py</code> with proper FKs, <code>Meta.ordering</code>, and <code>__str__</code>.</p></li>
+      <li><p>Run <code>python manage.py makemigrations &lt;app&gt;</code> and review the generated migration.</p></li>
+      <li><p>Add the <strong>view function</strong> in <code>views.py</code> decorated with <code>@login_required</code>. Use <code>get_object_or_404</code> for lookups.</p></li>
+      <li><p>Register the URL in <code>urls.py</code> with a named pattern (<code>name='...'</code>) so templates can use <code>{% url %}</code> tags.</p></li>
+      <li><p>Create a template that extends <code>pipeline/base.html</code> and uses CSS variables (<code>var(--card-bg)</code>, etc.) for the dark theme.</p></li>
+      <li><p>Register the model in <code>admin.py</code> with appropriate <code>list_display</code> and <code>search_fields</code>.</p></li>
+      <li><p>Write a <code>log_activity()</code> or <code>notify()</code> call for significant user actions so they appear in the activity feed.</p></li>
+    </ol>
+
+    <h3>Code Style</h3>
+    <p>Follow PEP 8. Use Django ORM queries rather than raw SQL. Template logic should be minimal — move business logic into model methods or view helpers. All new URL names should use hyphens, not underscores (e.g. <code>pipeline-detail</code> not <code>pipeline_detail</code>).</p>
+  </div>
+
+</div>
+
+<div style="background:#0f172a; color:#64748b; text-align:center; padding:24px; font-size:12px; margin-top:40px;">
+  ReleaseRocket Developer Guide · Version 2.0 · Confidential — Internal Use Only
+</div>
+</body>
+</html>
