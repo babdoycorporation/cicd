@@ -1333,22 +1333,39 @@ def keycloak_callback(request):
         userinfo_resp.raise_for_status()
         claims = userinfo_resp.json()
 
-        username = claims.get('preferred_username') or claims.get('email', '').split('@')[0]
-        email = claims.get('email', '')
-        first_name = claims.get('given_name', '')
-        last_name = claims.get('family_name', '')
+        # Extract Azure AD / Keycloak claims
+        email = claims.get('email') or claims.get('upn') or claims.get('unique_name') or ''
+        raw_user = claims.get('preferred_username') or claims.get('upn') or email or 'azure_user'
+        
+        # Clean username for Django compatibility
+        import re
+        username = re.sub(r'[^a-zA-Z0-9_@.-]', '_', raw_user)
+        first_name = claims.get('given_name') or claims.get('name', '').split(' ')[0] or ''
+        last_name = claims.get('family_name') or (claims.get('name', '').split(' ')[1] if ' ' in claims.get('name', '') else '')
 
-        user, created = User.objects.get_or_create(username=username, defaults={
-            'email': email,
-            'first_name': first_name,
-            'last_name': last_name,
-        })
-        if not created and email and not user.email:
-            user.email = email
+        # Match existing user by username or email
+        user = User.objects.filter(username=username).first()
+        if not user and email:
+            user = User.objects.filter(email=email).first()
+
+        if not user:
+            user = User.objects.create(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+            )
+        else:
+            if email and not user.email:
+                user.email = email
+            if first_name and not user.first_name:
+                user.first_name = first_name
+            if last_name and not user.last_name:
+                user.last_name = last_name
             user.save()
 
         auth_login(request, user)
-        messages.success(request, f"Welcome back, {user.first_name or user.username}! Signed in via Keycloak SSO.")
+        messages.success(request, f"Welcome, {user.first_name or user.username}! Signed in via Keycloak (Azure AD SSO).")
         return redirect('dashboard')
 
     except Exception as e:
