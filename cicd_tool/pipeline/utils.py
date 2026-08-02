@@ -51,8 +51,9 @@ def execute_step(step, run_id, credentials: dict, workdir=None):
         import shutil as _shutil
         if not _shutil.which('powershell') and not _shutil.which('pwsh'):
             import re
-            m = re.search(r'([A-Za-z]:\\[^\s"\'\}]+)', command)
-            target_dir = '/opt/deployed_apps/unlockian-app'
+            m = re.search(r'([A-Za-z]:\\[^\s"\'\}]+|\/[^\s"\'\}]+)', command)
+            app_name = (step.pipeline.application.name if hasattr(step, 'pipeline') and step.pipeline and step.pipeline.application else 'app').lower()
+            target_dir = f'/opt/deployed_apps/{app_name}'
             if m:
                 raw_path = m.group(1).replace('\\', '/')
                 target_dir = re.sub(r'^[A-Za-z]:', '/opt', raw_path)
