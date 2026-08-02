@@ -593,12 +593,23 @@ def view_logs(request, repository_name):
         git_repo = Repo(rp)
         git_repo.git.fetch('--all')
         ref = branch if branch in [h.name for h in git_repo.heads] else 'HEAD'
+        
+        users_by_email = {u.email.lower(): u for u in User.objects.exclude(email='')}
+        users_by_name = {u.username.lower(): u for u in User.objects.all()}
+
         for c in git_repo.iter_commits(ref, max_count=100):
+            author_email = (c.author.email or '').strip().lower()
+            author_name = (c.author.name or '').strip().lower()
+
+            matched_user = users_by_email.get(author_email) or users_by_name.get(author_name)
+            author_display = matched_user.username if matched_user else (c.author.name or c.author.email or 'Unknown')
+
             logs.append({
                 'hash': c.hexsha[:7],
                 'full_hash': c.hexsha,
                 'message': c.message.strip(),
-                'author': c.author.name,
+                'author': author_display,
+                'user': matched_user,
                 'email': c.author.email,
                 'date': c.committed_datetime.isoformat(),
                 'date_display': c.committed_datetime.strftime('%b %d, %Y %H:%M'),
