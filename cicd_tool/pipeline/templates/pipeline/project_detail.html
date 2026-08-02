@@ -194,29 +194,37 @@
             {% endif %}
         </div>
         
-        <div class="action-grid" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
-            <button onclick="document.getElementById('orchestrator-modal').style.display='flex'" class="btn btn-primary" style="background:var(--btn-dark); color:#fff; border:1px solid var(--btn-dark); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:700;">
-                <i class="ph ph-play"></i> Trigger Orchestrator
-            </button>
-            <a href="{% url 'project_pipeline_create' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
-                <i class="ph ph-git-merge"></i> Define Orchestrator
-            </a>
-            <a href="{% url 'create_application_project' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
-                <i class="ph ph-cube"></i> Create Application
-            </a>
-            <a href="{% url 'pipeline_list' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
-                <i class="ph ph-rocket-launch"></i> Manage Pipelines
-            </a>
+        <div class="action-grid" style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+            {% if my_role != 'viewer' %}
+                <button onclick="document.getElementById('orchestrator-modal').style.display='flex'" class="btn btn-primary" style="background:var(--btn-dark); color:#fff; border:1px solid var(--btn-dark); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:700;">
+                    <i class="ph ph-play"></i> Trigger Orchestrator
+                </button>
+                <a href="{% url 'project_pipeline_create' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                    <i class="ph ph-git-merge"></i> Define Orchestrator
+                </a>
+                <a href="{% url 'create_application_project' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                    <i class="ph ph-cube"></i> Create Application
+                </a>
+                <a href="{% url 'pipeline_list' project.name %}" class="btn btn-secondary" style="background:#ffffff; color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0.42rem 0.85rem; font-size:0.78rem; font-weight:600; text-decoration:none;">
+                    <i class="ph ph-rocket-launch"></i> Manage Pipelines
+                </a>
+            {% else %}
+                <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); background:var(--canvas-bg); border:1px solid var(--border-color); padding:0.38rem 0.75rem; border-radius:20px; display:inline-flex; align-items:center; gap:0.4rem;">
+                    <i class="ph ph-eye" style="color:var(--brand);"></i> Read-Only Viewer Mode
+                </span>
+            {% endif %}
         </div>
     </div>
 
     <!-- Applications Section -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
         <h2 class="section-title" style="margin:0;"><i class="ph ph-cube"></i> Applications</h2>
+        {% if my_role != 'viewer' %}
         <a href="{% url 'create_application_project' project.name %}"
            style="display:inline-flex; align-items:center; gap:0.4rem; background:var(--btn-dark); color:#fff; border:1px solid var(--btn-dark); border-radius:6px; padding:0.4rem 0.9rem; font-size:0.82rem; font-weight:700; text-decoration:none; transition:var(--transition);">
             <i class="ph ph-plus"></i> New Application
         </a>
+        {% endif %}
     </div>
     {% if applications %}
     <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:1rem; margin-bottom:2rem;">

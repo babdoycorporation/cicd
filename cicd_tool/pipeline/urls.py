@@ -96,6 +96,13 @@ urlpatterns = [
     path('settings/scaling/save/', login_required(views.save_task_scaling_settings), name='save_task_scaling_settings'),
     path('settings/redis/test/', login_required(views.test_redis_connection_api), name='test_redis_connection_api'),
     path('settings/secrets/save/', login_required(views.save_secret_storage_settings), name='save_secret_storage_settings'),
+    path('settings/storage/save/', login_required(views.save_repo_storage_settings), name='save_repo_storage_settings'),
+
+    # ── Keycloak Enterprise SSO (Workloop Pattern) ────────────────────────────
+    path('settings/keycloak/save/', login_required(views.save_keycloak_settings), name='save_keycloak_settings'),
+    path('settings/keycloak/test/', login_required(views.test_keycloak_connection_api), name='test_keycloak_connection_api'),
+    path('auth/keycloak/login/', views.keycloak_login, name='keycloak_login'),
+    path('auth/keycloak/callback/', views.keycloak_callback, name='keycloak_callback'),
 
     # ── Build Artifacts ───────────────────────────────────────────────────────
     path('pipeline/run/<uuid:run_id>/artifacts/<int:artifact_id>/download/', login_required(views.artifact_download), name='artifact_download'),

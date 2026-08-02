@@ -46,10 +46,19 @@ from .models import (ActivityEvent, Branch, BranchProtectionRule, Commit,
 logger = logging.getLogger(__name__)
 
 def _get_repo_base_path():
+    try:
+        from pipeline.models import GlobalSettings
+        setting = GlobalSettings.objects.filter(key='REPO_STORAGE_PATH').first()
+        if setting and setting.value.strip():
+            return setting.value.strip()
+    except Exception:
+        pass
     return getattr(settings, 'REPO_BASE_PATH', str(settings.BASE_DIR / 'repos'))
 
 def _repo_path(name):
-    return os.path.join(_get_repo_base_path(), f"{name}.git")
+    base_dir = _get_repo_base_path()
+    os.makedirs(base_dir, exist_ok=True)
+    return os.path.join(base_dir, f"{name}.git")
 
 
 # ─────────────────────────────────────────────────────────────────────────────

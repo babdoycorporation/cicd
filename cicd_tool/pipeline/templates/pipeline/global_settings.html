@@ -321,6 +321,67 @@
         </div>
     </div>
 
+    <!-- Git Repository Storage Path Card -->
+    <div class="integration-card {% if repo_storage_path %}connected{% endif %}">
+        <div class="int-header">
+            <div class="int-logo" style="background:rgba(59, 130, 246, 0.1); color:#3b82f6;"><i class="ph ph-folder-open"></i></div>
+            <div>
+                <div class="int-name">Git Repository Storage</div>
+                <div class="int-desc">On-disk or shared network volume path</div>
+            </div>
+        </div>
+
+        {% if repo_storage_path %}
+            <span class="badge-connected"><i class="ph ph-hard-drives"></i> Custom Storage Path</span>
+            <div class="int-meta">
+                Path: <code>{{ repo_storage_path }}</code>
+            </div>
+        {% else %}
+            <span class="badge-connected" style="background:rgba(5,150,105,0.1); color:var(--brand); border-color:rgba(5,150,105,0.25);">
+                <i class="ph ph-hard-drive"></i> Default Internal Storage
+            </span>
+            <div class="int-meta">
+                Location: <code>Standard Workspace Repo Path</code>
+            </div>
+        {% endif %}
+
+        <div class="int-actions">
+            <button class="btn btn-primary" onclick="openStorageModal()">
+                <i class="ph ph-folder"></i> Configure Storage
+            </button>
+        </div>
+    </div>
+
+    <!-- Keycloak SSO Card -->
+    <div class="integration-card {% if keycloak_enabled %}connected{% endif %}">
+        <div class="int-header">
+            <div class="int-logo" style="background:rgba(234, 88, 12, 0.1); color:#ea580c;"><i class="ph ph-keyhole"></i></div>
+            <div>
+                <div class="int-name">Keycloak Enterprise SSO</div>
+                <div class="int-desc">Identity Provider &amp; Single Sign-On</div>
+            </div>
+        </div>
+
+        {% if keycloak_enabled %}
+            <span class="badge-connected"><i class="ph ph-check-circle"></i> Keycloak SSO Active</span>
+            <div class="int-meta">
+                Server: <code>{{ keycloak_server_url }}</code><br>
+                Realm: <code>{{ keycloak_realm }}</code>
+            </div>
+        {% else %}
+            <span class="badge-error"><i class="ph ph-warning"></i> Keycloak Disabled</span>
+            <div class="int-meta" style="color:var(--text-muted);">
+                Enable Keycloak OIDC authentication for user onboarding.
+            </div>
+        {% endif %}
+
+        <div class="int-actions">
+            <button class="btn btn-primary" onclick="openKeycloakModal()">
+                <i class="ph ph-keyhole"></i> Configure Keycloak
+            </button>
+        </div>
+    </div>
+
 </div>
 
 <!-- ── Integrations ── -->
@@ -598,6 +659,93 @@
     </div>
 </div>
 
+<!-- ══ Git Storage Path Modal ══ -->
+<div class="modal-overlay" id="storageModal">
+    <div class="modal" style="max-width:540px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="ph ph-folder-open" style="color:#3b82f6;"></i> Configure Git Storage Location</h2>
+            <button class="modal-close" onclick="closeStorageModal()"><i class="ph ph-x"></i></button>
+        </div>
+        <form method="post" action="{% url 'save_repo_storage_settings' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Repository Storage Path</label>
+                <input type="text" name="repo_storage_path" class="form-control"
+                       value="{{ repo_storage_path }}" placeholder="e.g. D:\cicd\repos or /var/git/repos">
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.35rem;">
+                    Specify an absolute path on disk or network mount. Leave blank to use the default internal workspace storage.
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-floppy-disk"></i> Save &amp; Verify Directory
+                </button>
+                <button type="button" class="btn btn-outline" onclick="closeStorageModal()" style="margin-left:auto;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ Keycloak SSO Modal ══ -->
+<div class="modal-overlay" id="keycloakModal">
+    <div class="modal" style="max-width:560px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="ph ph-keyhole" style="color:#ea580c;"></i> Configure Keycloak Enterprise SSO</h2>
+            <button class="modal-close" onclick="closeKeycloakModal()"><i class="ph ph-x"></i></button>
+        </div>
+        <form method="post" action="{% url 'save_keycloak_settings' %}" id="keycloakForm">
+            {% csrf_token %}
+            
+            <div class="form-group" style="display:flex; align-items:center; gap:0.6rem; margin-bottom:1rem; background:var(--canvas-bg); border:1px solid var(--border-color); padding:0.75rem; border-radius:6px;">
+                <input type="checkbox" name="keycloak_enabled" value="true" id="kc_enabled_cb" {% if keycloak_enabled %}checked{% endif %} style="width:auto; margin:0; accent-color:var(--brand);">
+                <label for="kc_enabled_cb" style="margin:0; font-size:0.85rem; font-weight:700; color:var(--text-primary);">Enable Keycloak SSO Authentication</label>
+            </div>
+
+            <div class="form-group">
+                <label>Keycloak Server Base URL</label>
+                <input type="url" name="keycloak_server_url" id="kc_url_input" class="form-control"
+                       value="{{ keycloak_server_url }}" placeholder="https://sso.company.com/auth">
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Realm Name</label>
+                    <input type="text" name="keycloak_realm" id="kc_realm_input" class="form-control"
+                           value="{{ keycloak_realm }}" placeholder="company-realm">
+                </div>
+                <div class="form-group">
+                    <label>Client ID</label>
+                    <input type="text" name="keycloak_client_id" class="form-control"
+                           value="{{ keycloak_client_id }}" placeholder="cogfocus-cicd">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Client Secret</label>
+                <input type="password" name="keycloak_client_secret" class="form-control"
+                       placeholder="{% if keycloak_client_secret %}••••••••{% else %}your keycloak client secret{% endif %}">
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.25rem;">Leave blank to keep existing secret.</div>
+            </div>
+
+            <div id="kcTestResult" class="test-result"></div>
+
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-floppy-disk"></i> Save Keycloak Config
+                </button>
+                <button type="button" class="btn btn-outline" onclick="testKeycloakConnection(this)">
+                    <i class="ph ph-plug"></i> Test Metadata
+                </button>
+                <button type="button" class="btn btn-outline" onclick="closeKeycloakModal()" style="margin-left:auto;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ══ Email Config Modal ══ -->
 <div class="modal-overlay" id="emailModal">
     <div class="modal">
@@ -677,6 +825,46 @@ function closeScalingModal() { document.getElementById('scalingModal').classList
 
 function openSecretModal() { document.getElementById('secretModal').classList.add('open'); }
 function closeSecretModal() { document.getElementById('secretModal').classList.remove('open'); }
+
+function openStorageModal() { document.getElementById('storageModal').classList.add('open'); }
+function closeStorageModal() { document.getElementById('storageModal').classList.remove('open'); }
+
+function openKeycloakModal() { document.getElementById('keycloakModal').classList.add('open'); }
+function closeKeycloakModal() { document.getElementById('keycloakModal').classList.remove('open'); }
+
+function testKeycloakConnection(btn) {
+    const form = document.getElementById('keycloakForm');
+    const data = new FormData(form);
+    const result = document.getElementById('kcTestResult');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ph ph-spinner-gap ph-spin"></i> Discovering Metadata…';
+    }
+    result.style.display = 'none';
+
+    fetch("{% url 'test_keycloak_connection_api' %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': data.get('csrfmiddlewaretoken')},
+        body: data,
+    })
+    .then(r => r.json())
+    .then(d => {
+        result.style.display = 'flex';
+        result.className = 'test-result ' + (d.ok ? 'ok' : 'fail');
+        result.textContent = d.message;
+    })
+    .catch(() => {
+        result.style.display = 'flex';
+        result.className = 'test-result fail';
+        result.textContent = 'Failed to execute Keycloak metadata test.';
+    })
+    .finally(() => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ph ph-plug"></i> Test Metadata';
+        }
+    });
+}
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
     el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });

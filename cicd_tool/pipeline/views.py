@@ -124,9 +124,17 @@ def project_detail(request, project_name):
     ).select_related('pipeline', 'agent').order_by('-started_at')[:20]
     applications = Application.objects.filter(project=project).prefetch_related('pipelines')
     project_pipelines = ProjectPipeline.objects.filter(project=project)
+    
+    my_role = project.get_member_role(request.user)
+    if not my_role and (request.user.is_superuser or (project.members.count() == 0 and project.organization is None)):
+        my_role = 'maintainer'
+    elif not my_role:
+        my_role = 'viewer'
+
     return render(request, 'pipeline/project_detail.html', {
         'project': project, 'orchestrator_runs': orchestrator_runs, 'pipeline_runs': pipeline_runs,
-        'applications': applications, 'project_pipelines': project_pipelines
+        'applications': applications, 'project_pipelines': project_pipelines,
+        'my_role': my_role,
     })
 
 
@@ -1151,6 +1159,14 @@ def global_settings(request):
     vault_url = settings_dict.get('SECRET_STORAGE_VAULT_URL', '')
     vault_token = settings_dict.get('SECRET_STORAGE_VAULT_TOKEN', '')
 
+    repo_storage_path = settings_dict.get('REPO_STORAGE_PATH', '')
+
+    keycloak_enabled = settings_dict.get('KEYCLOAK_ENABLED', 'false').lower() == 'true'
+    keycloak_server_url = settings_dict.get('KEYCLOAK_SERVER_URL', '')
+    keycloak_realm = settings_dict.get('KEYCLOAK_REALM', '')
+    keycloak_client_id = settings_dict.get('KEYCLOAK_CLIENT_ID', '')
+    keycloak_client_secret = settings_dict.get('KEYCLOAK_CLIENT_SECRET', '')
+
     return render(request, 'pipeline/global_settings.html', {
         'settings': settings_list,
         'form': form,
@@ -1171,7 +1187,173 @@ def global_settings(request):
         'secret_engine': secret_engine,
         'vault_url': vault_url,
         'vault_token': vault_token,
+
+        # Git Storage
+        'repo_storage_path': repo_storage_path,
+
+        # Keycloak SSO
+        'keycloak_enabled': keycloak_enabled,
+        'keycloak_server_url': keycloak_server_url,
+        'keycloak_realm': keycloak_realm,
+        'keycloak_client_id': keycloak_client_id,
+        'keycloak_client_secret': keycloak_client_secret,
     })
+
+
+@login_required
+def save_repo_storage_settings(request):
+    """Save custom Git repository storage path in GlobalSettings."""
+    if request.method == 'POST':
+        repo_storage_path = request.POST.get('repo_storage_path', '').strip()
+        if repo_storage_path:
+            import os
+            try:
+                os.makedirs(repo_storage_path, exist_ok=True)
+                test_file = os.path.join(repo_storage_path, '.perm_test')
+                with open(test_file, 'w') as f:
+                    f.write('ok')
+                if os.path.exists(test_file):
+                    os.remove(test_file)
+                GlobalSettings.objects.update_or_create(key='REPO_STORAGE_PATH', defaults={'value': repo_storage_path})
+                messages.success(request, f"Git repository storage path updated to: {repo_storage_path}")
+            except Exception as e:
+                messages.error(request, f"Failed to verify repository storage directory '{repo_storage_path}': {e}")
+        else:
+            GlobalSettings.objects.filter(key='REPO_STORAGE_PATH').delete()
+            messages.success(request, "Reset Git repository storage path to default internal storage.")
+    return redirect('global_settings')
+
+
+@login_required
+def save_keycloak_settings(request):
+    """Save Keycloak Enterprise SSO configuration."""
+    if request.method == 'POST':
+        kc_url = request.POST.get('keycloak_server_url', '').strip().rstrip('/')
+        kc_realm = request.POST.get('keycloak_realm', '').strip()
+        kc_client_id = request.POST.get('keycloak_client_id', '').strip()
+        kc_client_secret = request.POST.get('keycloak_client_secret', '').strip()
+        kc_enabled = 'true' if request.POST.get('keycloak_enabled') == 'true' else 'false'
+
+        GlobalSettings.objects.update_or_create(key='KEYCLOAK_SERVER_URL', defaults={'value': kc_url})
+        GlobalSettings.objects.update_or_create(key='KEYCLOAK_REALM', defaults={'value': kc_realm})
+        GlobalSettings.objects.update_or_create(key='KEYCLOAK_CLIENT_ID', defaults={'value': kc_client_id})
+        if kc_client_secret:
+            GlobalSettings.objects.update_or_create(key='KEYCLOAK_CLIENT_SECRET', defaults={'value': kc_client_secret})
+        GlobalSettings.objects.update_or_create(key='KEYCLOAK_ENABLED', defaults={'value': kc_enabled})
+
+        if kc_enabled == 'true':
+            messages.success(request, "Keycloak Enterprise SSO enabled and configured.")
+        else:
+            messages.success(request, "Keycloak SSO configuration saved (Disabled).")
+    return redirect('global_settings')
+
+
+@login_required
+def test_keycloak_connection_api(request):
+    """AJAX endpoint to test Keycloak realm OIDC openid-configuration discovery endpoint."""
+    if request.method == 'POST':
+        kc_url = request.POST.get('keycloak_server_url', '').strip().rstrip('/')
+        kc_realm = request.POST.get('keycloak_realm', '').strip()
+        if not kc_url or not kc_realm:
+            return JsonResponse({'ok': False, 'message': 'Please enter Keycloak Server URL and Realm Name.'})
+
+        discovery_url = f"{kc_url}/realms/{kc_realm}/.well-known/openid-configuration"
+        try:
+            import requests
+            resp = requests.get(discovery_url, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                issuer = data.get('issuer', '')
+                return JsonResponse({'ok': True, 'message': f"Keycloak Realm OK! Discovered Issuer: {issuer}"})
+            else:
+                return JsonResponse({'ok': False, 'message': f"Keycloak endpoint returned status {resp.status_code}."})
+        except Exception as e:
+            return JsonResponse({'ok': False, 'message': f"Connection to Keycloak failed: {e}"})
+    return JsonResponse({'ok': False, 'message': 'Invalid request.'})
+
+
+def keycloak_login(request):
+    """Initiate Keycloak OIDC authorization flow (Workloop pattern)."""
+    settings_dict = {s.key: s.value for s in GlobalSettings.objects.all()}
+    kc_enabled = settings_dict.get('KEYCLOAK_ENABLED', 'false').lower() == 'true'
+    kc_url = settings_dict.get('KEYCLOAK_SERVER_URL', '').rstrip('/')
+    kc_realm = settings_dict.get('KEYCLOAK_REALM', '')
+    kc_client_id = settings_dict.get('KEYCLOAK_CLIENT_ID', '')
+
+    if not (kc_enabled and kc_url and kc_realm and kc_client_id):
+        messages.error(request, "Keycloak SSO is not enabled or configured by admin.")
+        return redirect('login')
+
+    from urllib.parse import urlencode
+    redirect_uri = request.build_absolute_uri('/ci/auth/keycloak/callback/')
+    auth_url = f"{kc_url}/realms/{kc_realm}/protocol/openid-connect/auth?" + urlencode({
+        'client_id': kc_client_id,
+        'response_type': 'code',
+        'scope': 'openid profile email',
+        'redirect_uri': redirect_uri,
+    })
+    return redirect(auth_url)
+
+
+def keycloak_callback(request):
+    """Keycloak OIDC callback endpoint — exchanges auth code for token & provisions basic user."""
+    code = request.GET.get('code')
+    if not code:
+        messages.error(request, "Keycloak authentication failed: missing authorization code.")
+        return redirect('login')
+
+    settings_dict = {s.key: s.value for s in GlobalSettings.objects.all()}
+    kc_url = settings_dict.get('KEYCLOAK_SERVER_URL', '').rstrip('/')
+    kc_realm = settings_dict.get('KEYCLOAK_REALM', '')
+    kc_client_id = settings_dict.get('KEYCLOAK_CLIENT_ID', '')
+    kc_client_secret = settings_dict.get('KEYCLOAK_CLIENT_SECRET', '')
+
+    redirect_uri = request.build_absolute_uri('/ci/auth/keycloak/callback/')
+    token_url = f"{kc_url}/realms/{kc_realm}/protocol/openid-connect/token"
+    userinfo_url = f"{kc_url}/realms/{kc_realm}/protocol/openid-connect/userinfo"
+
+    import requests
+    from django.contrib.auth import login as auth_login
+    from django.contrib.auth.models import User
+
+    try:
+        token_data = {
+            'grant_type': 'authorization_code',
+            'client_id': kc_client_id,
+            'client_secret': kc_client_secret,
+            'code': code,
+            'redirect_uri': redirect_uri,
+        }
+        token_resp = requests.post(token_url, data=token_data, timeout=8)
+        token_resp.raise_for_status()
+        tokens = token_resp.json()
+        access_token = tokens.get('access_token')
+
+        userinfo_resp = requests.get(userinfo_url, headers={'Authorization': f"Bearer {access_token}"}, timeout=8)
+        userinfo_resp.raise_for_status()
+        claims = userinfo_resp.json()
+
+        username = claims.get('preferred_username') or claims.get('email', '').split('@')[0]
+        email = claims.get('email', '')
+        first_name = claims.get('given_name', '')
+        last_name = claims.get('family_name', '')
+
+        user, created = User.objects.get_or_create(username=username, defaults={
+            'email': email,
+            'first_name': first_name,
+            'last_name': last_name,
+        })
+        if not created and email and not user.email:
+            user.email = email
+            user.save()
+
+        auth_login(request, user)
+        messages.success(request, f"Welcome back, {user.first_name or user.username}! Signed in via Keycloak SSO.")
+        return redirect('dashboard')
+
+    except Exception as e:
+        messages.error(request, f"Keycloak SSO callback error: {e}")
+        return redirect('login')
 
 
 @login_required
