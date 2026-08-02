@@ -37,6 +37,8 @@ def execute_step(step, run_id, credentials: dict, workdir=None, agent=None):
     if credentials:
         env.update({str(k): str(v) for k, v in credentials.items()})
 
+    step_timeout = getattr(step, 'timeout', 60) or 60
+
     # ── NAT-Safe Agent Task Queueing for Remote Build Agents ─────────────────────
     if agent and agent.hostname != 'local':
         from .models import AgentTask
@@ -46,10 +48,10 @@ def execute_step(step, run_id, credentials: dict, workdir=None, agent=None):
             command=command,
             status='pending'
         )
-        logger.info(f"Queued AgentTask #{task.pk} for agent '{agent.hostname}'. Waiting for agent outbound poll...")
+        logger.info(f"Queued AgentTask #{task.pk} for agent '{agent.hostname}'. Waiting for agent outbound poll (Timeout: {step_timeout}s)...")
 
         start_time = time.time()
-        while time.time() - start_time < 600:
+        while time.time() - start_time < step_timeout:
             task.refresh_from_db()
             if task.status in ('completed', 'failed'):
                 output = (task.stdout + ('\n' + task.stderr if task.stderr else '')).strip()
@@ -57,7 +59,13 @@ def execute_step(step, run_id, credentials: dict, workdir=None, agent=None):
                 return subprocess.CompletedProcess(args=command, returncode=rc, stdout=output)
             time.sleep(1)
 
-        logger.warning(f"AgentTask #{task.pk} for '{agent.hostname}' timed out. Falling back to local worker execution.")
+        task.status = 'failed'
+        task.save(update_fields=['status'])
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=124,
+            stdout=f"❌ [TIMEOUT ERROR] Step '{getattr(step, 'name', 'Execution')}' timed out after {step_timeout} seconds waiting for agent '{agent.hostname}' outbound poll/execution."
+        )
 
     # ── git clone shortcut ────────────────────────────────────────────────────
     if command.lower().startswith('git clone'):
@@ -167,6 +175,7 @@ def sync_steps_from_yaml(pipeline, yaml_content):
             return 0
 
     steps = []
+    global_timeout = int(parsed.get('timeout', 60) or 60)
 
     # ── rockerci native format: stages → steps → command ─────────────────
     if 'stages' in parsed:
@@ -180,7 +189,8 @@ def sync_steps_from_yaml(pipeline, yaml_content):
                 cmd = s.get('command') or s.get('run')
                 if cmd:
                     name = s.get('name') or f"{stage_name}: {str(cmd)[:40]}"
-                    steps.append((str(name)[:100], str(cmd)))
+                    t_val = int(s.get('timeout', global_timeout) or global_timeout)
+                    steps.append((str(name)[:100], str(cmd), t_val))
 
     # ── GitHub Actions format: jobs → steps → run ─────────────────────────
     elif 'jobs' in parsed:
@@ -191,7 +201,8 @@ def sync_steps_from_yaml(pipeline, yaml_content):
                 cmd = s.get('run') or s.get('command')
                 if cmd:
                     name = s.get('name') or str(cmd)[:60]
-                    steps.append((str(name)[:100], str(cmd)))
+                    t_val = int(s.get('timeout', global_timeout) or global_timeout)
+                    steps.append((str(name)[:100], str(cmd), t_val))
 
     # ── Flat steps format: steps → command / run ─────────────────────────
     elif 'steps' in parsed:
@@ -201,15 +212,18 @@ def sync_steps_from_yaml(pipeline, yaml_content):
             cmd = s.get('command') or s.get('run')
             if cmd:
                 name = s.get('name') or str(cmd)[:60]
-                steps.append((str(name)[:100], str(cmd)))
+                t_val = int(s.get('timeout', global_timeout) or global_timeout)
+                steps.append((str(name)[:100], str(cmd), t_val))
 
     if not steps:
         logger.warning(f"sync_steps_from_yaml: no steps found in YAML for {pipeline.name}")
         return 0
 
     PipelineStep.objects.filter(pipeline=pipeline).delete()
-    for name, cmd in steps:
-        PipelineStep.objects.create(pipeline=pipeline, name=name, command=cmd)
+    for item in steps:
+        name, cmd = item[0], item[1]
+        t_val = item[2] if len(item) > 2 else 60
+        PipelineStep.objects.create(pipeline=pipeline, name=name, command=cmd, timeout=t_val)
     logger.info(f"Synced {len(steps)} steps from YAML for pipeline {pipeline.name}")
     return len(steps)
 

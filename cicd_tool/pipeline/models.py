@@ -165,6 +165,7 @@ class PipelineStep(models.Model):
     description = models.TextField(blank=True)
     command = models.TextField()
     condition = models.TextField(blank=True)
+    timeout = models.IntegerField(default=60, help_text='Step execution timeout in seconds')
     def __str__(self):
         return f"{self.name} - {self.pipeline.name}"
 
