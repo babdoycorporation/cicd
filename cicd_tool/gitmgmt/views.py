@@ -656,10 +656,11 @@ class GitService(View):
             logger.error(f"Git auth error: {e}")
         return None
 
-    def get(self, request, repo_name, path=None):
-        repo = Repository.objects.filter(name__iexact=repo_name).first()
+    def get(self, request, repo_name, owner=None, path=None):
+        clean_name = repo_name.removesuffix('.git')
+        repo = Repository.objects.filter(name__iexact=clean_name).first()
         if not repo:
-            return HttpResponse(f"Repository '{repo_name}' not found.", status=404)
+            return HttpResponse(f"Repository '{clean_name}' not found.", status=404)
         repo_name = repo.name
         rp = _repo_path(repo_name)
         if not os.path.exists(rp):
@@ -671,10 +672,11 @@ class GitService(View):
             return self._static_file(rp, path)
         return self._info_refs(rp)
 
-    def post(self, request, repo_name, path=None):
-        repo = Repository.objects.filter(name__iexact=repo_name).first()
+    def post(self, request, repo_name, owner=None, path=None):
+        clean_name = repo_name.removesuffix('.git')
+        repo = Repository.objects.filter(name__iexact=clean_name).first()
         if not repo:
-            return HttpResponse(f"Repository '{repo_name}' not found.", status=404)
+            return HttpResponse(f"Repository '{clean_name}' not found.", status=404)
         repo_name = repo.name
         rp = _repo_path(repo_name)
         if not os.path.exists(rp):

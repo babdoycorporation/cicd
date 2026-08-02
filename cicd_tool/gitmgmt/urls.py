@@ -97,8 +97,8 @@ urlpatterns = [
     path('reactions/<str:target_type>/<int:target_id>/<str:emoji>/', views.toggle_reaction, name='toggle_reaction'),
 
     # ── Git Smart HTTP Protocol ───────────────────────────────────────────────
-    re_path(r'^repos/(?P<repo_name>[\w\-\.]+)/info/refs$', GitService.as_view(), name='git_info_refs'),
-    re_path(r'^repos/(?P<repo_name>[\w\-\.]+)/(?P<path>git-upload-pack)$', GitService.as_view(), name='git_upload_pack'),
-    re_path(r'^repos/(?P<repo_name>[\w\-\.]+)/(?P<path>git-receive-pack)$', GitService.as_view(), name='git_receive_pack'),
-    re_path(r'^repos/(?P<repo_name>[\w\-\.]+)/(?P<path>.+)$', GitService.as_view(), name='git_static_files'),
+    re_path(r'^(?:git|repos)/(?:(?P<owner>[\w\-\.]+)/)?(?P<repo_name>[\w\-\.]+?)(?:\.git)?/info/refs$', GitService.as_view(), name='git_info_refs'),
+    re_path(r'^(?:git|repos)/(?:(?P<owner>[\w\-\.]+)/)?(?P<repo_name>[\w\-\.]+?)(?:\.git)?/(?P<path>git-upload-pack)$', GitService.as_view(), name='git_upload_pack'),
+    re_path(r'^(?:git|repos)/(?:(?P<owner>[\w\-\.]+)/)?(?P<repo_name>[\w\-\.]+?)(?:\.git)?/(?P<path>git-receive-pack)$', GitService.as_view(), name='git_receive_pack'),
+    re_path(r'^(?:git|repos)/(?:(?P<owner>[\w\-\.]+)/)?(?P<repo_name>[\w\-\.]+?)(?:\.git)?/(?P<path>.+)$', GitService.as_view(), name='git_static_files'),
 ]
