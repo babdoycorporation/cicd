@@ -1327,7 +1327,12 @@ def keycloak_callback(request):
             token_data['client_secret'] = kc_client_secret
 
         logger.info(f"Exchanging Keycloak code for client '{kc_client_id}' at {token_url}")
-        token_resp = requests.post(token_url, data=token_data, timeout=8)
+        auth_param = (kc_client_id, kc_client_secret) if kc_client_secret else None
+        token_resp = requests.post(token_url, data=token_data, auth=auth_param, timeout=8)
+        if token_resp.status_code != 200:
+            # Fallback to body-only request if basic auth failed
+            token_resp = requests.post(token_url, data=token_data, timeout=8)
+
         if token_resp.status_code != 200:
             logger.error(f"Keycloak token exchange error {token_resp.status_code}: {token_resp.text}")
             messages.error(request, f"Keycloak SSO Token Error: {token_resp.text}")
