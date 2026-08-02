@@ -107,7 +107,7 @@ class Repository(models.Model):
         User, on_delete=models.CASCADE, null=True, blank=True,
         related_name='owned_repositories'
     )
-    visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='public')
+    visibility = models.CharField(max_length=10, choices=VISIBILITY_CHOICES, default='private')
     default_branch = models.CharField(max_length=100, default='main')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

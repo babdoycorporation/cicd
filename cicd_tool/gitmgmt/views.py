@@ -603,11 +603,12 @@ def view_logs(request, repository_name):
                 'date': c.committed_datetime.isoformat(),
                 'date_display': c.committed_datetime.strftime('%b %d, %Y %H:%M'),
             })
-    except Exception as e:
-        error_message = str(e)
+    except Exception:
+        error_message = None
     return render(request, 'gitmgmt/view_logs.html', {
         'repository': repo, 'logs': logs,
         'error_message': error_message, 'current_branch': branch,
+        'can_manage_repo': _user_can_manage_repo(request.user, repo),
     })
 
 

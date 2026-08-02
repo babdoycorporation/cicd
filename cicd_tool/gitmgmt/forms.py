@@ -13,6 +13,11 @@ from .models import (
 # ─────────────────────────────────────────────────────────────────────────────
 
 class RepositoryForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'visibility' in self.fields and not self.instance.pk:
+            self.fields['visibility'].initial = 'private'
+
     class Meta:
         model = Repository
         fields = ['name', 'description', 'visibility', 'default_branch']
