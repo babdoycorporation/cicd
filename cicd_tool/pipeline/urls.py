@@ -92,6 +92,11 @@ urlpatterns = [
     path('settings/integrations/email/test/', login_required(views.test_email_integration), name='test_email_integration'),
     path('notifications/preferences/', login_required(views.notification_preferences), name='notification_preferences'),
 
+    # ── Infrastructure & Security Settings ────────────────────────────────────
+    path('settings/scaling/save/', login_required(views.save_task_scaling_settings), name='save_task_scaling_settings'),
+    path('settings/redis/test/', login_required(views.test_redis_connection_api), name='test_redis_connection_api'),
+    path('settings/secrets/save/', login_required(views.save_secret_storage_settings), name='save_secret_storage_settings'),
+
     # ── Build Artifacts ───────────────────────────────────────────────────────
     path('pipeline/run/<uuid:run_id>/artifacts/<int:artifact_id>/download/', login_required(views.artifact_download), name='artifact_download'),
 

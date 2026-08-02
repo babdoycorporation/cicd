@@ -1058,9 +1058,62 @@ def global_pipeline_list(request):
     return render(request, 'pipeline/global_pipeline_list.html', {'pipelines': pipelines})
 
 
+import socket
+import ssl
+
+def check_redis_connection(host='127.0.0.1', port=6379, password='', use_tls=False, timeout=3):
+    """
+    Test Redis server reachability and RESP protocol PING response.
+    Supports both Non-TLS (redis://) and TLS/SSL (rediss://).
+    """
+    try:
+        raw_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        raw_socket.settimeout(timeout)
+        
+        port_num = int(port) if str(port).isdigit() else 6379
+
+        if use_tls:
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            sock = context.wrap_socket(raw_socket, server_hostname=host)
+        else:
+            sock = raw_socket
+
+        sock.connect((host, port_num))
+
+        # Send AUTH if password provided
+        if password:
+            auth_cmd = f"*2\r\n$4\r\nAUTH\r\n${len(password)}\r\n{password}\r\n"
+            sock.sendall(auth_cmd.encode('utf-8'))
+            auth_resp = sock.recv(1024).decode('utf-8', errors='ignore')
+            if not auth_resp.startswith('+OK'):
+                sock.close()
+                return False, f"Authentication failed: {auth_resp.strip()}"
+
+        # Send PING command
+        sock.sendall(b"*1\r\n$4\r\nPING\r\n")
+        ping_resp = sock.recv(1024).decode('utf-8', errors='ignore')
+        sock.close()
+
+        if ping_resp.startswith('+PONG') or 'PONG' in ping_resp:
+            scheme = "rediss" if use_tls else "redis"
+            return True, f"Successfully connected to Redis server at {scheme}://{host}:{port_num} (Response: PONG)"
+        else:
+            return False, f"Unexpected response from server: {ping_resp.strip()}"
+
+    except socket.timeout:
+        return False, f"Connection timed out while connecting to {host}:{port}"
+    except ConnectionRefusedError:
+        return False, f"Connection refused at {host}:{port}. Ensure Redis service is running."
+    except Exception as e:
+        return False, f"Connection failed: {str(e)}"
+
+
 @login_required
 def global_settings(request):
     settings_list = GlobalSettings.objects.all()
+    settings_dict = {s.key: s.value for s in settings_list}
     show_email_modal = False
     if request.method == 'POST':
         form = GlobalSettingsForm(request.POST)
@@ -1077,12 +1130,114 @@ def global_settings(request):
         obj.integration_type: obj
         for obj in NotificationIntegration.objects.all()
     }
+
+    # Scaling & Infrastructure config
+    task_engine = settings_dict.get('BACKGROUND_TASK_ENGINE', 'internal')
+    redis_host = settings_dict.get('REDIS_HOST', '127.0.0.1')
+    redis_port = settings_dict.get('REDIS_PORT', '6379')
+    redis_password = settings_dict.get('REDIS_PASSWORD', '')
+    redis_use_tls = settings_dict.get('REDIS_USE_TLS', 'false').lower() == 'true'
+    redis_db_index = settings_dict.get('REDIS_DB_INDEX', '0')
+
+    # Test redis connection status
+    redis_ok, redis_status = check_redis_connection(
+        host=redis_host,
+        port=redis_port,
+        password=redis_password,
+        use_tls=redis_use_tls
+    )
+
+    secret_engine = settings_dict.get('SECRET_STORAGE_ENGINE', 'builtin')
+    vault_url = settings_dict.get('SECRET_STORAGE_VAULT_URL', '')
+    vault_token = settings_dict.get('SECRET_STORAGE_VAULT_TOKEN', '')
+
     return render(request, 'pipeline/global_settings.html', {
         'settings': settings_list,
         'form': form,
         'integrations': integrations,
         'show_email_modal': show_email_modal,
+
+        # Task Engine & Scaling
+        'task_engine': task_engine,
+        'redis_host': redis_host,
+        'redis_port': redis_port,
+        'redis_password': redis_password,
+        'redis_use_tls': redis_use_tls,
+        'redis_db_index': redis_db_index,
+        'redis_ok': redis_ok,
+        'redis_status': redis_status,
+
+        # Secrets Storage Engine
+        'secret_engine': secret_engine,
+        'vault_url': vault_url,
+        'vault_token': vault_token,
     })
+
+
+@login_required
+def save_task_scaling_settings(request):
+    """Save Background Task Scaling engine (Internal Django vs External Redis/Celery)."""
+    if request.method == 'POST':
+        task_engine = request.POST.get('task_engine', 'internal').strip()
+        redis_host = request.POST.get('redis_host', '127.0.0.1').strip()
+        redis_port = request.POST.get('redis_port', '6379').strip()
+        redis_password = request.POST.get('redis_password', '').strip()
+        redis_use_tls = 'true' if request.POST.get('redis_use_tls') == 'true' else 'false'
+        redis_db_index = request.POST.get('redis_db_index', '0').strip()
+
+        GlobalSettings.objects.update_or_create(key='BACKGROUND_TASK_ENGINE', defaults={'value': task_engine})
+        GlobalSettings.objects.update_or_create(key='REDIS_HOST', defaults={'value': redis_host})
+        GlobalSettings.objects.update_or_create(key='REDIS_PORT', defaults={'value': redis_port})
+        GlobalSettings.objects.update_or_create(key='REDIS_PASSWORD', defaults={'value': redis_password})
+        GlobalSettings.objects.update_or_create(key='REDIS_USE_TLS', defaults={'value': redis_use_tls})
+        GlobalSettings.objects.update_or_create(key='REDIS_DB_INDEX', defaults={'value': redis_db_index})
+
+        if task_engine == 'external':
+            ok, msg = check_redis_connection(redis_host, redis_port, redis_password, redis_use_tls == 'true')
+            if ok:
+                messages.success(request, f'Task scaling engine set to External Redis. {msg}')
+            else:
+                messages.warning(request, f'Task scaling set to External Redis, but auto-detection warning: {msg}')
+        else:
+            messages.success(request, 'Task scaling engine set to Internal (Django Built-in DB & Thread Worker).')
+
+    return redirect('global_settings')
+
+
+@login_required
+def test_redis_connection_api(request):
+    """AJAX endpoint to test Redis connection for TLS (rediss://) or Non-TLS (redis://)."""
+    if request.method == 'POST':
+        host = request.POST.get('redis_host', '127.0.0.1').strip()
+        port = request.POST.get('redis_port', '6379').strip()
+        password = request.POST.get('redis_password', '').strip()
+        use_tls = request.POST.get('redis_use_tls') in ('true', '1', 'True')
+
+        ok, msg = check_redis_connection(host, port, password, use_tls)
+        return JsonResponse({'ok': ok, 'message': msg})
+
+    return JsonResponse({'ok': False, 'message': 'Invalid request method.'})
+
+
+@login_required
+def save_secret_storage_settings(request):
+    """Save Secret Storage & KMS configuration."""
+    if request.method == 'POST':
+        secret_engine = request.POST.get('secret_engine', 'builtin').strip()
+        vault_url = request.POST.get('vault_url', '').strip()
+        vault_token = request.POST.get('vault_token', '').strip()
+
+        GlobalSettings.objects.update_or_create(key='SECRET_STORAGE_ENGINE', defaults={'value': secret_engine})
+        GlobalSettings.objects.update_or_create(key='SECRET_STORAGE_VAULT_URL', defaults={'value': vault_url})
+        if vault_token:
+            GlobalSettings.objects.update_or_create(key='SECRET_STORAGE_VAULT_TOKEN', defaults={'value': vault_token})
+
+        if secret_engine == 'vault':
+            messages.success(request, 'Secret Storage set to External KMS / HashiCorp Vault.')
+        else:
+            messages.success(request, 'Secret Storage set to Built-in (Standard Django Secret Key Encryption).')
+
+    return redirect('global_settings')
 
 
 @login_required

@@ -273,6 +273,82 @@
                 <i class="ph ph-lock"></i> Coming Soon
             </button>
         </div>
+</div>
+
+<!-- ── Infrastructure Scaling & Security ── -->
+<div class="section-label">Infrastructure Scaling & Secret Vault</div>
+<div class="integration-grid" style="margin-bottom: 2rem;">
+
+    <!-- Background Task Scaling Card -->
+    <div class="integration-card {% if task_engine == 'external' and redis_ok %}connected{% endif %}">
+        <div class="int-header">
+            <div class="int-logo" style="background:rgba(239, 68, 68, 0.15); color:#ef4444;"><i class="ph ph-cpu"></i></div>
+            <div>
+                <div class="int-name">Background Task Engine</div>
+                <div class="int-desc">Distributed task queue & worker scaling</div>
+            </div>
+        </div>
+
+        {% if task_engine == 'external' %}
+            {% if redis_ok %}
+                <span class="badge-connected"><i class="ph ph-check-circle"></i> External Redis Active</span>
+                <div class="int-meta">
+                    URI: <code>{% if redis_use_tls %}rediss{% else %}redis{% endif %}://{{ redis_host }}:{{ redis_port }}/{{ redis_db_index }}</code><br>
+                    Status: <span style="color:var(--success-color); font-weight:600;">PING PONG OK</span>
+                </div>
+            {% else %}
+                <span class="badge-error"><i class="ph ph-warning"></i> Connection Warning</span>
+                <div class="int-meta" style="color:var(--danger-color); font-size:0.75rem;">
+                    {{ redis_status|default:"Could not reach Redis host." }}
+                </div>
+            {% endif %}
+        {% else %}
+            <span class="badge-connected" style="background:rgba(47,129,247,0.12); color:#2f81f7; border-color:rgba(47,129,247,0.3);">
+                <i class="ph ph-database"></i> Internal (Django Built-in)
+            </span>
+            <div class="int-meta">
+                Engine: <code>Django DB + Async Thread Worker</code><br>
+                Mode: Standard single-node background worker
+            </div>
+        {% endif %}
+
+        <div class="int-actions">
+            <button class="btn btn-primary" onclick="openScalingModal()">
+                <i class="ph ph-sliders"></i> Configure Engine
+            </button>
+        </div>
+    </div>
+
+    <!-- Secret Storage Card -->
+    <div class="integration-card {% if secret_engine == 'vault' %}connected{% endif %}">
+        <div class="int-header">
+            <div class="int-logo" style="background:rgba(168, 85, 247, 0.15); color:#a855f7;"><i class="ph ph-lock-key"></i></div>
+            <div>
+                <div class="int-name">Secret Storage & KMS</div>
+                <div class="int-desc">Credential encryption & key management</div>
+            </div>
+        </div>
+
+        {% if secret_engine == 'vault' %}
+            <span class="badge-connected"><i class="ph ph-shield-check"></i> External KMS / Vault</span>
+            <div class="int-meta">
+                Vault: <code>{{ vault_url|default:"Not set" }}</code>
+            </div>
+        {% else %}
+            <span class="badge-connected" style="background:rgba(47,129,247,0.12); color:#2f81f7; border-color:rgba(47,129,247,0.3);">
+                <i class="ph ph-key"></i> Built-in (Django Key)
+            </span>
+            <div class="int-meta">
+                Encryption: <code>Standard Django Secret Key</code><br>
+                Storage: Encrypted local DB vault
+            </div>
+        {% endif %}
+
+        <div class="int-actions">
+            <button class="btn btn-primary" onclick="openSecretModal()">
+                <i class="ph ph-shield"></i> Configure Secrets
+            </button>
+        </div>
     </div>
 
 </div>
@@ -313,6 +389,158 @@
                 <p>No global settings configured yet.</p>
             </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- ══ Background Task Scaling Modal ══ -->
+<div class="modal-overlay" id="scalingModal">
+    <div class="modal" style="max-width:580px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="ph ph-cpu" style="color:#ef4444;"></i> Configure Background Task Engine</h2>
+            <button class="modal-close" onclick="closeScalingModal()"><i class="ph ph-x"></i></button>
+        </div>
+        <form method="post" action="{% url 'save_task_scaling_settings' %}" id="scalingForm">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label style="font-weight:700;">Task Engine Mode</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.35rem;">
+                    <label style="background:var(--canvas-bg); border:1px solid var(--border-color); border-radius:8px; padding:0.85rem; cursor:pointer; display:flex; align-items:flex-start; gap:0.6rem;">
+                        <input type="radio" name="task_engine" value="internal" {% if task_engine != 'external' %}checked{% endif %} onchange="toggleTaskEngineFields()" style="margin-top:0.2rem; accent-color:var(--brand);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary);">Internal (Built-in)</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">Django DB + Async Thread Worker</div>
+                        </div>
+                    </label>
+
+                    <label style="background:var(--canvas-bg); border:1px solid var(--border-color); border-radius:8px; padding:0.85rem; cursor:pointer; display:flex; align-items:flex-start; gap:0.6rem;">
+                        <input type="radio" name="task_engine" value="external" {% if task_engine == 'external' %}checked{% endif %} onchange="toggleTaskEngineFields()" style="margin-top:0.2rem; accent-color:var(--brand);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary);">External (Redis Queue)</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">Celery / Redis Distributed Workers</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Redis Configuration Fields -->
+            <div id="redisFields" style="display:{% if task_engine == 'external' %}block{% else %}none{% endif %}; border-top:1px solid var(--border-color); padding-top:1rem; margin-top:1rem;">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--text-primary); margin-bottom:0.75rem;">
+                    <i class="ph ph-plug-charging" style="color:var(--brand);"></i> Redis Server Configuration
+                </div>
+
+                <div class="form-group">
+                    <label>Connection Protocol (TLS / Non-TLS)</label>
+                    <div style="display:flex; gap:1.25rem; margin-top:0.3rem;">
+                        <label style="display:inline-flex; align-items:center; gap:0.4rem; cursor:pointer; font-size:0.82rem; font-weight:600;">
+                            <input type="radio" name="redis_use_tls" value="false" {% if not redis_use_tls %}checked{% endif %} style="accent-color:var(--brand);">
+                            <span style="color:var(--text-primary);">Standard Non-TLS (<code>redis://</code>)</span>
+                        </label>
+                        <label style="display:inline-flex; align-items:center; gap:0.4rem; cursor:pointer; font-size:0.82rem; font-weight:600;">
+                            <input type="radio" name="redis_use_tls" value="true" {% if redis_use_tls %}checked{% endif %} style="accent-color:var(--brand);">
+                            <span style="color:var(--text-primary);">Secure TLS / SSL (<code>rediss://</code>)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Redis Host</label>
+                        <input type="text" name="redis_host" id="redis_host_input" class="form-control"
+                               value="{{ redis_host|default:'127.0.0.1' }}" placeholder="127.0.0.1 or redis.example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Port</label>
+                        <input type="number" name="redis_port" id="redis_port_input" class="form-control"
+                               value="{{ redis_port|default:'6379' }}" placeholder="6379">
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Password (Optional)</label>
+                        <input type="password" name="redis_password" id="redis_password_input" class="form-control"
+                               value="{{ redis_password }}" placeholder="Optional auth password">
+                    </div>
+                    <div class="form-group">
+                        <label>DB Index</label>
+                        <input type="number" name="redis_db_index" id="redis_db_index_input" class="form-control"
+                               value="{{ redis_db_index|default:'0' }}" placeholder="0">
+                    </div>
+                </div>
+
+                <div id="redisTestResult" class="test-result"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-floppy-disk"></i> Save Configuration
+                </button>
+                <button type="button" id="btnTestRedis" class="btn btn-outline" onclick="testRedisConnection(this)" style="display:{% if task_engine == 'external' %}inline-flex{% else %}none{% endif %};">
+                    <i class="ph ph-lightning"></i> Auto-Detect / Test Redis
+                </button>
+                <button type="button" class="btn btn-outline" onclick="closeScalingModal()" style="margin-left:auto;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ Secret Storage KMS Modal ══ -->
+<div class="modal-overlay" id="secretModal">
+    <div class="modal" style="max-width:540px;">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="ph ph-lock-key" style="color:#a855f7;"></i> Configure Secret Storage & KMS</h2>
+            <button class="modal-close" onclick="closeSecretModal()"><i class="ph ph-x"></i></button>
+        </div>
+        <form method="post" action="{% url 'save_secret_storage_settings' %}">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label style="font-weight:700;">Secret Storage Engine</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.35rem;">
+                    <label style="background:var(--canvas-bg); border:1px solid var(--border-color); border-radius:8px; padding:0.85rem; cursor:pointer; display:flex; align-items:flex-start; gap:0.6rem;">
+                        <input type="radio" name="secret_engine" value="builtin" {% if secret_engine != 'vault' %}checked{% endif %} onchange="toggleVaultFields()" style="margin-top:0.2rem; accent-color:var(--brand);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary);">Built-in (Django Key)</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">Standard Django Secret Key Encryption</div>
+                        </div>
+                    </label>
+
+                    <label style="background:var(--canvas-bg); border:1px solid var(--border-color); border-radius:8px; padding:0.85rem; cursor:pointer; display:flex; align-items:flex-start; gap:0.6rem;">
+                        <input type="radio" name="secret_engine" value="vault" {% if secret_engine == 'vault' %}checked{% endif %} onchange="toggleVaultFields()" style="margin-top:0.2rem; accent-color:var(--brand);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary);">External KMS / Vault</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">HashiCorp Vault / AWS KMS Engine</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="vaultFields" style="display:{% if secret_engine == 'vault' %}block{% else %}none{% endif %}; border-top:1px solid var(--border-color); padding-top:1rem; margin-top:1rem;">
+                <div class="form-group">
+                    <label>HashiCorp Vault / KMS URL</label>
+                    <input type="url" name="vault_url" class="form-control"
+                           value="{{ vault_url|default:'' }}" placeholder="https://vault.company.com:8200">
+                </div>
+                <div class="form-group">
+                    <label>Vault Token / Access Key</label>
+                    <input type="password" name="vault_token" class="form-control"
+                           placeholder="{% if vault_token %}••••••••{% else %}s.xxxxxxxxx{% endif %}">
+                    <div style="font-size:0.72rem; color:var(--text-secondary); margin-top:0.25rem;">Leave blank to keep existing vault token.</div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ph ph-floppy-disk"></i> Save Configuration
+                </button>
+                <button type="button" class="btn btn-outline" onclick="closeSecretModal()" style="margin-left:auto;">
+                    Cancel
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -387,15 +615,73 @@
 </div>
 
 <script>
-function openEmailModal() {
-    document.getElementById('emailModal').classList.add('open');
-}
-function closeEmailModal() {
-    document.getElementById('emailModal').classList.remove('open');
-}
-document.getElementById('emailModal').addEventListener('click', function(e) {
-    if (e.target === this) closeEmailModal();
+function openEmailModal() { document.getElementById('emailModal').classList.add('open'); }
+function closeEmailModal() { document.getElementById('emailModal').classList.remove('open'); }
+
+function openScalingModal() { document.getElementById('scalingModal').classList.add('open'); }
+function closeScalingModal() { document.getElementById('scalingModal').classList.remove('open'); }
+
+function openSecretModal() { document.getElementById('secretModal').classList.add('open'); }
+function closeSecretModal() { document.getElementById('secretModal').classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
 });
+
+function toggleTaskEngineFields() {
+    const selected = document.querySelector('input[name="task_engine"]:checked')?.value;
+    const redisFields = document.getElementById('redisFields');
+    const btnTest = document.getElementById('btnTestRedis');
+    if (selected === 'external') {
+        redisFields.style.display = 'block';
+        btnTest.style.display = 'inline-flex';
+        // Auto-run connection test when external is selected
+        testRedisConnection(btnTest);
+    } else {
+        redisFields.style.display = 'none';
+        btnTest.style.display = 'none';
+    }
+}
+
+function toggleVaultFields() {
+    const selected = document.querySelector('input[name="secret_engine"]:checked')?.value;
+    document.getElementById('vaultFields').style.display = (selected === 'vault') ? 'block' : 'none';
+}
+
+function testRedisConnection(btn) {
+    const form = document.getElementById('scalingForm');
+    const data = new FormData(form);
+    const result = document.getElementById('redisTestResult');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ph ph-spinner-gap ph-spin"></i> Detecting Redis…';
+    }
+    result.style.display = 'none';
+
+    fetch("{% url 'test_redis_connection_api' %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': data.get('csrfmiddlewaretoken')},
+        body: data,
+    })
+    .then(r => r.json())
+    .then(d => {
+        result.style.display = 'flex';
+        result.className = 'test-result ' + (d.ok ? 'ok' : 'fail');
+        result.textContent = d.message;
+    })
+    .catch(() => {
+        result.style.display = 'flex';
+        result.className = 'test-result fail';
+        result.textContent = 'Failed to execute Redis connection test.';
+    })
+    .finally(() => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ph ph-lightning"></i> Auto-Detect / Test Redis';
+        }
+    });
+}
+
 {% if show_email_modal %}
 openEmailModal();
 {% endif %}
