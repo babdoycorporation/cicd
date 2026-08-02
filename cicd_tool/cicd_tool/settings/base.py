@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # ── Security & Environment ───────────────────────────────────────────────────
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
-    'django-insecure-change-me-in-production-set-env-var'
+    'django-insecure-cogfocus-one-enterprise-secret-key-prod-dev-2026'
 )
 
 # ── Applications ──────────────────────────────────────────────────────────────
