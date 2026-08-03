@@ -1561,10 +1561,27 @@ def organization_detail(request, org_name):
     for t in teams:
         member_ids.update(t.members.values_list('id', flat=True))
     member_ids.update(org.memberships.values_list('user_id', flat=True))
-    member_ids.add(org.owner_id)
-    members = get_user_model().objects.filter(id__in=member_ids).order_by('username')
+    if org.owner_id:
+        member_ids.add(org.owner_id)
+        
+    members = list(get_user_model().objects.filter(id__in=member_ids).order_by('username'))
+    
+    # Map exact member roles for this organization
+    member_roles = {}
+    if org.owner_id:
+        member_roles[org.owner_id] = 'owner'
+    for mem in org.memberships.all():
+        if mem.user_id not in member_roles or member_roles[mem.user_id] != 'owner':
+            member_roles[mem.user_id] = mem.role or 'member'
+
+    for u in members:
+        u.org_role = member_roles.get(u.id, 'owner' if u.id == org.owner_id else 'member')
+
     projects = org.projects.all()
-    repositories = org.repositories.all()
+    repositories = Repository.objects.filter(
+        Q(organization=org) | Q(owner=org.owner) | Q(owner__in=members)
+    ).distinct().order_by('-updated_at')
+
     return render(request, 'gitmgmt/organization_detail.html', {
         'organization': org,
         'org': org,
