@@ -39,32 +39,34 @@ def execute_step(step, run_id, credentials: dict, workdir=None, agent=None):
 
     step_timeout = getattr(step, 'timeout', 60) or 60
 
-    # ── Real-Time Outbound Agent Tunnel (Solution 2) ───────────────────────────
+    # ── Real-Time Agent Stream Task Execution ──────────────────────────────────
     if agent and agent.hostname != 'local':
-        from .agent_tunnel import tunnel_manager
         from .models import AgentTask
         step_name = getattr(step, 'name', 'Step Execution')
         task = AgentTask.objects.create(
             agent=agent,
             step_name=step_name,
             command=command,
-            status='running'
+            status='pending'
         )
-        logger.info(f"[TUNNEL] Dispatching task #{task.pk} ('{step_name}') to agent '{agent.hostname}' via Real-Time Tunnel (Timeout: {step_timeout}s)...")
+        logger.info(f"[STREAM-DB] Queued task #{task.pk} ('{step_name}') for agent '{agent.hostname}'. Waiting for stream execution (Timeout: {step_timeout}s)...")
 
-        res = tunnel_manager.dispatch_task(agent.pk, task.pk, command, step_name, timeout=step_timeout)
-        rc = res.get('returncode', 0)
-        stdout = res.get('stdout', '')
-        stderr = res.get('stderr', '')
+        start_time = time.time()
+        while time.time() - start_time < step_timeout:
+            task.refresh_from_db()
+            if task.status in ('completed', 'failed'):
+                output = (task.stdout + ('\n' + task.stderr if task.stderr else '')).strip()
+                rc = task.returncode if task.returncode is not None else (0 if task.status == 'completed' else 1)
+                return subprocess.CompletedProcess(args=command, returncode=rc, stdout=output)
+            time.sleep(1)
 
-        task.stdout = stdout
-        task.stderr = stderr
-        task.returncode = rc
-        task.status = 'completed' if rc == 0 else 'failed'
-        task.save()
-
-        output = (stdout + ('\n' + stderr if stderr else '')).strip()
-        return subprocess.CompletedProcess(args=command, returncode=rc, stdout=output)
+        task.status = 'failed'
+        task.save(update_fields=['status'])
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=124,
+            stdout=f"❌ [TIMEOUT ERROR] Step '{step_name}' timed out after {step_timeout} seconds waiting for agent '{agent.hostname}' execution."
+        )
 
     # ── git clone shortcut ────────────────────────────────────────────────────
     if command.lower().startswith('git clone'):

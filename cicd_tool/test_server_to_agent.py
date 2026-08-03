@@ -38,11 +38,14 @@ def run_verification():
         'print(f\'DIRECT SERVER-TO-AGENT VERIFICATION SUCCESSFUL: Created {path}\')"'
     )
 
+    # Clear old pending/running tasks so agent executes test command immediately
+    AgentTask.objects.filter(agent=agent, status__in=['pending', 'running']).update(status='failed')
+
     task = AgentTask.objects.create(
         agent=agent,
         step_name="Server-to-Agent Remote Verification",
         command=test_cmd,
-        status="running"
+        status="pending"
     )
 
     print(f"\n[DISPATCH] Sending remote command to {agent.hostname}...")
