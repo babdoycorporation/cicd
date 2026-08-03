@@ -15,7 +15,8 @@ import os
 import subprocess
 import uuid
 from datetime import timedelta
-
+import re
+import time
 import yaml
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -1573,7 +1574,6 @@ def keycloak_callback(request):
         raw_user = claims.get('preferred_username') or claims.get('upn') or email or 'azure_user'
         
         # Clean username for Django compatibility
-        import re
         username = re.sub(r'[^a-zA-Z0-9_@.-]', '_', raw_user)
         first_name = claims.get('given_name') or claims.get('name', '').split(' ')[0] or ''
         last_name = claims.get('family_name') or (claims.get('name', '').split(' ')[1] if ' ' in claims.get('name', '') else '')
