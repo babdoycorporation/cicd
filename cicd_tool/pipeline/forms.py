@@ -7,6 +7,11 @@ class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ['name', 'repository_url', 'organization']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. ecommerce-backend', 'autofocus': True}),
+            'repository_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://github.com/org/repo.git'}),
+            'organization': forms.Select(attrs={'class': 'form-control'}),
+        }
 
 class ProjectConfigurationForm(forms.ModelForm):
     environment_variables = forms.CharField(widget=forms.Textarea(attrs={'rows': 5}), required=False)
