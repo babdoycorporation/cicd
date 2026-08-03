@@ -94,6 +94,10 @@ CI_RUNS_DIR = os.environ.get('CI_RUNS_DIR', str(BASE_DIR / 'runs'))
 os.makedirs(REPO_BASE_PATH, exist_ok=True)
 os.makedirs(CI_RUNS_DIR, exist_ok=True)
 
+# ── Upload Limits for Large Git Push & Assets ─────────────────────────────────
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2147483648  # 2 GB limit for git push payloads
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2147483648  # 2 GB limit for file uploads
+
 # ── Logging Setup ─────────────────────────────────────────────────────────────
 LOGGING = {
     'version': 1,
