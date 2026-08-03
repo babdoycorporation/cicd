@@ -844,19 +844,19 @@ function testKeycloakConnection(btn) {
 
     fetch("{% url 'test_keycloak_connection_api' %}", {
         method: 'POST',
-        headers: {'X-CSRFToken': data.get('csrfmiddlewaretoken')},
+        headers: {'X-CSRFToken': data.get('csrfmiddlewaretoken') || ''},
         body: data,
     })
-    .then(r => r.json())
+    .then(r => r.json().catch(() => ({ ok: false, message: 'Server returned status ' + r.status + '.' })))
     .then(d => {
         result.style.display = 'flex';
         result.className = 'test-result ' + (d.ok ? 'ok' : 'fail');
-        result.textContent = d.message;
+        result.textContent = d.message || (d.ok ? 'Keycloak connection OK!' : 'Metadata discovery failed.');
     })
-    .catch(() => {
+    .catch(err => {
         result.style.display = 'flex';
         result.className = 'test-result fail';
-        result.textContent = 'Failed to execute Keycloak metadata test.';
+        result.textContent = 'Connection error: ' + (err.message || 'Unable to contact server endpoint.');
     })
     .finally(() => {
         if (btn) {
