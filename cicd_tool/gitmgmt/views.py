@@ -1582,8 +1582,8 @@ def organization_detail(request, org_name):
         Q(organization=org) | Q(owner=org.owner) | Q(owner__in=members)
     ).distinct().order_by('-updated_at')
 
-    # All onboarded users in CogFocus One eligible to be added to this organization
-    available_users = get_user_model().objects.exclude(id__in=member_ids).order_by('username')
+    # All onboarded non-staff users in CogFocus One eligible to be added to this organization
+    available_users = get_user_model().objects.filter(is_staff=False, is_superuser=False).exclude(id__in=member_ids).order_by('username')
 
     return render(request, 'gitmgmt/organization_detail.html', {
         'organization': org,
