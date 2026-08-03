@@ -98,57 +98,53 @@
         box-shadow: var(--shadow-md);
     }
 
-    .btn-outline {
-        background-color: #ffffff;
-        color: var(--text-primary);
-    }
-
-    .btn-outline:hover {
-        background-color: var(--canvas-bg);
-        border-color: var(--brand);
-        color: var(--brand);
-    }
-
-    /* Filter Pills */
     .filter-pills {
         display: flex;
-        gap: 0.35rem;
-        margin-bottom: 1.1rem;
+        gap: 0.4rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
     }
 
     .filter-pill {
-        padding: 0.25rem 0.65rem;
+        padding: 0.28rem 0.7rem;
         border-radius: 20px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        background: var(--card-bg);
+        font-size: 0.75rem;
+        font-weight: 700;
+        background-color: #ffffff;
         border: 1px solid var(--border-color);
         color: var(--text-secondary);
         cursor: pointer;
-        text-decoration: none;
         transition: var(--transition);
+        user-select: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        box-shadow: var(--shadow-sm);
     }
 
-    .filter-pill.active, .filter-pill:hover {
-        background: var(--accent-light);
-        border-color: rgba(16, 185, 129, 0.3);
-        color: var(--brand);
-        font-weight: 700;
+    .filter-pill:hover {
+        background-color: var(--canvas-bg);
+        border-color: var(--btn-dark);
+        color: var(--btn-dark);
     }
 
-    /* Repository Cards Grid */
+    .filter-pill.active {
+        background-color: var(--btn-dark);
+        color: #ffffff;
+        border-color: var(--btn-dark);
+    }
+
     .repo-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-        gap: 0.85rem;
-        margin-bottom: 2rem;
+        gap: 1.15rem;
     }
 
     .repo-card {
-        background-color: var(--card-bg);
+        background-color: #ffffff;
         border: 1px solid var(--border-color);
         border-radius: 8px;
-        padding: 0.9rem 1.05rem;
+        padding: 1.15rem;
         transition: var(--transition);
         display: flex;
         flex-direction: column;
@@ -159,8 +155,8 @@
 
     .repo-card:hover {
         border-color: var(--brand);
-        transform: translateY(-2px);
         box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
     }
 
     .repo-card-top {
@@ -168,14 +164,15 @@
         justify-content: space-between;
         align-items: flex-start;
         gap: 0.5rem;
-        margin-bottom: 0.4rem;
+        margin-bottom: 0.45rem;
     }
 
     .repo-title-area {
         display: flex;
         align-items: center;
         gap: 0.45rem;
-        min-width: 0;
+        flex-wrap: wrap;
+        max-width: 85%;
     }
 
     .repo-name-link {
@@ -215,6 +212,38 @@
         background: #f1f5f9;
         color: #475569;
         border: 1px solid #cbd5e1;
+    }
+
+    /* Source / Scope Badges */
+    .badge-scope {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.12rem 0.45rem;
+        border-radius: 4px;
+        margin: 0.25rem 0 0.5rem 0;
+    }
+    .badge-scope-app {
+        background: rgba(5, 150, 105, 0.1);
+        color: var(--brand);
+        border: 1px solid rgba(5, 150, 105, 0.25);
+    }
+    .badge-scope-project {
+        background: rgba(37, 99, 235, 0.1);
+        color: #2563eb;
+        border: 1px solid rgba(37, 99, 235, 0.25);
+    }
+    .badge-scope-org {
+        background: rgba(147, 51, 234, 0.1);
+        color: #9333ea;
+        border: 1px solid rgba(147, 51, 234, 0.25);
+    }
+    .badge-scope-independent {
+        background: rgba(100, 116, 139, 0.1);
+        color: #475569;
+        border: 1px solid rgba(100, 116, 139, 0.25);
     }
 
     .favorite-btn {
@@ -319,76 +348,25 @@
     <!-- Filter Pills -->
     <div class="filter-pills">
         <span class="filter-pill active" onclick="setFilter('all', this)">All</span>
+        <span class="filter-pill" onclick="setFilter('app', this)"><i class="ph ph-cube"></i> Project / App Repos</span>
+        <span class="filter-pill" onclick="setFilter('independent', this)"><i class="ph ph-user"></i> Independent Repos</span>
         <span class="filter-pill" onclick="setFilter('public', this)">Public</span>
         <span class="filter-pill" onclick="setFilter('private', this)">Private</span>
         {% if favorites %}
         <span class="filter-pill" onclick="setFilter('favorites', this)">⭐ Favorites ({{ favorites|length }})</span>
         {% endif %}
     </div>
-    
-    <!-- Favorites Section if any -->
-    {% if favorites %}
-    <div id="favoritesSection">
-        <div class="section-label-header">
-            <i class="ph ph-star" style="color:#f59e0b;"></i> Favorites
-        </div>
-        <div class="repo-grid">
-            {% for repository in favorites %}
-            <div class="repo-card repo-item" data-name="{{ repository.name|lower }}" data-vis="{{ repository.visibility|lower }}" data-fav="true">
-                <div>
-                    <div class="repo-card-top">
-                        <div class="repo-title-area">
-                            <i class="ph ph-git-branch" style="color:var(--brand); font-size:1.05rem; flex-shrink:0;"></i>
-                            <a href="{% url 'repository_detail' repository.name %}" class="repo-name-link">
-                                {{ repository.name }}
-                            </a>
-                            <span class="badge-vis {% if repository.visibility == 'public' %}badge-public{% else %}badge-private{% endif %}">
-                                {{ repository.visibility }}
-                            </span>
-                        </div>
-                        <form method="post" action="{% url 'toggle_favorite' repository.name %}" style="margin: 0;">
-                            {% csrf_token %}
-                            <button type="submit" class="favorite-btn" title="Remove from favorites">
-                                <i class="ph-fill ph-star"></i>
-                            </button>
-                        </form>
-                    </div>
-                    <p class="repo-description">
-                        {{ repository.description|default:"No description provided for this repository." }}
-                    </p>
-                </div>
-                <div class="repo-card-footer">
-                    <span class="repo-meta-item">
-                        <span class="lang-dot"></span>
-                        {{ repository.language|default:"Text" }}
-                    </span>
-                    <span class="repo-meta-item">
-                        <i class="ph ph-git-fork"></i>
-                        {{ repository.branch|default:"main" }}
-                    </span>
-                    <span class="repo-meta-item" style="margin-left:auto;">
-                        <i class="ph ph-clock"></i>
-                        {{ repository.updated_at|date:"Y-m-d" }}
-                    </span>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Main Repositories Grid -->
     <div id="allReposSection">
-        {% if favorites %}
-        <div class="section-label-header">
-            <i class="ph ph-folder-open"></i> All Repositories
-        </div>
-        {% endif %}
-
         {% if repositories %}
         <div class="repo-grid">
             {% for repository in repositories %}
-            <div class="repo-card repo-item" data-name="{{ repository.name|lower }}" data-vis="{{ repository.visibility|lower }}" data-fav="{% if repository.is_favorite %}true{% else %}false{% endif %}">
+            <div class="repo-card repo-item"
+                 data-name="{{ repository.name|lower }}"
+                 data-vis="{{ repository.visibility|lower }}"
+                 data-scope="{% if repository.application %}app{% elif repository.organization %}org{% else %}independent{% endif %}"
+                 data-fav="{% if repository.is_favorite %}true{% else %}false{% endif %}">
                 <div>
                     <div class="repo-card-top">
                         <div class="repo-title-area">
@@ -411,6 +389,29 @@
                             </button>
                         </form>
                     </div>
+
+                    <!-- Scope / Context Badge -->
+                    <div style="display:flex; flex-wrap:wrap; gap:0.3rem; align-items:center;">
+                        {% if repository.application %}
+                            <span class="badge-scope badge-scope-app" title="Application: {{ repository.application.name }}">
+                                <i class="ph ph-cube"></i> App: {{ repository.application.name }}
+                            </span>
+                            {% if repository.application.project %}
+                            <span class="badge-scope badge-scope-project" title="Project: {{ repository.application.project.name }}">
+                                <i class="ph ph-tree-structure"></i> {{ repository.application.project.name }}
+                            </span>
+                            {% endif %}
+                        {% elif repository.organization %}
+                            <span class="badge-scope badge-scope-org" title="Organization: {{ repository.organization.name }}">
+                                <i class="ph ph-buildings"></i> Org: {{ repository.organization.name }}
+                            </span>
+                        {% else %}
+                            <span class="badge-scope badge-scope-independent" title="Independent / Personal Repository">
+                                <i class="ph ph-user"></i> Independent Repo
+                            </span>
+                        {% endif %}
+                    </div>
+
                     <p class="repo-description">
                         {{ repository.description|default:"No description provided for this repository." }}
                     </p>
@@ -422,7 +423,7 @@
                     </span>
                     <span class="repo-meta-item">
                         <i class="ph ph-git-fork"></i>
-                        {{ repository.branch|default:"main" }}
+                        {{ repository.default_branch|default:"main" }}
                     </span>
                     <span class="repo-meta-item" style="margin-left:auto;">
                         <i class="ph ph-clock"></i>
@@ -460,18 +461,22 @@ function filterRepos(q) {
 }
 
 function applyFilters() {
-    const q = document.getElementById('repoSearchInput').value.toLowerCase().strip ? document.getElementById('repoSearchInput').value.toLowerCase().trim() : '';
+    const qInput = document.getElementById('repoSearchInput');
+    const q = qInput && qInput.value ? qInput.value.toLowerCase().trim() : '';
     const cards = document.querySelectorAll('.repo-item');
 
     cards.forEach(card => {
         const name = card.getAttribute('data-name') || '';
         const vis = card.getAttribute('data-vis') || '';
+        const scope = card.getAttribute('data-scope') || '';
         const isFav = card.getAttribute('data-fav') === 'true';
 
         let matchesFilter = true;
         if (currentFilter === 'public' && vis !== 'public') matchesFilter = false;
         if (currentFilter === 'private' && vis !== 'private') matchesFilter = false;
         if (currentFilter === 'favorites' && !isFav) matchesFilter = false;
+        if (currentFilter === 'app' && scope !== 'app' && scope !== 'org') matchesFilter = false;
+        if (currentFilter === 'independent' && scope !== 'independent') matchesFilter = false;
 
         let matchesSearch = true;
         if (q && !name.includes(q)) matchesSearch = false;

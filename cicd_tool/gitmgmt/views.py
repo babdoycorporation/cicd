@@ -82,7 +82,7 @@ def repository_list(request):
         Q(organization__in=user_orgs) |
         Q(collaborators__user=request.user) |
         Q(visibility='public')
-    ).distinct().order_by('-updated_at')
+    ).select_related('organization', 'application', 'application__project', 'owner').distinct().order_by('-updated_at')
 
     if visibility_filter == 'public':
         repos = repos.filter(visibility='public')
