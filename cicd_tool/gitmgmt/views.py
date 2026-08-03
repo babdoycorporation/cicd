@@ -774,14 +774,14 @@ class GitService(View):
         if not os.path.exists(rp):
             return HttpResponse(f"Repository '{repo_name}' not found.", status=404)
         if path in ('git-upload-pack', 'git-receive-pack'):
-            return self._handle_service(rp, path, request.body, repo_name)
+            return self._handle_service(rp, path, request.body, repo_name, user=getattr(request, 'user', None))
         return HttpResponseServerError("Invalid service")
 
     def _advertise(self, rp, service):
         cmd = ['git', service[4:], '--advertise-refs', rp]
         result = subprocess.run(cmd, capture_output=True)
         if result.returncode != 0:
-            return HttpResponseServerError(result.stderr.decode())
+            return HttpResponseServerError(result.stderr.decode(errors='replace'))
         resp = HttpResponse(content_type=f'application/x-{service}-advertisement')
         pkt = f"# service={service}\n"
         resp.write(f"{len(pkt) + 4:04x}{pkt}0000".encode())
@@ -796,20 +796,30 @@ class GitService(View):
         with open(refs_file, 'rb') as fh:
             return HttpResponse(fh.read(), content_type='text/plain')
 
-    def _handle_service(self, rp, service, body, repo_name):
+    def _handle_service(self, rp, service, body, repo_name, user=None):
         cmd = ['git', service[4:], '--stateless-rpc', rp]
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate(input=body)
-        if proc.returncode != 0:
-            return HttpResponseServerError(stderr.decode())
+
+        if stderr:
+            logger.debug(f"Git service {service} stderr: {stderr.decode(errors='replace')}")
+
+        if proc.returncode != 0 and not stdout:
+            err_msg = stderr.decode(errors='replace') or "Git service error"
+            logger.error(f"Git service {service} failed ({proc.returncode}): {err_msg}")
+            return HttpResponseServerError(err_msg)
+
         if service == 'git-receive-pack':
             try:
                 repo_obj = Repository.objects.filter(name__iexact=repo_name).first()
                 if repo_obj:
-                    log_activity(repo_obj.owner, 'push', f"Pushed commits to {repo_obj.name}", repository=repo_obj)
+                    actor = user if (user and user.is_authenticated) else (repo_obj.owner or user)
+                    if actor:
+                        log_activity(actor, 'push', f"Pushed commits to {repo_obj.name}", repository=repo_obj)
                 self._trigger_yaml_pipeline(rp, repo_name)
             except Exception as e:
                 logger.error(f"Error in post-receive hook for {repo_name}: {e}")
+
         return HttpResponse(stdout, content_type=f'application/x-{service}-result')
 
     def _trigger_yaml_pipeline(self, rp, repo_name):
