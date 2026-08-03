@@ -1658,8 +1658,13 @@ def organization_detail(request, org_name):
         u.org_role = member_roles.get(u.id, 'owner' if u.id == org.owner_id else 'member')
 
     projects = org.projects.all()
+    
+    from pipeline.models import Application
+    applications = Application.objects.filter(project__organization=org).select_related('project').order_by('name')
+
     repositories = Repository.objects.filter(
-        Q(organization=org) | Q(owner=org.owner) | Q(owner__in=members)
+        Q(organization=org) |
+        Q(application__project__organization=org)
     ).distinct().order_by('-updated_at')
 
     # All onboarded non-staff users in CogFocus One eligible to be added to this organization
@@ -1669,6 +1674,7 @@ def organization_detail(request, org_name):
         'organization': org,
         'org': org,
         'projects': projects,
+        'applications': applications,
         'repositories': repositories,
         'repos': repositories,
         'teams': teams,

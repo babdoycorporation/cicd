@@ -518,6 +518,10 @@
                         <i class="ph ph-tree-structure icon"></i>
                         <span class="text">Projects</span>
                     </a>
+                    <a href="{% url 'organization_detail' current_org.name %}#applications" class="{% if 'application' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-cube icon"></i>
+                        <span class="text">Applications</span>
+                    </a>
                     <a href="{% url 'organization_detail' current_org.name %}#repositories" class="{% if 'repository' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-git-branch icon"></i>
                         <span class="text">Repositories</span>
@@ -545,6 +549,10 @@
                     <a href="{% url 'organization_detail' current_org.name %}#projects" class="{% if 'project' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-tree-structure icon"></i>
                         <span class="text">Projects</span>
+                    </a>
+                    <a href="{% url 'organization_detail' current_org.name %}#applications" class="{% if 'application' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="ph ph-cube icon"></i>
+                        <span class="text">Applications</span>
                     </a>
                     <a href="{% url 'organization_detail' current_org.name %}#repositories" class="{% if 'repository' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-git-branch icon"></i>

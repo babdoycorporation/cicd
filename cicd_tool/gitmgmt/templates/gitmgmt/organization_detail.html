@@ -213,11 +213,51 @@
       {% endif %}
     </div>
 
+    <!-- Applications Section -->
+    <div class="pcard" id="applications">
+      <div class="pcard-head">
+        <span><i class="ph ph-cube" style="color:var(--brand);"></i> Applications ({{ applications|length }})</span>
+        <a href="{% url 'create_application' %}" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
+          <i class="ph ph-plus"></i> New Application
+        </a>
+      </div>
+      {% if applications %}
+        <div class="tile-grid">
+          {% for app in applications %}
+          <a href="{% url 'application_detail' app.name %}" class="tile-card">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                <span class="tile-name">
+                  <i class="ph ph-cube" style="color:var(--brand);"></i> {{ app.name }}
+                </span>
+                <span class="badge-public" style="font-size:0.65rem; background:rgba(37,99,235,0.1); color:#2563eb; border:1px solid rgba(37,99,235,0.25);">
+                  {{ app.project.name }}
+                </span>
+              </div>
+              <p style="color:var(--text-secondary); font-size:0.75rem; margin:0 0 0.65rem; line-height:1.4;">
+                {{ app.description|default:"No application description."|truncatewords:12 }}
+              </p>
+            </div>
+            <div style="font-size:0.7rem; color:var(--text-muted); border-top:1px solid #f1f5f9; padding-top:0.45rem; display:flex; justify-content:space-between; align-items:center;">
+              <span><i class="ph ph-git-branch"></i> {{ app.default_branch|default:"main" }}</span>
+              <span><i class="ph ph-tree-structure"></i> {{ app.project.name }}</span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-box">
+          <i class="ph ph-cube" style="font-size:1.8rem; color:var(--brand); display:block; margin-bottom:0.35rem;"></i>
+          No applications created under {{ org.name }} yet.
+        </div>
+      {% endif %}
+    </div>
+
     <!-- Repositories Section -->
     <div class="pcard" id="repositories">
       <div class="pcard-head">
         <span><i class="ph ph-git-branch" style="color:var(--brand);"></i> Repositories ({{ repositories|length }})</span>
-        <a href="{% url 'create_repository' %}" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
+        <a href="{% url 'create_repository' %}?org={{ org.id }}" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
           <i class="ph ph-plus"></i> New Repository
         </a>
       </div>
