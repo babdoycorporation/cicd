@@ -15,7 +15,7 @@ import os
 import subprocess
 import uuid
 from datetime import timedelta
-import time
+
 import yaml
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -1440,7 +1440,7 @@ def save_keycloak_settings(request):
     return redirect('global_settings')
 
 
-@csrf_exempt
+@login_required
 def test_keycloak_connection_api(request):
     """AJAX endpoint to test Keycloak realm OIDC openid-configuration discovery endpoint."""
     if request.method == 'POST':
