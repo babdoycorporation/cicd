@@ -1,44 +1,276 @@
 {% extends 'gitmgmt/repository_base.html' %}
+
 {% block repo_content %}
-<div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 2rem;">
-    <h2 style="margin-top: 0; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
-        <i class="fas fa-gear"></i> General Settings
+<style>
+  .settings-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .settings-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.38rem;
+  }
+  .form-control {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    padding: 0.52rem 0.8rem;
+    font-size: 0.82rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    outline: none;
+    transition: var(--transition);
+  }
+  .form-control:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(5,150,105,0.12);
+  }
+  .btn-primary {
+    background: var(--btn-dark);
+    color: #ffffff;
+    border: 1px solid var(--btn-dark);
+    border-radius: 6px;
+    padding: 0.45rem 1.05rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+  }
+  .btn-primary:hover {
+    background: var(--btn-dark-hover);
+    border-color: var(--btn-dark-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  .btn-danger-outline {
+    background: transparent;
+    color: var(--danger-color);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .btn-danger-outline:hover {
+    background: rgba(239,68,68,0.1);
+    border-color: var(--danger-color);
+  }
+
+  .badge-role {
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-write { background: rgba(5,150,105,0.1); color: var(--brand); border: 1px solid rgba(5,150,105,0.25); }
+  .badge-read { background: rgba(100,116,139,0.1); color: #475569; border: 1px solid rgba(100,116,139,0.25); }
+  .badge-admin { background: rgba(234,88,12,0.1); color: #ea580c; border: 1px solid rgba(234,88,12,0.25); }
+
+  .collab-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  .collab-table th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .collab-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+  }
+</style>
+
+<!-- General Settings -->
+<div class="settings-card">
+    <h2 class="settings-title">
+        <i class="ph ph-gear" style="color:var(--brand);"></i> General Settings
     </h2>
     
-    <div style="margin-bottom: 2rem;">
-        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">Repository Name</label>
-        <input type="text" value="{{ repository.name }}" class="form-control" style="width: 100%; max-width: 400px; padding: 0.5rem 1rem; background: var(--darker-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem;">
-    </div>
-    
-    <div style="margin-bottom: 2rem;">
-        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">Description</label>
-        <input type="text" value="{{ repository.description|default:'' }}" class="form-control" style="width: 100%; max-width: 600px; padding: 0.5rem 1rem; background: var(--darker-bg); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem;">
-    </div>
-    
-    <div style="margin-bottom: 2rem;">
-        <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary);">Visibility</label>
-        <div style="display: flex; gap: 1rem;">
-            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-primary);">
-                <input type="radio" name="visibility" value="public" {% if repository.visibility == 'public' %}checked{% endif %}> Public
-            </label>
-            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--text-primary);">
-                <input type="radio" name="visibility" value="private" {% if repository.visibility == 'private' %}checked{% endif %}> Private
-            </label>
+    <form method="post" action="">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Repository Name</label>
+            <input type="text" name="name" value="{{ repository.name }}" class="form-control" style="max-width: 420px;" readonly>
+            <p style="font-size:0.72rem; color:var(--text-muted); margin-top:0.25rem;">Repository identifier cannot be changed.</p>
         </div>
+        
+        <div class="form-group">
+            <label>Description</label>
+            <input type="text" name="description" value="{{ repository.description|default:'' }}" class="form-control" style="max-width: 600px;">
+        </div>
+        
+        <div class="form-group">
+            <label>Visibility</label>
+            <div style="display: flex; gap: 1.5rem; margin-top: 0.35rem;">
+                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.82rem; font-weight:600;">
+                    <input type="radio" name="visibility" value="public" {% if repository.visibility == 'public' %}checked{% endif %} style="accent-color:var(--brand);">
+                    Public (Visible to everyone)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.82rem; font-weight:600;">
+                    <input type="radio" name="visibility" value="private" {% if repository.visibility == 'private' %}checked{% endif %} style="accent-color:var(--brand);">
+                    Private (Restricted to owner &amp; collaborators)
+                </label>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn-primary">
+            <i class="ph ph-floppy-disk"></i> Save Settings
+        </button>
+    </form>
+</div>
+
+<!-- Manage Access & Collaborators -->
+<div class="settings-card">
+    <h2 class="settings-title">
+        <i class="ph ph-users-three" style="color:var(--brand);"></i> Manage Access &amp; Collaborators
+    </h2>
+    <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1.25rem;">
+        Grant team members direct access to contribute (Push / PR / Edit) or view this repository.
+    </p>
+
+    <!-- Add Collaborator Form -->
+    <form method="post" action="{% url 'add_collaborator' repository.name %}" style="background:var(--canvas-bg); border:1px solid var(--border-color); border-radius:8px; padding:1.15rem; margin-bottom:1.5rem;">
+        {% csrf_token %}
+        <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end;">
+            <div style="flex:1; min-width:220px;">
+                <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">
+                    Select Onboarded System User
+                </label>
+                {% if available_users %}
+                <select name="username" class="form-control" required style="font-weight:600;">
+                    <option value="">— Select User —</option>
+                    {% for u in available_users %}
+                    <option value="{{ u.username }}">{{ u.username }} {% if u.email %}({{ u.email }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                <input type="text" name="username" class="form-control" placeholder="Username" required>
+                {% endif %}
+            </div>
+
+            <div style="width:240px;">
+                <label style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">
+                    Access Permission Level
+                </label>
+                <select name="role" class="form-control" style="font-weight:600;">
+                    <option value="write">Contribute / Write Access (Push, Commit, PRs)</option>
+                    <option value="read">Read Only Access (View &amp; Clone)</option>
+                    <option value="admin">Admin Access (Full Control)</option>
+                </select>
+            </div>
+
+            <div>
+                <button type="submit" class="btn-primary">
+                    <i class="ph ph-user-plus"></i> Add Collaborator
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Existing Collaborators List -->
+    <h3 style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin:0 0 0.5rem 0;">
+        Active Collaborators ({{ collaborators|length }})
+    </h3>
+    {% if collaborators %}
+    <table class="collab-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Role / Access Level</th>
+                <th style="text-align:right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in collaborators %}
+            <tr>
+                <td>
+                    <div style="display:flex; align-items:center; gap:0.45rem;">
+                        <i class="ph ph-user-circle" style="color:var(--text-muted); font-size:1.1rem;"></i>
+                        <strong style="color:var(--text-primary);">{{ c.user.username }}</strong>
+                        {% if c.user.email %}
+                        <span style="color:var(--text-muted); font-size:0.75rem;">({{ c.user.email }})</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    {% if c.role == 'write' %}
+                        <span class="badge-role badge-write"><i class="ph ph-pencil-simple"></i> Contribute / Write</span>
+                    {% elif c.role == 'admin' %}
+                        <span class="badge-role badge-admin"><i class="ph ph-shield-check"></i> Admin</span>
+                    {% else %}
+                        <span class="badge-role badge-read"><i class="ph ph-eye"></i> Read Only</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">
+                    <form method="post" action="{% url 'remove_collaborator' repository.name c.user.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-danger-outline" onclick="return confirm('Remove access for {{ c.user.username }}?')">
+                            <i class="ph ph-trash"></i> Remove Access
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align:center; padding:1.5rem; background:var(--canvas-bg); border:1px dashed var(--border-color); border-radius:6px; color:var(--text-muted); font-size:0.78rem;">
+        <i class="ph ph-users" style="font-size:1.5rem; color:var(--brand); display:block; margin-bottom:0.25rem;"></i>
+        No external collaborators added to this repository yet.
     </div>
-    
-    <button class="btn btn-primary">Save Changes</button>
-    
-    <h2 style="margin-top: 3rem; color: #da3633; border-bottom: 1px solid #da3633; padding-bottom: 1rem; margin-bottom: 1.5rem;">
-        Danger Zone
+    {% endif %}
+</div>
+
+<!-- Danger Zone -->
+<div class="settings-card" style="border-color: rgba(239,68,68,0.3);">
+    <h2 class="settings-title" style="color: var(--danger-color); border-color: rgba(239,68,68,0.3);">
+        <i class="ph ph-warning-diamond"></i> Danger Zone
     </h2>
     
-    <div style="border: 1px solid #da3633; border-radius: 6px; padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap:wrap; gap:1rem;">
         <div>
-            <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary);">Delete this repository</h4>
-            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Once you delete a repository, there is no going back. Please be certain.</p>
+            <h4 style="margin: 0 0 0.25rem 0; color: var(--text-primary); font-size:0.85rem;">Delete this repository</h4>
+            <p style="margin: 0; color: var(--text-secondary); font-size: 0.78rem;">Once deleted, all files, commits, issues, and settings will be permanently lost.</p>
         </div>
-        <button class="btn" style="background: transparent; color: #da3633; border: 1px solid #da3633;">Delete Repository</button>
+        <button class="btn-danger-outline" style="padding:0.5rem 1rem;">Delete Repository</button>
     </div>
 </div>
 {% endblock %}

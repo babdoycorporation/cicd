@@ -349,10 +349,21 @@ def repository_settings(request, repository_name):
     if not _user_can_manage_repo(request.user, repo):
         messages.error(request, "Access Denied: You need Maintainer or Repository Admin permissions to manage repository settings.")
         return redirect('repository_detail', repository_name=repo.name)
+
     collaborators = repo.collaborators.select_related('user').all()
+    existing_user_ids = set(collaborators.values_list('user_id', flat=True))
+    if repo.owner_id:
+        existing_user_ids.add(repo.owner_id)
+
+    from django.contrib.auth import get_user_model
+    available_users = get_user_model().objects.filter(
+        is_staff=False, is_superuser=False
+    ).exclude(id__in=existing_user_ids).order_by('username')
+
     return render(request, 'gitmgmt/repository_settings.html', {
         'repository': repo,
         'collaborators': collaborators,
+        'available_users': available_users,
         'can_manage_repo': True,
     })
 
@@ -370,7 +381,8 @@ def add_collaborator(request, repository_name):
         if user:
             from .models import Collaborator
             Collaborator.objects.update_or_create(repository=repo, user=user, defaults={'role': role})
-            messages.success(request, f"Added {username} as {role}.")
+            role_label = "Contribute / Write Access" if role == 'write' else ("Read Only Access" if role == 'read' else "Admin Access")
+            messages.success(request, f"Granted {username} {role_label} on '{repo.name}'.")
         else:
             messages.error(request, f"User '{username}' not found.")
     return redirect('repository_settings', repository_name=repo.name)
