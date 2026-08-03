@@ -69,16 +69,36 @@ def _repo_path(name):
 @login_required
 def repository_list(request):
     query = request.GET.get('q', '').strip()
-    repos = Repository.objects.filter(
-        Q(owner=request.user) | Q(collaborators__user=request.user) | Q(visibility='public')
+    visibility_filter = request.GET.get('visibility', '').strip().lower()
+
+    # User's organizations
+    user_orgs = Organization.objects.filter(
+        Q(owner=request.user) | Q(memberships__user=request.user) | Q(teams__members=request.user)
     ).distinct()
+
+    # Repositories user has access to (owned, organization, collaborator, or public)
+    repos = Repository.objects.filter(
+        Q(owner=request.user) |
+        Q(organization__in=user_orgs) |
+        Q(collaborators__user=request.user) |
+        Q(visibility='public')
+    ).distinct().order_by('-updated_at')
+
+    if visibility_filter == 'public':
+        repos = repos.filter(visibility='public')
+    elif visibility_filter == 'private':
+        repos = repos.filter(visibility='private')
+
     if query:
         repos = repos.filter(Q(name__icontains=query) | Q(description__icontains=query))
+
     favorites = repos.filter(stars=request.user)
+
     return render(request, 'gitmgmt/repository_list.html', {
         'repositories': repos,
         'favorites': favorites,
         'query': query,
+        'visibility_filter': visibility_filter,
     })
 
 
@@ -144,6 +164,13 @@ def _initialize_repository(name, user=None):
 
 @login_required
 def create_repository(request):
+    org_id = request.GET.get('org')
+    initial = {}
+    if org_id and str(org_id).isdigit():
+        org = Organization.objects.filter(pk=int(org_id)).first()
+        if org:
+            initial['organization'] = org.pk
+
     if request.method == 'POST':
         form = RepositoryForm(request.POST)
         if form.is_valid():
@@ -152,7 +179,6 @@ def create_repository(request):
             try:
                 _initialize_repository(repo.name, user=request.user)
                 repo.save()
-                # Create default Branch record and default labels
                 branch = Branch.objects.create(repository=repo, name=repo.default_branch, is_default=True)
                 _create_default_labels(repo)
                 log_activity(request.user, 'push', f"Created repository {repo.name}", repository=repo)
@@ -161,7 +187,7 @@ def create_repository(request):
             except Exception as e:
                 form.add_error(None, f"Failed to initialize repository: {e}")
     else:
-        form = RepositoryForm()
+        form = RepositoryForm(initial=initial)
     return render(request, 'gitmgmt/repository_form.html', {'form': form})
 
 
