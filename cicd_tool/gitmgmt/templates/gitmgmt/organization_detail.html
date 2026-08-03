@@ -311,20 +311,37 @@
 
       {% if my_role == 'owner' or my_role == 'admin' %}
       <div style="margin-top:1rem; border-top:1px solid var(--border-color); padding-top:0.75rem;">
-        <h4 style="margin:0 0 0.4rem; font-size:0.75rem; color:var(--text-secondary); font-weight:700;">Add Member</h4>
+        <h4 style="margin:0 0 0.4rem; font-size:0.75rem; color:var(--text-secondary); font-weight:700;">
+          <i class="ph ph-user-plus" style="color:var(--brand);"></i> Add Onboarded Member
+        </h4>
         <form method="post" action="{% url 'add_org_member' org.name %}">
           {% csrf_token %}
           <div class="form-row">
+            <label style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Select Keycloak / System User</label>
+            {% if available_users %}
+            <select name="username" required style="font-weight:600;">
+              <option value="">— Select Onboarded User —</option>
+              {% for u in available_users %}
+              <option value="{{ u.username }}">
+                {{ u.username }} {% if u.email %}({{ u.email }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            {% else %}
             <input type="text" name="username" placeholder="Username" required>
+            {% endif %}
           </div>
           <div class="form-row">
+            <label style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Organization Role</label>
             <select name="role">
               <option value="member">Member</option>
               <option value="admin">Admin</option>
               <option value="owner">Owner</option>
             </select>
           </div>
-          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">Add Member</button>
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+            <i class="ph ph-user-check"></i> Add Member
+          </button>
         </form>
       </div>
       {% endif %}

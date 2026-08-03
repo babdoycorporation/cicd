@@ -1582,6 +1582,9 @@ def organization_detail(request, org_name):
         Q(organization=org) | Q(owner=org.owner) | Q(owner__in=members)
     ).distinct().order_by('-updated_at')
 
+    # All onboarded users in CogFocus One eligible to be added to this organization
+    available_users = get_user_model().objects.exclude(id__in=member_ids).order_by('username')
+
     return render(request, 'gitmgmt/organization_detail.html', {
         'organization': org,
         'org': org,
@@ -1590,6 +1593,7 @@ def organization_detail(request, org_name):
         'repos': repositories,
         'teams': teams,
         'members': members,
+        'available_users': available_users,
         'my_role': org.get_member_role(request.user),
     })
 
