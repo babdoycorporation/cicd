@@ -113,25 +113,69 @@
 <!-- Main Content Grid -->
 <div class="repo-grid">
     <div class="main-column">
+        <!-- Directory Navigation Breadcrumbs Bar -->
+        <div style="background:var(--canvas-bg); border:1px solid var(--border-color); border-radius:8px; padding:0.6rem 1rem; margin-bottom:1rem; display:flex; align-items:center; gap:0.4rem; font-size:0.83rem; font-weight:600;">
+            <a href="?branch={{ current_branch }}" style="color:var(--brand); text-decoration:none;">
+                <i class="ph ph-folder-notch-open"></i> {{ repository.name }}
+            </a>
+            {% for bc in breadcrumbs %}
+                <span style="color:var(--text-muted);">/</span>
+                {% if forloop.last %}
+                    <span style="color:var(--text-primary); font-weight:700;">{{ bc.name }}</span>
+                {% else %}
+                    <a href="?branch={{ current_branch }}&path={{ bc.path }}" style="color:var(--brand); text-decoration:none;">{{ bc.name }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+
         <div class="file-explorer">
             <div class="explorer-header">
-                <div class="last-commit" style="font-size: 0.9rem;">
-                    <strong>Latest:</strong> <span style="color: var(--text-secondary);">{{ last_commit_message|truncatechars:100 }}</span>
+                <div class="last-commit" style="font-size: 0.85rem; display:flex; align-items:center; gap:0.4rem;">
+                    <i class="ph ph-git-commit" style="color:var(--brand);"></i>
+                    <strong>Latest:</strong> <span style="color: var(--text-secondary);">{{ last_commit_message|default:"No commit history"|truncatechars:100 }}</span>
                 </div>
-                <div style="font-family: monospace; font-size: 0.85rem; color: var(--accent-color);">
+                {% if last_commit_hash %}
+                <div style="font-family: monospace; font-size: 0.8rem; color: var(--brand); background:rgba(5,150,105,0.1); padding:0.15rem 0.5rem; border-radius:4px; font-weight:700;">
                     {{ last_commit_hash|slice:":7" }}
                 </div>
+                {% endif %}
             </div>
 
             <ul class="file-list">
-                {% for file in files %}
+                <!-- Parent Directory Link -->
+                {% if current_path %}
+                <li class="file-item" style="background:rgba(0,0,0,0.01);">
+                    <i class="ph ph-arrow-left" style="color: var(--brand); font-size:1rem;"></i>
+                    <a href="?branch={{ current_branch }}&path={{ parent_path }}" style="font-weight:700; color:var(--brand);">..</a>
+                </li>
+                {% endif %}
+
+                {% for item in items %}
                 <li class="file-item">
-                    <i class="fas fa-file-code" style="color: var(--text-secondary);"></i>
-                    <a href="{% url 'edit_and_save_file' repository.name file.path %}">{{ file.path }}</a>
+                    {% if item.is_dir %}
+                        <i class="ph ph-folder" style="color: var(--brand); font-size:1.1rem; flex-shrink:0;"></i>
+                        <a href="?branch={{ current_branch }}&path={{ item.path }}" style="font-weight:700; color:var(--text-primary);">
+                            {{ item.name }}
+                        </a>
+                        <span style="font-size:0.72rem; color:var(--text-muted); font-weight:600;">Directory</span>
+                    {% else %}
+                        <i class="ph ph-file-text" style="color: var(--text-muted); font-size:1.1rem; flex-shrink:0;"></i>
+                        <a href="{% url 'edit_and_save_file' repository.name item.path %}" style="color:var(--text-primary);">
+                            {{ item.name }}
+                        </a>
+                        {% if item.size %}
+                        <span style="font-size:0.72rem; color:var(--text-muted); font-family:monospace;">
+                            {{ item.size|filesizeformat }}
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="file-item" style="color:var(--text-muted); font-size:0.85rem; text-align:center; justify-content:center; padding:1.5rem;">
+                    No files or directories found in this folder.
                 </li>
                 {% endfor %}
             </ul>
-
         </div>
 
         {% if readme_content %}

@@ -216,13 +216,15 @@ def _create_default_labels(repo):
 def repository_detail(request, repository_name):
     repo = get_object_or_404(Repository, name=repository_name)
     rp = _repo_path(repo.name)
-    branches, files, current_branch = [], [], None
+    branches, items, current_branch = [], [], None
     last_commit_hash = last_commit_message = readme_content = error_message = None
+    current_path = request.GET.get('path', '').strip('/')
+    parent_path = None
+    breadcrumbs = []
 
     try:
         git_repo = Repo(rp)
         branches = [b.name for b in git_repo.heads]
-        # Bare repos have no active_branch — use the request param, then DB default, then first head
         requested = request.GET.get('branch')
         default = repo.default_branch or 'main'
         if requested and any(b == requested for b in branches):
@@ -236,21 +238,57 @@ def repository_detail(request, repository_name):
 
         if current_branch:
             branch_head = next(h for h in git_repo.heads if h.name == current_branch)
-            tree = branch_head.commit.tree
-            files = []
-            for item in tree.traverse():
-                if item.type == 'blob':
-                    files.append({
-                        'path': item.path,
-                        'size': item.size,
-                    })
+            root_tree = branch_head.commit.tree
+
+            target_tree = root_tree
+            if current_path:
+                try:
+                    target_tree = root_tree[current_path]
+                except KeyError:
+                    target_tree = None
+
+            if target_tree and target_tree.type == 'tree':
+                folders = []
+                files_list = []
+                for item in target_tree:
+                    if item.type == 'tree':
+                        folders.append({
+                            'name': item.name,
+                            'path': item.path,
+                            'is_dir': True,
+                        })
+                    elif item.type == 'blob':
+                        files_list.append({
+                            'name': item.name,
+                            'path': item.path,
+                            'size': item.size,
+                            'is_dir': False,
+                        })
+                folders.sort(key=lambda x: x['name'].lower())
+                files_list.sort(key=lambda x: x['name'].lower())
+                items = folders + files_list
+
+                if current_path:
+                    parts = current_path.split('/')
+                    parent_path = '/'.join(parts[:-1])
+
+                    cum_path = ""
+                    for p in parts:
+                        cum_path = f"{cum_path}/{p}".strip('/')
+                        breadcrumbs.append({'name': p, 'path': cum_path})
+
+                for name in ('README.md', 'readme.md', 'Readme.md'):
+                    if name in target_tree:
+                        try:
+                            readme_content = target_tree[name].data_stream.read().decode('utf-8', errors='replace')
+                            break
+                        except Exception:
+                            pass
+
             last_commit = branch_head.commit
             last_commit_hash = last_commit.hexsha
             last_commit_message = last_commit.message.strip()
-            for name in ('README.md', 'readme.md', 'Readme.md'):
-                if name in tree:
-                    readme_content = tree[name].data_stream.read().decode('utf-8', errors='replace')
-                    break
+
     except Exception as e:
         error_message = str(e)
 
@@ -270,7 +308,11 @@ def repository_detail(request, repository_name):
         'repository': repo,
         'branches': branches,
         'current_branch': current_branch,
-        'files': files,
+        'current_path': current_path,
+        'parent_path': parent_path if parent_path is not None else '',
+        'breadcrumbs': breadcrumbs,
+        'items': items,
+        'files': items,
         'last_commit_hash': last_commit_hash,
         'last_commit_message': last_commit_message,
         'readme_content': readme_content,
