@@ -1419,6 +1419,13 @@ def save_keycloak_settings(request):
         kc_client_secret = request.POST.get('keycloak_client_secret', '').strip()
         kc_enabled = 'true' if request.POST.get('keycloak_enabled') == 'true' else 'false'
 
+        # Auto-correct port 8443 / 443 HTTP to HTTPS for Keycloak SSL
+        if kc_url:
+            if ':8443' in kc_url or ':443' in kc_url:
+                kc_url = re.sub(r'^http://', 'https://', kc_url)
+            if not kc_url.startswith(('http://', 'https://')):
+                kc_url = f"https://{kc_url}" if ':8443' in kc_url or ':443' in kc_url else f"http://{kc_url}"
+
         GlobalSettings.objects.update_or_create(key='KEYCLOAK_SERVER_URL', defaults={'value': kc_url})
         GlobalSettings.objects.update_or_create(key='KEYCLOAK_REALM', defaults={'value': kc_realm})
         GlobalSettings.objects.update_or_create(key='KEYCLOAK_CLIENT_ID', defaults={'value': kc_client_id})
@@ -1427,7 +1434,7 @@ def save_keycloak_settings(request):
         GlobalSettings.objects.update_or_create(key='KEYCLOAK_ENABLED', defaults={'value': kc_enabled})
 
         if kc_enabled == 'true':
-            messages.success(request, "Keycloak Enterprise SSO enabled and configured.")
+            messages.success(request, f"Keycloak Enterprise SSO enabled and configured ({kc_url}).")
         else:
             messages.success(request, "Keycloak SSO configuration saved (Disabled).")
     return redirect('global_settings')
@@ -1442,16 +1449,19 @@ def test_keycloak_connection_api(request):
         if not kc_url or not kc_realm:
             return JsonResponse({'ok': False, 'message': 'Please enter Keycloak Server URL and Realm Name.'})
 
-        # Auto-correct http:// to https:// for port 8443 or TLS ports
-        if kc_url.startswith('http://') and ':8443' in kc_url:
-            kc_url = 'https://' + kc_url[7:]
+        # Smart protocol normalization: If 8443 or SSL port, ensure https://
+        if ':8443' in kc_url or ':443' in kc_url:
+            kc_url = re.sub(r'^http://', 'https://', kc_url)
+        if not kc_url.startswith(('http://', 'https://')):
+            kc_url = f"https://{kc_url}" if ':8443' in kc_url or ':443' in kc_url else f"http://{kc_url}"
 
         discovery_url = f"{kc_url}/realms/{kc_realm}/.well-known/openid-configuration"
+        
+        import requests
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
         try:
-            import requests
-            import urllib3
-            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            
             resp = requests.get(discovery_url, timeout=6, verify=False)
             if resp.status_code == 200:
                 data = resp.json()
@@ -1460,19 +1470,19 @@ def test_keycloak_connection_api(request):
             else:
                 return JsonResponse({'ok': False, 'message': f"Keycloak endpoint returned status {resp.status_code}."})
         except Exception as e:
-            # Fallback attempt with HTTPS if HTTP failed
+            # Fallback retry with https if http failed with RemoteDisconnected
             if kc_url.startswith('http://'):
+                https_url = re.sub(r'^http://', 'https://', kc_url)
+                https_discovery = f"{https_url}/realms/{kc_realm}/.well-known/openid-configuration"
                 try:
-                    https_url = 'https://' + kc_url[7:]
-                    discovery_url_s = f"{https_url}/realms/{kc_realm}/.well-known/openid-configuration"
-                    resp = requests.get(discovery_url_s, timeout=6, verify=False)
+                    resp = requests.get(https_discovery, timeout=6, verify=False)
                     if resp.status_code == 200:
                         data = resp.json()
                         issuer = data.get('issuer', '')
                         return JsonResponse({'ok': True, 'message': f"Keycloak Realm OK (via HTTPS)! Discovered Issuer: {issuer}"})
                 except Exception:
                     pass
-            return JsonResponse({'ok': False, 'message': f"Connection to Keycloak failed: {e}"})
+            return JsonResponse({'ok': False, 'message': f"Connection to Keycloak failed: {e}. Note: Keycloak on port 8443 requires 'https://'."})
     return JsonResponse({'ok': False, 'message': 'Invalid request.'})
 
 
@@ -1488,8 +1498,9 @@ def keycloak_login(request):
         messages.error(request, "Keycloak SSO is not enabled or configured by admin.")
         return redirect('login')
 
-    if kc_url.startswith('http://') and ':8443' in kc_url:
-        kc_url = 'https://' + kc_url[7:]
+    # Auto-correct port 8443 / 443 HTTP to HTTPS
+    if ':8443' in kc_url or ':443' in kc_url:
+        kc_url = re.sub(r'^http://', 'https://', kc_url)
 
     from urllib.parse import urlencode
     redirect_uri = request.build_absolute_uri('/ci/auth/keycloak/callback/')
@@ -1515,8 +1526,8 @@ def keycloak_callback(request):
     kc_client_id = settings_dict.get('KEYCLOAK_CLIENT_ID', '')
     kc_client_secret = settings_dict.get('KEYCLOAK_CLIENT_SECRET', '')
 
-    if kc_url.startswith('http://') and ':8443' in kc_url:
-        kc_url = 'https://' + kc_url[7:]
+    if ':8443' in kc_url or ':443' in kc_url:
+        kc_url = re.sub(r'^http://', 'https://', kc_url)
 
     redirect_uri = request.build_absolute_uri('/ci/auth/keycloak/callback/')
     token_url = f"{kc_url}/realms/{kc_realm}/protocol/openid-connect/token"
@@ -1540,10 +1551,10 @@ def keycloak_callback(request):
 
         logger.info(f"Exchanging Keycloak code for client '{kc_client_id}' at {token_url}")
         auth_param = (kc_client_id, kc_client_secret) if kc_client_secret else None
-        token_resp = requests.post(token_url, data=token_data, auth=auth_param, timeout=8, verify=False)
+        token_resp = requests.post(token_url, data=token_data, auth=auth_param, timeout=10, verify=False)
         if token_resp.status_code != 200:
             # Fallback to body-only request if basic auth failed
-            token_resp = requests.post(token_url, data=token_data, timeout=8, verify=False)
+            token_resp = requests.post(token_url, data=token_data, timeout=10, verify=False)
 
         if token_resp.status_code != 200:
             logger.error(f"Keycloak token exchange error {token_resp.status_code}: {token_resp.text}")
@@ -1553,7 +1564,7 @@ def keycloak_callback(request):
         tokens = token_resp.json()
         access_token = tokens.get('access_token')
 
-        userinfo_resp = requests.get(userinfo_url, headers={'Authorization': f"Bearer {access_token}"}, timeout=8, verify=False)
+        userinfo_resp = requests.get(userinfo_url, headers={'Authorization': f"Bearer {access_token}"}, timeout=10, verify=False)
         userinfo_resp.raise_for_status()
         claims = userinfo_resp.json()
 
