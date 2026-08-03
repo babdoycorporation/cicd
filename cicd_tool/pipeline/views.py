@@ -1055,37 +1055,51 @@ def local_credential_delete(request, pk):
 
 @login_required
 def create_application(request, project_name=None):
+    project = None
     if project_name:
         project = get_object_or_404(Project, name=project_name)
-    else:
-        project = Project.objects.first()
-        if not project:
-            return redirect('project_create')
+    elif request.GET.get('project'):
+        project = Project.objects.filter(name=request.GET.get('project')).first()
+
+    all_projects = Project.objects.all().order_by('name')
+    if not all_projects.exists():
+        messages.warning(request, "Please create a project first before adding applications.")
+        return redirect('project_create')
+
     if request.method == 'POST':
         form = ApplicationForm(request.POST)
         if form.is_valid():
             app = form.save(commit=False)
-            app.project = project
+            
+            selected_project = form.cleaned_data.get('project')
+            if selected_project:
+                app.project = selected_project
+            elif project:
+                app.project = project
+            else:
+                form.add_error('project', 'Please select a project for this application.')
+                return render(request, 'pipeline/create_application.html', {
+                    'form': form, 'project': project, 'all_projects': all_projects
+                })
 
             repo_mode = form.cleaned_data['repo_mode']
             if repo_mode == 'create':
-                # Initialize a real Git repository backing this application
                 from gitmgmt.models import Repository, Branch
                 from gitmgmt.views import _initialize_repository, _create_default_labels
-                visibility = (project.organization.default_repo_visibility
-                              if project.organization else 'private')
+                visibility = (app.project.organization.default_repo_visibility
+                              if app.project.organization else 'private')
                 try:
                     _initialize_repository(app.name, user=request.user)
                 except Exception as e:
                     form.add_error(None, f"Failed to initialize repository: {e}")
                     return render(request, 'pipeline/create_application.html',
-                                  {'form': form, 'project': project})
+                                  {'form': form, 'project': project, 'all_projects': all_projects})
                 app.save()
                 repo = Repository.objects.create(
                     name=app.name,
                     description=form.cleaned_data.get('description', ''),
                     owner=request.user,
-                    organization=project.organization if project else None,
+                    organization=app.project.organization if app.project else None,
                     visibility=visibility,
                     default_branch=app.default_branch or 'main',
                     application=app,
@@ -1099,10 +1113,20 @@ def create_application(request, project_name=None):
                 repo.save()
             else:
                 app.save()
+
+            messages.success(request, f"Application '{app.name}' created under project '{app.project.name}'.")
             return redirect('application_detail', application_name=app.name)
     else:
-        form = ApplicationForm()
-    return render(request, 'pipeline/create_application.html', {'form': form, 'project': project})
+        initial = {}
+        if project:
+            initial['project'] = project.pk
+        form = ApplicationForm(initial=initial)
+
+    return render(request, 'pipeline/create_application.html', {
+        'form': form,
+        'project': project,
+        'all_projects': all_projects
+    })
 
 
 @login_required
