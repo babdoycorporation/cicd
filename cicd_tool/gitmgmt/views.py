@@ -172,7 +172,7 @@ def create_repository(request):
             initial['organization'] = org.pk
 
     if request.method == 'POST':
-        form = RepositoryForm(request.POST)
+        form = RepositoryForm(request.POST, user=request.user)
         if form.is_valid():
             repo = form.save(commit=False)
             repo.owner = request.user
@@ -187,7 +187,7 @@ def create_repository(request):
             except Exception as e:
                 form.add_error(None, f"Failed to initialize repository: {e}")
     else:
-        form = RepositoryForm(initial=initial)
+        form = RepositoryForm(initial=initial, user=request.user)
     return render(request, 'gitmgmt/repository_form.html', {'form': form})
 
 

@@ -14,16 +14,32 @@ from .models import (
 
 class RepositoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if 'visibility' in self.fields and not self.instance.pk:
             self.fields['visibility'].initial = 'private'
 
+        from .models import Organization
+        if user:
+            from django.db.models import Q
+            orgs = Organization.objects.filter(
+                Q(owner=user) | Q(memberships__user=user) | Q(teams__members=user)
+            ).distinct()
+            self.fields['organization'].queryset = orgs
+        else:
+            self.fields['organization'].queryset = Organization.objects.all()
+
+        self.fields['organization'].required = False
+        self.fields['organization'].empty_label = "Personal Account (User Namespace)"
+        self.fields['organization'].label = "Owner / Organization"
+
     class Meta:
         model = Repository
-        fields = ['name', 'description', 'visibility', 'default_branch']
+        fields = ['name', 'organization', 'description', 'visibility', 'default_branch']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'my-project'}),
-            'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3}),
+            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. backend-api'}),
+            'organization': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'Optional description for this repository'}),
             'visibility': forms.Select(attrs={'class': 'form-select'}),
             'default_branch': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'main'}),
         }

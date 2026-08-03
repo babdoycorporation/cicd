@@ -68,19 +68,19 @@
   .btn-cancel:hover { background: rgba(255,255,255,0.05); }
 
   /* Style Django auto-rendered form widgets */
-  #id_name, #id_description, #id_visibility, #id_default_branch {
+  #id_name, #id_organization, #id_description, #id_visibility, #id_default_branch {
     width: 100%; background: var(--dark-bg);
     border: 1px solid var(--border-color); border-radius: 6px;
     color: var(--text-primary); padding: 0.5rem 0.75rem;
     font-size: 0.88rem; font-family: inherit; box-sizing: border-box;
     outline: none; transition: border-color 0.2s;
   }
-  #id_name:focus, #id_description:focus, #id_visibility:focus, #id_default_branch:focus {
+  #id_name:focus, #id_organization:focus, #id_description:focus, #id_visibility:focus, #id_default_branch:focus {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
   }
   #id_description { resize: vertical; min-height: 80px; }
-  #id_visibility option { background: var(--card-bg); }
+  #id_visibility option, #id_organization option { background: var(--card-bg); }
 </style>
 
 <div class="breadcrumb">
