@@ -1,3 +1,5 @@
+from django.views.static import serve
+from django.urls import re_path
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -13,4 +15,5 @@ urlpatterns = [
     path('dashboard/', lambda r: redirect('dashboard'), name='root_dashboard'),
     path('ci/', include('pipeline.urls')),
     path('', include('gitmgmt.urls')),
+    re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
