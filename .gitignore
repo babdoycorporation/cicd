@@ -34,3 +34,5 @@ db.sqlite3
 staticfiles/
 cicd_tool/staticfiles/
 cicd_tool/db.sqlite3
+repos/
+cicd_tool/repos/
