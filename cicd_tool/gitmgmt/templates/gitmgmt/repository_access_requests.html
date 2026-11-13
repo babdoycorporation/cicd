@@ -1,0 +1,96 @@
+{% extends 'gitmgmt/repository_base.html' %}
+
+{% block repo_content %}
+<div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="font-size: 1.15rem; font-weight: 800; font-family: 'Outfit', sans-serif; margin: 0 0 0.35rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                <i class="ph ph-shield-check" style="color: var(--brand);"></i> Repository Access Requests
+            </h2>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0;">
+                Review and approve developer permissions to clone (pull) or push (write) code in <strong>{{ repository.name }}</strong>.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 20px; background: {% if pending_count > 0 %}rgba(239, 68, 68, 0.12){% else %}rgba(5, 150, 105, 0.12){% endif %}; color: {% if pending_count > 0 %}#ef4444{% else %}var(--brand){% endif %}; border: 1px solid {% if pending_count > 0 %}rgba(239, 68, 68, 0.25){% else %}rgba(5, 150, 105, 0.25){% endif %};">
+                <i class="ph ph-hourglass-medium"></i> {{ pending_count }} Pending
+            </span>
+            <span style="font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 20px; background: var(--canvas-bg); color: var(--text-secondary); border: 1px solid var(--border-color);">
+                Total: {{ access_requests|length }}
+            </span>
+        </div>
+    </div>
+
+    {% if access_requests %}
+    <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+        {% for r in access_requests %}
+        <div style="background: var(--canvas-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.15rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; transition: var(--transition);">
+            <div style="display: flex; align-items: flex-start; gap: 0.85rem; min-width: 0; flex: 1;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(5, 150, 105, 0.12); color: var(--brand); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem; flex-shrink: 0; border: 1px solid rgba(5, 150, 105, 0.25);">
+                    {{ r.user.username|make_list|first|default:"U"|upper }}
+                </div>
+                <div style="min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+                        <span style="font-weight: 800; font-size: 0.9rem; color: var(--text-primary);">
+                            {{ r.user.get_full_name|default:r.user.username }}
+                        </span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                            @{{ r.user.username }}
+                        </span>
+                        <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.04em; {% if r.permission_requested == 'push' %}background: rgba(37, 99, 235, 0.12); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.28);{% else %}background: rgba(16, 185, 129, 0.12); color: var(--brand); border: 1px solid rgba(16, 185, 129, 0.28);{% endif %}">
+                            {{ r.get_permission_requested_display }}
+                        </span>
+                        <span style="font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 12px; text-transform: uppercase; {% if r.status == 'pending' %}background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.28);{% elif r.status == 'approved' %}background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.28);{% else %}background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.28);{% endif %}">
+                            {{ r.get_status_display }}
+                        </span>
+                    </div>
+
+                    {% if r.reason %}
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0.4rem; background: #ffffff; padding: 0.45rem 0.75rem; border-radius: 6px; border: 1px solid var(--border-color); line-height: 1.4;">
+                        <i class="ph ph-chat-text" style="color: var(--brand);"></i> {{ r.reason }}
+                    </p>
+                    {% endif %}
+
+                    <div style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem;">
+                        <span><i class="ph ph-clock"></i> Requested: {{ r.created_at|date:"M d, Y H:i" }}</span>
+                        {% if r.reviewed_by %}
+                        <span><i class="ph ph-user-check"></i> Reviewed by {{ r.reviewed_by.username }} ({{ r.reviewed_at|date:"M d, Y" }})</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Actions -->
+            <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                {% if r.status == 'pending' %}
+                <form method="post" action="{% url 'review_access_request' repository.name r.id 'approve' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary" style="background: #10b981; border-color: #10b981;">
+                        <i class="ph ph-check"></i> Approve
+                    </button>
+                </form>
+                <form method="post" action="{% url 'review_access_request' repository.name r.id 'reject' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                        <i class="ph ph-x"></i> Decline
+                    </button>
+                </form>
+                {% else %}
+                <span style="font-size: 0.78rem; font-weight: 700; color: {% if r.status == 'approved' %}#10b981{% else %}#ef4444{% endif %}; display: inline-flex; align-items: center; gap: 0.3rem;">
+                    {% if r.status == 'approved' %}<i class="ph ph-check-circle"></i> Access Active{% else %}<i class="ph ph-x-circle"></i> Declined{% endif %}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
+        <i class="ph ph-shield-check" style="font-size: 2.5rem; color: var(--brand); opacity: 0.6; display: block; margin-bottom: 0.75rem;"></i>
+        <h4 style="margin: 0 0 0.35rem; font-size: 1rem; color: var(--text-primary); font-family: 'Outfit', sans-serif;">No Access Requests</h4>
+        <p style="margin: 0; font-size: 0.82rem;">Developers who request clone or push permissions will appear here for your review.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -1,11 +1,31 @@
-DS_Store
-/nginx
-../runs
-*log
+# Environments & local configuration
+.env
+*/.env
+cicd_tool/.env
+
+# Runtime build & runs directories
+runs/
+*/runs/
+cicd_tool/runs/
+artifacts/
+*/artifacts/
+cicd_tool/artifacts/
+D:/
+cicd_tool/D:/
+
+# Python bytecode & cache
 __pycache__/
-*.pyc
-*.sqlite3
-db.sqlite3
-repos/
-staticfiles/
-media/
+*.py[cod]
+*$py.class
+*.pkl
+*.log
+agent.log
+cicd_tool/agent.log
+build_failure_predictor.pkl
+cicd_tool/build_failure_predictor.pkl
+
+# IDE & OS files
+.vscode/
+.DS_Store
+Thumbs.db
+

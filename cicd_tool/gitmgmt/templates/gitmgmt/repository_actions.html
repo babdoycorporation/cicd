@@ -1,0 +1,742 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% load static %}
+
+{% block repo_content %}
+<style>
+    .actions-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .actions-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .actions-title-group h2 {
+        margin: 0 0 0.35rem 0;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .actions-title-group p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .runner-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.35rem 0.75rem;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        color: #059669;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .actions-actions-group {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    /* Workflow Filters */
+    .workflow-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+    }
+
+    .filter-pill {
+        padding: 0.45rem 0.9rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--text-secondary);
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+
+    .filter-pill:hover, .filter-pill.active {
+        background: var(--brand);
+        color: #ffffff;
+        border-color: var(--brand);
+        box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+    }
+
+    /* Latest IPA Artifact Highlight Card */
+    .ipa-highlight-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.94) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        padding: 1.35rem 1.75rem;
+        color: #ffffff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .ipa-highlight-card::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 150px;
+        height: 150px;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .ipa-info {
+        display: flex;
+        align-items: center;
+        gap: 1.15rem;
+    }
+
+    .ipa-icon-box {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        color: #34d399;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .ipa-details h3 {
+        margin: 0 0 0.25rem 0;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .ipa-details p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: #94a3b8;
+    }
+
+    .ipa-dl-btn {
+        background: #10b981;
+        color: #ffffff;
+        padding: 0.65rem 1.35rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+        border: 1px solid #059669;
+    }
+
+    .ipa-dl-btn:hover {
+        background: #059669;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+        color: #ffffff;
+    }
+
+    /* Workflow Runs List */
+    .runs-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .runs-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.9rem 1.25rem;
+        background: var(--darker-bg);
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .run-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.15s ease;
+        gap: 1rem;
+    }
+
+    .run-row:last-child {
+        border-bottom: none;
+    }
+
+    .run-row:hover {
+        background: rgba(248, 250, 252, 0.8);
+    }
+
+    .run-main {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .run-status-icon {
+        font-size: 1.35rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .status-success { color: #10b981; }
+    .status-failed { color: #ef4444; }
+    .status-running { color: #3b82f6; animation: spin 1.5s linear infinite; }
+    .status-pending { color: #f59e0b; }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .run-title-col {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .run-title-link {
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .run-title-link:hover {
+        color: var(--brand);
+        text-decoration: underline;
+    }
+
+    .run-meta-info {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .run-badge {
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        background: var(--canvas-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+    }
+
+    .run-side-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .run-time-col {
+        text-align: right;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    .run-time-col strong {
+        display: block;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .run-ipa-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.75rem;
+        background: rgba(16, 185, 129, 0.1);
+        color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.15s ease;
+    }
+
+    .run-ipa-pill:hover {
+        background: #059669;
+        color: #ffffff;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(4px);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-box {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 1.75rem;
+        max-width: 520px;
+        width: 92%;
+        margin: auto;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .field-group {
+        margin-bottom: 1rem;
+    }
+
+    .field-label {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.35rem;
+    }
+
+    .field-input, .field-select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.55rem 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.85rem;
+        background: var(--input-bg);
+        color: var(--text-primary);
+        outline: none;
+        transition: border 0.15s ease;
+    }
+
+    .field-input:focus, .field-select:focus {
+        border-color: var(--brand);
+        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+    }
+</style>
+
+<div class="actions-container">
+
+    <!-- Top Bar -->
+    <div class="actions-topbar">
+        <div class="actions-title-group">
+            <h2>
+                <i class="ph-bold ph-play-circle" style="color: var(--brand);"></i> Workflows &amp; Actions
+                <span class="runner-badge" title="macOS 14 Sonoma Runner">
+                    <i class="ph-bold ph-apple-logo"></i> macOS Sonoma
+                </span>
+                <span class="runner-badge" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.25); color: #2563eb;" title="Ubuntu 22.04 LTS Linux">
+                    <i class="ph-bold ph-linux-logo"></i> Ubuntu Linux
+                </span>
+                <span class="runner-badge" style="background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.25); color: #7c3aed;" title="Windows Server 2022">
+                    <i class="ph-bold ph-windows-logo"></i> Windows Server
+                </span>
+            </h2>
+            <p>Execute multi-platform GitHub Actions workflows, validate code syntax, run test suites, and publish release binaries (.ipa, .apk, .whl, .zip).</p>
+        </div>
+
+        <div class="actions-actions-group">
+            <button type="button" class="btn btn-outline" onclick="openRunModal()" style="border-color: #10b981; color: #059669; font-weight: 800;">
+                <i class="ph-bold ph-play"></i> Run workflow
+            </button>
+            <form method="post" action="{% url 'create_workflow_file' repository.name %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" title="Add .github/workflows/macos-ipa.yml to repository">
+                    <i class="ph-bold ph-file-plus"></i> New workflow file
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Latest Artifact Highlight (if any) -->
+    {% if latest_artifact %}
+    <div class="ipa-highlight-card">
+        <div class="ipa-info">
+            <div class="ipa-icon-box">
+                {% if '.ipa' in latest_artifact.name %}
+                    <i class="ph-bold ph-apple-logo"></i>
+                {% elif '.apk' in latest_artifact.name or '.aab' in latest_artifact.name %}
+                    <i class="ph-bold ph-device-mobile"></i>
+                {% elif '.whl' in latest_artifact.name %}
+                    <i class="ph-bold ph-package"></i>
+                {% else %}
+                    <i class="ph-bold ph-file-zip"></i>
+                {% endif %}
+            </div>
+            <div class="ipa-details">
+                <h3>
+                    <span>{{ latest_artifact.name }}</span>
+                    {% if '.ipa' in latest_artifact.name %}
+                        <span style="font-size:0.75rem; background:rgba(16,185,129,0.25); color:#34d399; padding:0.15rem 0.5rem; border-radius:12px; font-weight:700;">iOS Package (.ipa)</span>
+                    {% elif '.apk' in latest_artifact.name or '.aab' in latest_artifact.name %}
+                        <span style="font-size:0.75rem; background:rgba(16,185,129,0.25); color:#34d399; padding:0.15rem 0.5rem; border-radius:12px; font-weight:700;">Android Package (.apk)</span>
+                    {% elif '.whl' in latest_artifact.name %}
+                        <span style="font-size:0.75rem; background:rgba(59,130,246,0.25); color:#60a5fa; padding:0.15rem 0.5rem; border-radius:12px; font-weight:700;">Python Wheel (.whl)</span>
+                    {% else %}
+                        <span style="font-size:0.75rem; background:rgba(168,85,247,0.25); color:#c084fc; padding:0.15rem 0.5rem; border-radius:12px; font-weight:700;">Release Archive (.zip)</span>
+                    {% endif %}
+                </h3>
+                <p>
+                    Size: <strong>{{ latest_artifact.size_display }}</strong> &bull; Generated from Run #{{ latest_artifact.pipeline_run.run_id|stringformat:"s"|slice:":8" }} &bull; {{ latest_artifact.created_at|timesince }} ago
+                </p>
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+            <a href="{% url 'download_action_ipa' repository.name latest_artifact.pipeline_run.run_id %}" class="ipa-dl-btn">
+                <i class="ph-bold ph-download-simple"></i> Download Package
+            </a>
+            <a href="{% url 'repository_action_run_detail' repository.name latest_artifact.pipeline_run.run_id %}" class="btn btn-outline" style="background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.2); color:#ffffff;">
+                View Run
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filter Pills -->
+    <div class="workflow-filter-bar">
+        <a href="{% url 'repository_actions' repository.name %}" class="filter-pill {% if not selected_workflow %}active{% endif %}">
+            <i class="ph ph-squares-four"></i> All workflows ({{ total_runs_count }})
+        </a>
+        {% for pipe in pipelines %}
+        <a href="{% url 'repository_actions' repository.name %}?workflow={{ pipe.name }}" class="filter-pill {% if selected_workflow == pipe.name %}active{% endif %}">
+            {% if 'mac' in pipe.name or 'ipa' in pipe.name %}
+            <i class="ph-bold ph-apple-logo"></i>
+            {% else %}
+            <i class="ph ph-git-commit"></i>
+            {% endif %}
+            {{ pipe.name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- Workflow Runs Table -->
+    <div class="runs-card">
+        <div class="runs-header">
+            <span>Workflow Runs ({{ runs|length }})</span>
+            <span>
+                <span style="color:#10b981;">✓ {{ successful_runs_count }} passed</span>
+                {% if failed_runs_count > 0 %}
+                &bull; <span style="color:#ef4444;">✕ {{ failed_runs_count }} failed</span>
+                {% endif %}
+            </span>
+        </div>
+
+        {% if runs %}
+            {% for run in runs %}
+            <div class="run-row">
+                <div class="run-main">
+                    <div class="run-status-icon">
+                        {% if run.status|lower == 'success' %}
+                            <i class="ph-fill ph-check-circle status-success"></i>
+                        {% elif run.status|lower == 'failed' %}
+                            <i class="ph-fill ph-x-circle status-failed"></i>
+                        {% elif run.status|lower == 'running' %}
+                            <i class="ph-bold ph-spinner status-running"></i>
+                        {% else %}
+                            <i class="ph-fill ph-hourglass-medium status-pending"></i>
+                        {% endif %}
+                    </div>
+
+                    <div class="run-title-col">
+                        <a href="{% url 'repository_action_run_detail' repository.name run.run_id %}" class="run-title-link">
+                            {{ run.pipeline.name }} #{{ run.run_id|stringformat:"s"|slice:":8" }}
+                        </a>
+
+                        <div class="run-meta-info">
+                            <span class="run-badge">
+                                <i class="ph ph-git-branch"></i> {{ run.pipeline.monitored_branch|default:current_branch }}
+                            </span>
+                            <span>&bull;</span>
+                            <span>{{ run.started_at|timesince }} ago</span>
+                            <span>&bull;</span>
+                            <span>Runner: <strong>{{ run.agent.hostname|default:"GitHub Actions Runner" }}</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="run-side-actions">
+                    <!-- Check if run has artifacts -->
+                    {% with all_arts=run.artifacts.all %}
+                        {% for art in all_arts %}
+                        <a href="{% url 'download_action_ipa' repository.name run.run_id %}" class="run-ipa-pill" title="Download {{ art.name }}">
+                            {% if '.ipa' in art.name %}
+                                <i class="ph-bold ph-apple-logo"></i>
+                            {% elif '.apk' in art.name or '.aab' in art.name %}
+                                <i class="ph-bold ph-device-mobile"></i>
+                            {% elif '.whl' in art.name %}
+                                <i class="ph-bold ph-package"></i>
+                            {% else %}
+                                <i class="ph-bold ph-file-zip"></i>
+                            {% endif %}
+                            <span>{{ art.name }}</span>
+                            <span style="opacity:0.75;">({{ art.size_display }})</span>
+                        </a>
+                        {% endfor %}
+                    {% endwith %}
+
+                    <div class="run-time-col">
+                        <strong>{{ run.status|upper }}</strong>
+                        <span>{{ run.started_at|date:"M d, H:i" }}</span>
+                    </div>
+
+                    <a href="{% url 'repository_action_run_detail' repository.name run.run_id %}" class="btn btn-outline" style="padding: 0.35rem 0.65rem;">
+                        <i class="ph ph-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
+                <i class="ph-bold ph-play-circle" style="font-size: 3.5rem; color: var(--brand); opacity: 0.4; margin-bottom: 1rem; display: block;"></i>
+                <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-family: 'Outfit', sans-serif;">No Workflow Runs Yet</h3>
+                <p style="max-width: 460px; margin: 0 auto 1.5rem; line-height: 1.5;">
+                    Trigger a workflow to run multi-platform CI/CD jobs, validate repository code syntax, and publish release binaries.
+                </p>
+                <button type="button" class="btn btn-primary" onclick="openRunModal()" style="padding: 0.6rem 1.4rem; font-size: 0.9rem;">
+                    <i class="ph-bold ph-play"></i> Run workflow now
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- "Run Workflow" Modal -->
+<div id="runWorkflowModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 560px;">
+        <div class="modal-header">
+            <h3>
+                <i class="ph-bold ph-play-circle" style="color: var(--brand);"></i> Run GitHub Actions Workflow
+            </h3>
+            <button type="button" onclick="closeRunModal()" style="background: none; border: none; font-size: 1.35rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+        </div>
+
+        <form method="post" action="{% url 'run_macos_action' repository.name %}">
+            {% csrf_token %}
+
+            <div class="field-group">
+                <label class="field-label" for="wf_type">Workflow Preset</label>
+                <select name="workflow_type" id="wf_type" class="field-select" onchange="updateWorkflowFields()">
+                    <option value="ios_ipa">🍏 macOS iOS .IPA Builder (Xcode 15.4 / Swift)</option>
+                    <option value="android_apk">🤖 Android CI: Gradle Build &amp; Release APK (.apk)</option>
+                    <option value="python_ci">🐍 Python CI: Syntax Check, Pytest &amp; Wheel (.whl)</option>
+                    <option value="nodejs_ci">⚡ Node.js / React CI: Lint, Test &amp; Web Bundle (.zip)</option>
+                    <option value="docker_build">🐳 Docker Container: Multi-stage Build &amp; Archive (.tar.gz)</option>
+                    <option value="flutter_ipa">📱 Flutter iOS Release .IPA (flutter build ipa)</option>
+                    <option value="custom">🛠️ Custom Repository Workflow</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="field-group">
+                    <label class="field-label" for="wf_runner">Runner Environment</label>
+                    <select name="runner" id="wf_runner" class="field-select">
+                        <option value="auto">🔄 Auto-Select Runner</option>
+                        <option value="macos-latest">🍏 macOS 14 Sonoma (Apple Silicon)</option>
+                        <option value="ubuntu-latest">🐧 Ubuntu 22.04 LTS (x86_64 Linux)</option>
+                        <option value="windows-latest">🪟 Windows Server 2022 (x86_64)</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="wf_branch">Use workflow from branch</label>
+                    <select name="branch" id="wf_branch" class="field-select">
+                        {% for b in branches %}
+                        <option value="{{ b }}" {% if b == current_branch %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Pre-flight Code Validation Toggle -->
+            <div style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 0.75rem;">
+                <input type="checkbox" id="wf_validate" name="validate_code" value="true" checked style="margin-top: 0.2rem; cursor: pointer; accent-color: #10b981;">
+                <label for="wf_validate" style="font-size: 0.8rem; color: var(--text-primary); cursor: pointer; line-height: 1.4;">
+                    <strong style="color: #059669;">Pre-flight Code &amp; Syntax Validation</strong><br>
+                    <span style="color: var(--text-secondary); font-size: 0.76rem;">Scans repository files (.py, .json, .yaml, .js) for syntax and parsing errors. The workflow will halt immediately if code contains errors, ensuring only valid code executes.</span>
+                </label>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="field-group">
+                    <label class="field-label" for="wf_app_name" id="lbl_app_name">App / Package Name</label>
+                    <input type="text" name="app_name" id="wf_app_name" class="field-input" value="{{ repository.name }}" required>
+                </div>
+                <div class="field-group" id="group_bundle_id">
+                    <label class="field-label" for="wf_bundle_id">Identifier / Namespace</label>
+                    <input type="text" name="bundle_id" id="wf_bundle_id" class="field-input" value="com.cogfocus.{{ repository.name|lower }}" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="field-group">
+                    <label class="field-label" for="wf_version">Version</label>
+                    <input type="text" name="version" id="wf_version" class="field-input" value="1.0.0">
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="wf_build_num">Build Number</label>
+                    <input type="text" name="build_num" id="wf_build_num" class="field-input" value="1">
+                </div>
+            </div>
+
+            <div class="field-group" id="group_export_method">
+                <label class="field-label" for="wf_export">Export / Packaging Method</label>
+                <select name="export_method" id="wf_export" class="field-select">
+                    <option value="ad-hoc">Ad-Hoc / Enterprise Release</option>
+                    <option value="app-store">App Store Distribution</option>
+                    <option value="development">Development Testing</option>
+                </select>
+            </div>
+
+            <div id="runner_info_notice" style="background: var(--canvas-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; font-size: 0.8rem; color: var(--text-secondary);">
+                <i class="ph-bold ph-info" style="color: var(--brand);"></i>
+                <span id="runner_notice_text">Workflow will run in an isolated workspace, execute pre-flight syntax checks, run automated tests, and package release artifacts.</span>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-outline" onclick="closeRunModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="background: #10b981; border-color: #059669;">
+                    <i class="ph-bold ph-play"></i> Run workflow
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openRunModal() {
+    document.getElementById('runWorkflowModal').style.display = 'flex';
+}
+function closeRunModal() {
+    document.getElementById('runWorkflowModal').style.display = 'none';
+}
+window.onclick = function(event) {
+    const modal = document.getElementById('runWorkflowModal');
+    if (event.target === modal) {
+        closeRunModal();
+    }
+};
+function updateWorkflowFields() {
+    const wf = document.getElementById('wf_type').value;
+    const runnerSelect = document.getElementById('wf_runner');
+    const noticeText = document.getElementById('runner_notice_text');
+    const groupBundleId = document.getElementById('group_bundle_id');
+    const groupExport = document.getElementById('group_export_method');
+    
+    if (wf === 'ios_ipa' || wf === 'flutter_ipa') {
+        runnerSelect.value = 'macos-latest';
+        groupBundleId.style.display = 'block';
+        groupExport.style.display = 'block';
+        noticeText.innerText = 'Executes on macOS 14 Sonoma (Xcode 15.4 / Swift 5.10). Compiles application and exports signed .ipa container.';
+    } else if (wf === 'android_apk') {
+        runnerSelect.value = 'ubuntu-latest';
+        groupBundleId.style.display = 'block';
+        groupExport.style.display = 'none';
+        noticeText.innerText = 'Executes on Ubuntu 22.04 LTS (OpenJDK 17 / Gradle 8.5). Runs unit tests and builds release .apk package.';
+    } else if (wf === 'python_ci') {
+        runnerSelect.value = 'ubuntu-latest';
+        groupBundleId.style.display = 'none';
+        groupExport.style.display = 'none';
+        noticeText.innerText = 'Executes on Ubuntu 22.04 LTS (Python 3.11 / pip / pytest). Validates syntax, runs pytest suite, and builds .whl distribution package.';
+    } else if (wf === 'nodejs_ci') {
+        runnerSelect.value = 'ubuntu-latest';
+        groupBundleId.style.display = 'none';
+        groupExport.style.display = 'none';
+        noticeText.innerText = 'Executes on Ubuntu 22.04 LTS (Node.js 20 / npm). Lints codebase, executes tests, and packages release web bundle.';
+    } else if (wf === 'docker_build') {
+        runnerSelect.value = 'ubuntu-latest';
+        groupBundleId.style.display = 'none';
+        groupExport.style.display = 'none';
+        noticeText.innerText = 'Executes on Ubuntu 22.04 LTS (Docker Engine 26). Performs multi-stage image build and exports container tarball archive.';
+    } else {
+        groupBundleId.style.display = 'block';
+        groupExport.style.display = 'none';
+        noticeText.innerText = 'Executes repository CI/CD pipeline steps, pre-flight syntax checks, and artifact packaging.';
+    }
+}
+</script>
+{% endblock %}
+

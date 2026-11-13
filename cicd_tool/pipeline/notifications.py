@@ -34,35 +34,26 @@ import os
 from django.conf import settings
 
 def _get_email_integration_config():
-    """Return SMTP config dictionary only if email notifications are explicitly configured and active."""
+    """Return SMTP config dictionary from active DB model or settings/environment fallbacks."""
     from .models import NotificationIntegration
     integration = NotificationIntegration.objects.filter(
         integration_type='email', is_active=True
     ).first()
 
     if integration and integration.config:
-        cfg = integration.config
-        host = cfg.get('smtp_host', '').strip()
-        user = cfg.get('smtp_user', '').strip()
-        password = cfg.get('smtp_password', '').strip()
-        if host and (user and password or not cfg.get('requires_auth', True)):
-            return cfg
+        return integration.config
 
-    # Fallback to settings / env variables ONLY if credentials are fully provided
-    host = str(getattr(settings, 'EMAIL_HOST', os.environ.get('EMAIL_HOST', ''))).strip()
-    user = str(getattr(settings, 'EMAIL_HOST_USER', os.environ.get('EMAIL_HOST_USER', ''))).strip()
-    password = str(getattr(settings, 'EMAIL_HOST_PASSWORD', os.environ.get('EMAIL_HOST_PASSWORD', ''))).strip()
-
-    if host and user and password:
+    # Dynamic fallback to Django settings or OS Environment
+    host = getattr(settings, 'EMAIL_HOST', os.environ.get('EMAIL_HOST', ''))
+    if host:
         return {
             'smtp_host': host,
             'smtp_port': int(getattr(settings, 'EMAIL_PORT', os.environ.get('EMAIL_PORT', 587))),
-            'smtp_user': user,
-            'smtp_password': password,
-            'smtp_from': getattr(settings, 'DEFAULT_FROM_EMAIL', os.environ.get('DEFAULT_FROM_EMAIL', 'CogFocus One Enterprise <noreply@cogfocus.com>')),
+            'smtp_user': getattr(settings, 'EMAIL_HOST_USER', os.environ.get('EMAIL_HOST_USER', '')),
+            'smtp_password': getattr(settings, 'EMAIL_HOST_PASSWORD', os.environ.get('EMAIL_HOST_PASSWORD', '')),
+            'smtp_from': getattr(settings, 'DEFAULT_FROM_EMAIL', os.environ.get('DEFAULT_FROM_EMAIL', 'CogFocus One <noreply@cogfocus.local>')),
             'use_tls': bool(getattr(settings, 'EMAIL_USE_TLS', os.environ.get('EMAIL_USE_TLS', True))),
         }
-
     return None
 
 
@@ -76,63 +67,91 @@ def _user_wants(user, event_type: str) -> bool:
     return bool(getattr(prefs, event_type, True))
 
 
-def _send_smtp(config: dict, recipients: list[str], subject: str, body: str):
+def _send_smtp(config: dict, recipients: list[str], subject: str, body: str, link: str = ''):
     """
     Send one email via the SMTP settings stored in `config`.
-
-    config keys: smtp_host, smtp_port, smtp_user, smtp_password, smtp_from, use_tls
+    Supports TLS, SSL, plain SMTP, and automatic fallback to local mail relay.
     """
-    host     = config.get('smtp_host', 'localhost')
-    port     = int(config.get('smtp_port', 587))
-    user     = config.get('smtp_user', '')
+    host = config.get('smtp_host', '127.0.0.1')
+    port = int(config.get('smtp_port', 25))
+    user = config.get('smtp_user', '')
     password = config.get('smtp_password', '')
-    from_addr = config.get('smtp_from', 'CogFocus One <noreply@cogfocus.local>')
-    use_tls  = bool(config.get('use_tls', True))
+    from_addr = config.get('smtp_from', 'CogFocus One CI/CD <noreply@cogfocus.com>')
+    use_tls = bool(config.get('use_tls', False))
+    use_ssl = bool(config.get('use_ssl', port == 465))
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = f"[CogFocus One] {subject}"
-    msg['From']    = from_addr
-    msg['To']      = ', '.join(recipients)
+    msg['From'] = from_addr
+    msg['To'] = ', '.join(recipients)
 
     # Plain text part
-    msg.attach(MIMEText(body, 'plain'))
+    plain_text = body
+    if link:
+        plain_text += f"\n\nView & Review Link:\n{link}"
+    msg.attach(MIMEText(plain_text, 'plain'))
 
-    # HTML part — CogFocus One white theme branded wrapper
+    # HTML part with direct call to action button
+    button_html = f'''
+      <div style="margin-top:24px;">
+        <a href="{link}" style="display:inline-block;background:#059669;color:#ffffff;font-size:0.88rem;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;box-shadow:0 2px 4px rgba(5,150,105,0.2);">
+          View Pull Request &rarr;
+        </a>
+      </div>
+    ''' if link else ''
+
     html = f"""
-    <div style="font-family:'Plus Jakarta Sans','Inter',sans-serif;max-width:580px;margin:0 auto;color:#0f172a;background:#ffffff;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 4px 12px rgba(0,0,0,0.05);overflow:hidden;">
-      <div style="background:#0f172a;padding:16px 24px;border-bottom:3px solid #059669;">
-        <span style="font-size:1.1rem;font-weight:800;color:#ffffff;letter-spacing:-0.02em;">CogFocus One™</span>
-        <span style="font-size:0.75rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.05em;margin-left:0.5rem;">CI/CD &amp; DevOps</span>
+    <div style="font-family:'Plus Jakarta Sans','Inter',-apple-system,sans-serif;max-width:600px;margin:0 auto;color:#0f172a;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;box-shadow:0 4px 15px rgba(0,0,0,0.06);overflow:hidden;">
+      <div style="background:#0f172a;padding:18px 24px;border-bottom:3px solid #059669;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:1.15rem;font-weight:800;color:#ffffff;letter-spacing:-0.02em;">CogFocus One™</span>
+        <span style="font-size:0.75rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.06em;background:rgba(5,150,105,0.25);padding:2px 8px;border-radius:4px;">CI/CD Executive Suite</span>
       </div>
-      <div style="padding:24px;background:#ffffff;">
-        <h2 style="margin:0 0 12px;font-size:1.1rem;font-weight:700;color:#0f172a;">{subject}</h2>
-        <p style="margin:0;font-size:0.88rem;line-height:1.6;color:#475569;white-space:pre-wrap;">{body}</p>
+      <div style="padding:28px 24px;background:#ffffff;">
+        <h2 style="margin:0 0 16px;font-size:1.15rem;font-weight:700;color:#0f172a;line-height:1.4;">{subject}</h2>
+        <div style="margin:0;font-size:0.9rem;line-height:1.65;color:#334155;white-space:pre-wrap;background:#f8fafc;padding:16px;border-radius:8px;border:1px solid #e2e8f0;">{body}</div>
+        {button_html}
       </div>
-      <div style="background:#f8fafc;padding:12px 24px;border-top:1px solid #e2e8f0;font-size:0.75rem;color:#94a3b8;text-align:center;">
-        Sent by CogFocus One™ Executive Suite &bull; Automated System Notification
+      <div style="background:#f8fafc;padding:14px 24px;border-top:1px solid #e2e8f0;font-size:0.74rem;color:#94a3b8;text-align:center;">
+        Sent automatically by CogFocus One™ Executive Suite &bull; Real-time Repository Event
       </div>
     </div>
     """
     msg.attach(MIMEText(html, 'html'))
 
+    sent = False
+    # Attempt 1: Configured SMTP
     try:
-        if use_tls:
-            server = smtplib.SMTP(host, port, timeout=10)
-            server.starttls()
+        if use_ssl:
+            server = smtplib.SMTP_SSL(host, port, timeout=8)
         else:
-            server = smtplib.SMTP_SSL(host, port, timeout=10)
+            server = smtplib.SMTP(host, port, timeout=8)
+            if use_tls:
+                server.starttls()
         if user and password:
             server.login(user, password)
         server.sendmail(from_addr, recipients, msg.as_string())
         server.quit()
-        logger.info(f"Email sent: '{subject}' -> {recipients}")
+        logger.info(f"Email sent successfully via {host}:{port} -> {recipients}")
+        sent = True
     except Exception as exc:
-        logger.error(f"Email send failed: {exc}")
+        logger.warning(f"Primary email send via {host}:{port} failed: {exc}")
+
+    # Attempt 2: Fallback to local mail server (127.0.0.1:25)
+    if not sent and host not in ('127.0.0.1', 'localhost'):
+        try:
+            logger.info("Attempting delivery via local mail server (127.0.0.1:25)...")
+            server = smtplib.SMTP('127.0.0.1', 25, timeout=5)
+            server.sendmail(from_addr, recipients, msg.as_string())
+            server.quit()
+            logger.info(f"Email delivered via fallback local mail server -> {recipients}")
+            sent = True
+        except Exception as fb_exc:
+            logger.error(f"Fallback local mail delivery failed: {fb_exc}")
+
+    return sent
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Public API
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Public API ──
 
 def send_notification(event_type: str, subject: str, body: str,
                       users=None, link: str = ''):
@@ -166,7 +185,7 @@ def send_notification(event_type: str, subject: str, body: str,
     if link:
         full_body += f"\n\nView: {link}"
 
-    _send_smtp(config, recipients, subject, full_body)
+    _send_smtp(config, recipients, subject, body, link=link)
 
 
 def test_smtp_connection(config: dict) -> tuple[bool, str]:
@@ -174,20 +193,22 @@ def test_smtp_connection(config: dict) -> tuple[bool, str]:
     Try to connect and authenticate with the given SMTP config.
     Returns (success: bool, message: str).
     """
-    host     = config.get('smtp_host', '')
-    port     = int(config.get('smtp_port', 587))
-    user     = config.get('smtp_user', '')
+    host = config.get('smtp_host', '127.0.0.1')
+    port = int(config.get('smtp_port', 25))
+    user = config.get('smtp_user', '')
     password = config.get('smtp_password', '')
-    use_tls  = bool(config.get('use_tls', True))
+    use_tls = bool(config.get('use_tls', False))
+    use_ssl = bool(config.get('use_ssl', port == 465))
 
     if not host:
         return False, "SMTP host is required."
     try:
-        if use_tls:
-            server = smtplib.SMTP(host, port, timeout=8)
-            server.starttls()
-        else:
+        if use_ssl:
             server = smtplib.SMTP_SSL(host, port, timeout=8)
+        else:
+            server = smtplib.SMTP(host, port, timeout=8)
+            if use_tls:
+                server.starttls()
         if user and password:
             server.login(user, password)
         server.quit()

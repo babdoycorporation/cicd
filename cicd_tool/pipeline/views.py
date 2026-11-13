@@ -15,10 +15,10 @@ import os
 import subprocess
 import uuid
 from datetime import timedelta
-import re
-import time
+
 import yaml
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.core.management import call_command
 from django.db.models import Count
@@ -178,8 +178,12 @@ def project_edit(request, project_name):
 @login_required
 def project_delete(request, project_name):
     project = get_object_or_404(Project, name=project_name)
+    if not (request.user.is_superuser or request.user.is_staff):
+        messages.error(request, "Access Denied: Only administrators can delete projects.")
+        return redirect('project_detail', project_name=project.name)
     if request.method == 'POST':
         project.delete()
+        messages.success(request, f"Project '{project_name}' has been permanently deleted.")
         return redirect('project_list')
     return render(request, 'pipeline/project_confirm_delete.html', {'project': project})
 
@@ -246,11 +250,35 @@ def project_settings(request, project_name):
             role = request.POST.get('role', 'developer')
             if role not in ('maintainer', 'developer', 'viewer'):
                 role = 'developer'
-            user = User.objects.filter(username=username).first()
+            from django.db.models import Q
+            from gitmgmt.models import UserProfile
+            user = User.objects.filter(
+                Q(username__iexact=username) | Q(email__iexact=username)
+            ).first()
+
+            # If user not found but input looks like an email and user is admin/maintainer, auto-create
+            if not user and '@' in username and (request.user.is_superuser or request.user.is_staff or can_manage):
+                email_addr = username.lower()
+                base_username = email_addr.split('@')[0].replace('.', '_').replace('-', '_')
+                clean_u = base_username
+                c = 1
+                while User.objects.filter(username__iexact=clean_u).exists():
+                    clean_u = f"{base_username}_{c}"
+                    c += 1
+                user = User.objects.create(
+                    username=clean_u,
+                    email=email_addr,
+                    first_name=base_username.replace('_', ' ').title()
+                )
+                user.set_unusable_password()
+                user.save()
+                UserProfile.objects.get_or_create(user=user)
+                messages.info(request, f"New user account auto-created for '{email_addr}' (Username: {user.username}).")
+
             if user:
                 ProjectMember.objects.update_or_create(
                     project=project, user=user, defaults={'role': role})
-                messages.success(request, f"{username} added as {role}.")
+                messages.success(request, f"{user.username} ({user.email or 'no email'}) added as {role}.")
                 try:
                     from .notifications import send_notification
                     send_notification(
@@ -262,7 +290,7 @@ def project_settings(request, project_name):
                 except Exception as notify_err:
                     logger.warning(f"Failed to send project member email notification: {notify_err}")
             else:
-                messages.error(request, f"User '{username}' not found.")
+                messages.error(request, f"User '{username}' not found. Administrators can create users in the Users page.")
 
         elif action == 'update_member_role':
             member = ProjectMember.objects.filter(
@@ -592,28 +620,11 @@ def cancel_pipeline_run(request, run_id):
     if request.method == 'POST' and run.status in ('pending', 'running'):
         run.status = 'failed'
         run.finished_at = timezone.now()
-        run.log = (run.log or '') + '\n\n===================================\n❌ [RUN CANCELLED BY USER]\n==================================='
+        run.log = (run.log or '') + '\n[CANCELLED by user]'
         run.save()
         if run.agent:
             run.agent.live = True
             run.agent.save(update_fields=['live'])
-        messages.warning(request, f"Pipeline run #{str(run.run_id)[:8]} has been stopped.")
-    return redirect('pipeline_run_detail', run_id=str(run.run_id))
-
-
-@login_required
-def rerun_pipeline_run(request, run_id):
-    """Re-triggers an existing pipeline run."""
-    run = get_object_or_404(PipelineRun, run_id=run_id)
-    if request.method == 'POST':
-        new_run = PipelineRun.objects.create(
-            pipeline=run.pipeline,
-            status='pending',
-            started_at=timezone.now(),
-            log=f'[RE-RUN] Manually re-triggered from Run #{str(run.run_id)[:8]}\n'
-        )
-        messages.success(request, f"Re-triggered pipeline run #{str(new_run.run_id)[:8]}")
-        return redirect('pipeline_run_detail', run_id=str(new_run.run_id))
     return redirect('pipeline_run_detail', run_id=str(run.run_id))
 
 
@@ -673,19 +684,6 @@ def agent_detail(request, agent_hostname):
     return render(request, 'pipeline/agent_detail.html', {
         'agent': agent, 'pipeline_runs': pipeline_runs,
     })
-
-
-def download_agent_script(request, filename):
-    allowed_scripts = ('windows_agent.py', 'linux_agent.py', 'test_agent_connection.py', 'test_diag.py')
-    if filename not in allowed_scripts:
-        return HttpResponseNotFound("Invalid agent script requested.")
-    file_path = os.path.join(settings.BASE_DIR, filename)
-    if not os.path.exists(file_path):
-        file_path = os.path.join(settings.BASE_DIR, 'pipeline', 'static', 'agents', filename)
-    if os.path.exists(file_path):
-        with open(file_path, 'rb') as f:
-            return HttpResponse(f.read(), content_type='text/x-python')
-    return HttpResponseNotFound("Agent script file not found.")
 
 
 @login_required
@@ -770,151 +768,6 @@ def receive_heartbeat(request):
         if not busy:
             agent.live = True
         agent.save(update_fields=['last_heartbeat', 'live'])
-        return JsonResponse({'status': 'ok'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-@csrf_exempt
-def agent_stream(request):
-    """
-    Persistent Real-Time Streaming Tunnel for Agents.
-    Agent connects outbound and stays connected. Server pushes tasks instantly via chunked response.
-    """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-    try:
-        data = json.loads(request.body.decode('utf-8'))
-        hash_key = data.get('hash_key', '').strip()
-        agent = Agent.objects.filter(hash_key=hash_key).first()
-        if not agent:
-            return JsonResponse({'error': 'Agent not found'}, status=404)
-
-        agent.last_heartbeat = timezone.now()
-        agent.live = True
-        agent.save(update_fields=['last_heartbeat', 'live'])
-
-        from .agent_tunnel import tunnel_manager
-        agent_q = tunnel_manager.register_agent(agent.pk)
-
-        def event_stream():
-            yield json.dumps({'type': 'connected', 'status': 'ok'}) + '\n'
-            start_t = time.time()
-            while time.time() - start_t < 45:  # Stream for 45s per cycle
-                from .models import AgentTask
-                task = AgentTask.objects.filter(agent=agent, status='pending').order_by('created_at').first()
-                if task:
-                    task.status = 'running'
-                    task.save(update_fields=['status'])
-                    payload = {
-                        'task_id': task.pk,
-                        'command': task.command,
-                        'step_name': task.step_name
-                    }
-                    yield json.dumps({'type': 'task', 'payload': payload}) + '\n'
-                else:
-                    yield json.dumps({'type': 'ping'}) + '\n'
-                time.sleep(1)
-
-        resp = StreamingHttpResponse(event_stream(), content_type='application/x-ndjson')
-        resp['Cache-Control'] = 'no-cache'
-        resp['X-Accel-Buffering'] = 'no'
-        return resp
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-@csrf_exempt
-def report_stream_result(request):
-    """Agents submit real-time stream execution results back to server."""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-    try:
-        data = json.loads(request.body.decode('utf-8'))
-        hash_key = data.get('hash_key', '').strip()
-        task_id = data.get('task_id')
-        agent = Agent.objects.filter(hash_key=hash_key).first()
-        if not agent:
-            return JsonResponse({'error': 'Agent not found'}, status=404)
-
-        from .agent_tunnel import tunnel_manager
-        rc = data.get('returncode', 0)
-        stdout = data.get('stdout', '')
-        stderr = data.get('stderr', '')
-
-        from .models import AgentTask
-        task = AgentTask.objects.filter(pk=task_id, agent=agent).first()
-        if task:
-            task.stdout = stdout
-            task.stderr = stderr
-            task.returncode = rc
-            task.status = 'completed' if rc == 0 else 'failed'
-            task.completed_at = timezone.now()
-            task.save()
-
-        tunnel_manager.submit_result(task_id, rc, stdout, stderr)
-        return JsonResponse({'status': 'ok'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-@csrf_exempt
-def poll_agent_task(request):
-    """Agents poll this endpoint to pull pending AgentTask commands."""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-    try:
-        data = json.loads(request.body.decode('utf-8'))
-        hash_key = data.get('hash_key', '').strip()
-        agent = Agent.objects.filter(hash_key=hash_key).first()
-        if not agent:
-            return JsonResponse({'error': 'Agent not found'}, status=404)
-        
-        agent.last_heartbeat = timezone.now()
-        agent.live = True
-        agent.save(update_fields=['last_heartbeat', 'live'])
-
-        from .models import AgentTask
-        task = AgentTask.objects.filter(agent=agent, status='pending').order_by('created_at').first()
-        if task:
-            task.status = 'running'
-            task.save(update_fields=['status'])
-            return JsonResponse({
-                'status': 'ok',
-                'task_id': task.pk,
-                'command': task.command,
-                'step_name': task.step_name
-            })
-        return JsonResponse({'status': 'ok', 'task_id': None, 'command': None})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-@csrf_exempt
-def report_agent_task(request):
-    """Agents post execution stdout, stderr, and returncode back to server."""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-    try:
-        data = json.loads(request.body.decode('utf-8'))
-        hash_key = data.get('hash_key', '').strip()
-        task_id = data.get('task_id')
-        agent = Agent.objects.filter(hash_key=hash_key).first()
-        if not agent:
-            return JsonResponse({'error': 'Agent not found'}, status=404)
-
-        from .models import AgentTask
-        task = AgentTask.objects.filter(pk=task_id, agent=agent).first()
-        if not task:
-            return JsonResponse({'error': 'Task not found'}, status=404)
-
-        rc = data.get('returncode', 0)
-        task.stdout = data.get('stdout', '')
-        task.stderr = data.get('stderr', '')
-        task.returncode = rc
-        task.status = 'completed' if rc == 0 else 'failed'
-        task.completed_at = timezone.now()
-        task.save()
         return JsonResponse({'status': 'ok'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -1055,51 +908,61 @@ def local_credential_delete(request, pk):
 
 @login_required
 def create_application(request, project_name=None):
+    projects = Project.objects.all().order_by('name')
+    if not projects.exists():
+        messages.warning(request, "Please create a project first before creating an application.")
+        return redirect('project_create')
+
     project = None
     if project_name:
         project = get_object_or_404(Project, name=project_name)
-    elif request.GET.get('project'):
-        project = Project.objects.filter(name=request.GET.get('project')).first()
+    else:
+        p_name = request.GET.get('project') or request.GET.get('project_name')
+        if p_name:
+            project = Project.objects.filter(name=p_name).first()
+        if not project:
+            project = projects.first()
 
-    all_projects = Project.objects.all().order_by('name')
-    if not all_projects.exists():
-        messages.warning(request, "Please create a project first before adding applications.")
-        return redirect('project_create')
+    selected_project_id = project.pk if project else None
 
     if request.method == 'POST':
         form = ApplicationForm(request.POST)
         if form.is_valid():
             app = form.save(commit=False)
-            
-            selected_project = form.cleaned_data.get('project')
-            if selected_project:
-                app.project = selected_project
-            elif project:
-                app.project = project
-            else:
-                form.add_error('project', 'Please select a project for this application.')
+            selected_project = form.cleaned_data.get('project') or project
+            if not selected_project:
+                form.add_error('project', 'Please select a target project.')
                 return render(request, 'pipeline/create_application.html', {
-                    'form': form, 'project': project, 'all_projects': all_projects
+                    'form': form,
+                    'project': project,
+                    'projects': projects,
+                    'selected_project_id': selected_project_id,
                 })
+            app.project = selected_project
 
             repo_mode = form.cleaned_data['repo_mode']
             if repo_mode == 'create':
+                # Initialize a real Git repository backing this application
                 from gitmgmt.models import Repository, Branch
                 from gitmgmt.views import _initialize_repository, _create_default_labels
-                visibility = (app.project.organization.default_repo_visibility
-                              if app.project.organization else 'private')
+                visibility = (selected_project.organization.default_repo_visibility
+                              if selected_project.organization else 'private')
                 try:
                     _initialize_repository(app.name, user=request.user)
                 except Exception as e:
                     form.add_error(None, f"Failed to initialize repository: {e}")
-                    return render(request, 'pipeline/create_application.html',
-                                  {'form': form, 'project': project, 'all_projects': all_projects})
+                    return render(request, 'pipeline/create_application.html', {
+                        'form': form,
+                        'project': selected_project,
+                        'projects': projects,
+                        'selected_project_id': selected_project.pk,
+                    })
                 app.save()
                 repo = Repository.objects.create(
                     name=app.name,
                     description=form.cleaned_data.get('description', ''),
                     owner=request.user,
-                    organization=app.project.organization if app.project else None,
+                    organization=selected_project.organization if selected_project else None,
                     visibility=visibility,
                     default_branch=app.default_branch or 'main',
                     application=app,
@@ -1110,22 +973,31 @@ def create_application(request, project_name=None):
                 app.save()
                 repo = form.cleaned_data['existing_repository']
                 repo.application = app
+                if not repo.organization and selected_project.organization:
+                    repo.organization = selected_project.organization
                 repo.save()
             else:
                 app.save()
-
-            messages.success(request, f"Application '{app.name}' created under project '{app.project.name}'.")
+            messages.success(request, f"Application '{app.name}' created under project '{selected_project.name}'.")
             return redirect('application_detail', application_name=app.name)
+        else:
+            if form.data.get('project'):
+                try:
+                    selected_project_id = int(form.data.get('project'))
+                    project = Project.objects.filter(pk=selected_project_id).first() or project
+                except (ValueError, TypeError):
+                    pass
     else:
         initial = {}
         if project:
-            initial['project'] = project.pk
+            initial['project'] = project
         form = ApplicationForm(initial=initial)
 
     return render(request, 'pipeline/create_application.html', {
         'form': form,
         'project': project,
-        'all_projects': all_projects
+        'projects': projects,
+        'selected_project_id': selected_project_id,
     })
 
 
@@ -1329,6 +1201,90 @@ def check_redis_connection(host='127.0.0.1', port=6379, password='', use_tls=Fal
 
 
 @login_required
+def user_management(request):
+    """Admin-only User Management view for adding, viewing, and managing users."""
+    if not (request.user.is_superuser or request.user.is_staff):
+        messages.error(request, "Access Denied: Only administrators can manage platform users.")
+        return redirect('dashboard')
+
+    from gitmgmt.models import UserProfile
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add_user':
+            username = request.POST.get('username', '').strip()
+            email = request.POST.get('email', '').strip().lower()
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            password = request.POST.get('password', '').strip()
+            role = request.POST.get('role', 'developer')
+
+            if not username:
+                messages.error(request, "Username is required.")
+                return redirect('user_management')
+
+            if User.objects.filter(username__iexact=username).exists():
+                messages.error(request, f"User with username '{username}' already exists.")
+                return redirect('user_management')
+
+            if email and User.objects.filter(email__iexact=email).exists():
+                messages.error(request, f"User with email '{email}' already exists.")
+                return redirect('user_management')
+
+            if not password:
+                messages.error(request, "Password is required.")
+                return redirect('user_management')
+
+            is_admin = (role == 'admin')
+            u = User.objects.create(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                is_staff=is_admin,
+                is_superuser=is_admin,
+            )
+            u.set_password(password)
+            u.save()
+            UserProfile.objects.get_or_create(user=u)
+            messages.success(request, f"User '{username}' created successfully as {role.capitalize()}.")
+
+        elif action == 'delete_user':
+            user_id = request.POST.get('user_id')
+            if str(request.user.id) == str(user_id):
+                messages.error(request, "You cannot delete your own account.")
+            else:
+                u = User.objects.filter(id=user_id).first()
+                if u:
+                    uname = u.username
+                    u.delete()
+                    messages.success(request, f"User '{uname}' has been deleted.")
+                else:
+                    messages.error(request, "User not found.")
+
+        elif action == 'toggle_active':
+            user_id = request.POST.get('user_id')
+            if str(request.user.id) == str(user_id):
+                messages.error(request, "You cannot deactivate your own account.")
+            else:
+                u = User.objects.filter(id=user_id).first()
+                if u:
+                    u.is_active = not u.is_active
+                    u.save()
+                    status_text = "activated" if u.is_active else "deactivated"
+                    messages.success(request, f"User '{u.username}' has been {status_text}.")
+
+        return redirect('user_management')
+
+    users = User.objects.all().order_by('-date_joined')
+    return render(request, 'pipeline/user_management.html', {
+        'users': users,
+        'total_count': users.count(),
+        'admin_count': users.filter(is_superuser=True).count(),
+    })
+
+
+@login_required
 def global_settings(request):
     settings_list = GlobalSettings.objects.all()
     settings_dict = {s.key: s.value for s in settings_list}
@@ -1339,7 +1295,10 @@ def global_settings(request):
             key = form.cleaned_data['key']
             value = form.cleaned_data['value']
             GlobalSettings.objects.update_or_create(key=key, defaults={'value': value})
+            messages.success(request, f"Configuration key '{key}' saved successfully.")
             return redirect('global_settings')
+        else:
+            messages.error(request, f"Failed to save setting: {form.errors.as_text()}")
     else:
         form = GlobalSettingsForm()
 
@@ -1444,13 +1403,6 @@ def save_keycloak_settings(request):
         kc_client_secret = request.POST.get('keycloak_client_secret', '').strip()
         kc_enabled = 'true' if request.POST.get('keycloak_enabled') == 'true' else 'false'
 
-        # Auto-correct port 8443 / 443 HTTP to HTTPS for Keycloak SSL
-        if kc_url:
-            if ':8443' in kc_url or ':443' in kc_url:
-                kc_url = re.sub(r'^http://', 'https://', kc_url)
-            if not kc_url.startswith(('http://', 'https://')):
-                kc_url = f"https://{kc_url}" if ':8443' in kc_url or ':443' in kc_url else f"http://{kc_url}"
-
         GlobalSettings.objects.update_or_create(key='KEYCLOAK_SERVER_URL', defaults={'value': kc_url})
         GlobalSettings.objects.update_or_create(key='KEYCLOAK_REALM', defaults={'value': kc_realm})
         GlobalSettings.objects.update_or_create(key='KEYCLOAK_CLIENT_ID', defaults={'value': kc_client_id})
@@ -1459,7 +1411,7 @@ def save_keycloak_settings(request):
         GlobalSettings.objects.update_or_create(key='KEYCLOAK_ENABLED', defaults={'value': kc_enabled})
 
         if kc_enabled == 'true':
-            messages.success(request, f"Keycloak Enterprise SSO enabled and configured ({kc_url}).")
+            messages.success(request, "Keycloak Enterprise SSO enabled and configured.")
         else:
             messages.success(request, "Keycloak SSO configuration saved (Disabled).")
     return redirect('global_settings')
@@ -1474,20 +1426,12 @@ def test_keycloak_connection_api(request):
         if not kc_url or not kc_realm:
             return JsonResponse({'ok': False, 'message': 'Please enter Keycloak Server URL and Realm Name.'})
 
-        # Smart protocol normalization: If 8443 or SSL port, ensure https://
-        if ':8443' in kc_url or ':443' in kc_url:
-            kc_url = re.sub(r'^http://', 'https://', kc_url)
-        if not kc_url.startswith(('http://', 'https://')):
-            kc_url = f"https://{kc_url}" if ':8443' in kc_url or ':443' in kc_url else f"http://{kc_url}"
-
         discovery_url = f"{kc_url}/realms/{kc_realm}/.well-known/openid-configuration"
-        
-        import requests
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
         try:
-            resp = requests.get(discovery_url, timeout=6, verify=False)
+            import requests
+            import urllib3
+            urllib3.disable_warnings()
+            resp = requests.get(discovery_url, verify=False, timeout=6)
             if resp.status_code == 200:
                 data = resp.json()
                 issuer = data.get('issuer', '')
@@ -1495,19 +1439,7 @@ def test_keycloak_connection_api(request):
             else:
                 return JsonResponse({'ok': False, 'message': f"Keycloak endpoint returned status {resp.status_code}."})
         except Exception as e:
-            # Fallback retry with https if http failed with RemoteDisconnected
-            if kc_url.startswith('http://'):
-                https_url = re.sub(r'^http://', 'https://', kc_url)
-                https_discovery = f"{https_url}/realms/{kc_realm}/.well-known/openid-configuration"
-                try:
-                    resp = requests.get(https_discovery, timeout=6, verify=False)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        issuer = data.get('issuer', '')
-                        return JsonResponse({'ok': True, 'message': f"Keycloak Realm OK (via HTTPS)! Discovered Issuer: {issuer}"})
-                except Exception:
-                    pass
-            return JsonResponse({'ok': False, 'message': f"Connection to Keycloak failed: {e}. Note: Keycloak on port 8443 requires 'https://'."})
+            return JsonResponse({'ok': False, 'message': f"Connection to Keycloak failed: {e}"})
     return JsonResponse({'ok': False, 'message': 'Invalid request.'})
 
 
@@ -1523,12 +1455,10 @@ def keycloak_login(request):
         messages.error(request, "Keycloak SSO is not enabled or configured by admin.")
         return redirect('login')
 
-    # Auto-correct port 8443 / 443 HTTP to HTTPS
-    if ':8443' in kc_url or ':443' in kc_url:
-        kc_url = re.sub(r'^http://', 'https://', kc_url)
-
     from urllib.parse import urlencode
     redirect_uri = request.build_absolute_uri('/ci/auth/keycloak/callback/')
+    request.session['kc_redirect_uri'] = redirect_uri
+
     auth_url = f"{kc_url}/realms/{kc_realm}/protocol/openid-connect/auth?" + urlencode({
         'client_id': kc_client_id,
         'response_type': 'code',
@@ -1539,7 +1469,14 @@ def keycloak_login(request):
 
 
 def keycloak_callback(request):
-    """Keycloak OIDC callback endpoint — exchanges auth code for token & provisions basic user."""
+    """Keycloak OIDC callback endpoint — exchanges auth code for token & provisions user."""
+    error = request.GET.get('error')
+    error_description = request.GET.get('error_description')
+    if error:
+        logger.warning(f"Keycloak auth returned error: {error} - {error_description}")
+        messages.error(request, f"Keycloak SSO authorization error: {error_description or error}")
+        return redirect('login')
+
     code = request.GET.get('code')
     if not code:
         messages.error(request, "Keycloak authentication failed: missing authorization code.")
@@ -1551,18 +1488,19 @@ def keycloak_callback(request):
     kc_client_id = settings_dict.get('KEYCLOAK_CLIENT_ID', '')
     kc_client_secret = settings_dict.get('KEYCLOAK_CLIENT_SECRET', '')
 
-    if ':8443' in kc_url or ':443' in kc_url:
-        kc_url = re.sub(r'^http://', 'https://', kc_url)
-
-    redirect_uri = request.build_absolute_uri('/ci/auth/keycloak/callback/')
+    redirect_uri = request.session.get('kc_redirect_uri') or request.build_absolute_uri('/ci/auth/keycloak/callback/')
     token_url = f"{kc_url}/realms/{kc_realm}/protocol/openid-connect/token"
     userinfo_url = f"{kc_url}/realms/{kc_realm}/protocol/openid-connect/userinfo"
 
+    import json
+    import base64
     import requests
     import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    urllib3.disable_warnings()
+
     from django.contrib.auth import login as auth_login
     from django.contrib.auth.models import User
+    from gitmgmt.models import UserProfile
 
     try:
         token_data = {
@@ -1575,11 +1513,19 @@ def keycloak_callback(request):
             token_data['client_secret'] = kc_client_secret
 
         logger.info(f"Exchanging Keycloak code for client '{kc_client_id}' at {token_url}")
-        auth_param = (kc_client_id, kc_client_secret) if kc_client_secret else None
-        token_resp = requests.post(token_url, data=token_data, auth=auth_param, timeout=10, verify=False)
-        if token_resp.status_code != 200:
-            # Fallback to body-only request if basic auth failed
-            token_resp = requests.post(token_url, data=token_data, timeout=10, verify=False)
+
+        # Primary attempt: pass credentials in request body with SSL verification disabled for self-signed certificates
+        token_resp = requests.post(token_url, data=token_data, verify=False, timeout=10)
+
+        # Fallback attempt: HTTP Basic Auth header if body-only credentials are not accepted
+        if token_resp.status_code != 200 and kc_client_secret:
+            auth_param = (kc_client_id, kc_client_secret)
+            fallback_data = {
+                'grant_type': 'authorization_code',
+                'code': code,
+                'redirect_uri': redirect_uri,
+            }
+            token_resp = requests.post(token_url, data=fallback_data, auth=auth_param, verify=False, timeout=10)
 
         if token_resp.status_code != 200:
             logger.error(f"Keycloak token exchange error {token_resp.status_code}: {token_resp.text}")
@@ -1588,44 +1534,88 @@ def keycloak_callback(request):
 
         tokens = token_resp.json()
         access_token = tokens.get('access_token')
+        id_token = tokens.get('id_token')
 
-        userinfo_resp = requests.get(userinfo_url, headers={'Authorization': f"Bearer {access_token}"}, timeout=10, verify=False)
-        userinfo_resp.raise_for_status()
-        claims = userinfo_resp.json()
+        claims = {}
+        # Decode id_token JWT claims if present
+        if id_token:
+            try:
+                parts = id_token.split('.')
+                if len(parts) >= 2:
+                    payload = parts[1]
+                    padded = payload + '=' * (-len(payload) % 4)
+                    claims.update(json.loads(base64.urlsafe_b64decode(padded)))
+            except Exception as e:
+                logger.warning(f"Could not parse id_token payload: {e}")
 
-        # Extract Azure AD / Keycloak claims
+        # Fetch claims from userinfo endpoint
+        if access_token:
+            try:
+                userinfo_resp = requests.get(userinfo_url, headers={'Authorization': f"Bearer {access_token}"}, verify=False, timeout=10)
+                if userinfo_resp.status_code == 200:
+                    claims.update(userinfo_resp.json())
+            except Exception as e:
+                logger.warning(f"Could not fetch userinfo: {e}")
+
+        # Extract user profile information from claims
         email = claims.get('email') or claims.get('upn') or claims.get('unique_name') or ''
-        raw_user = claims.get('preferred_username') or claims.get('upn') or email or 'azure_user'
-        
-        # Clean username for Django compatibility
+        raw_user = claims.get('preferred_username') or claims.get('upn') or email or 'sso_user'
+
+        import re
         username = re.sub(r'[^a-zA-Z0-9_@.-]', '_', raw_user)
         first_name = claims.get('given_name') or claims.get('name', '').split(' ')[0] or ''
         last_name = claims.get('family_name') or (claims.get('name', '').split(' ')[1] if ' ' in claims.get('name', '') else '')
 
-        # Match existing user by username or email
-        user = User.objects.filter(username=username).first()
-        if not user and email:
-            user = User.objects.filter(email=email).first()
+        # Match existing user by username, username prefix, or email (case-insensitive)
+        from django.db.models import Q
+        short_username = username.split('@')[0] if '@' in username else username
+        user = User.objects.filter(
+            Q(username__iexact=username) |
+            Q(username__iexact=short_username) |
+            (Q(email__iexact=email) if email else Q(pk=None)) |
+            (Q(email__iexact=username) if '@' in username else Q(pk=None))
+        ).first()
 
         if not user:
+            base_username = username
+            counter = 1
+            while User.objects.filter(username__iexact=username).exists():
+                username = f"{base_username}_{counter}"
+                counter += 1
+
             user = User.objects.create(
                 username=username,
                 email=email,
                 first_name=first_name,
                 last_name=last_name,
+                is_active=True,
             )
+            user.set_unusable_password()
+            user.save()
         else:
+            updated = False
+            if not user.is_active:
+                user.is_active = True
+                updated = True
             if email and not user.email:
                 user.email = email
+                updated = True
             if first_name and not user.first_name:
                 user.first_name = first_name
+                updated = True
             if last_name and not user.last_name:
                 user.last_name = last_name
-            user.save()
+                updated = True
+            if updated:
+                user.save()
 
-        # Log the user into Django session with explicit auth backend
-        auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-        messages.success(request, f"Welcome, {user.first_name or user.username}! Signed in via Keycloak (Azure AD SSO).")
+        # Ensure UserProfile exists
+        UserProfile.objects.get_or_create(user=user)
+
+        # Log the user into Django session with explicit auth backend and 2-day session expiry (172,800 seconds)
+        auth_login(request, user, backend='pipeline.backends.EmailOrUsernameModelBackend')
+        request.session.set_expiry(172800)
+        messages.success(request, f"Welcome, {user.first_name or user.username}! Signed in via Keycloak SSO.")
         return redirect('dashboard')
 
     except Exception as e:
@@ -1885,18 +1875,26 @@ def pipeline_metrics_api(request):
 
 @login_required
 def artifact_download(request, run_id, artifact_id):
+    from django.conf import settings
     run      = get_object_or_404(PipelineRun, run_id=run_id)
     artifact = get_object_or_404(BuildArtifact, pk=artifact_id, pipeline_run=run)
-    artifacts_dir = os.environ.get('CI_ARTIFACTS_DIR', 'D:/cicd/artifacts')
+    artifacts_dir = getattr(settings, 'CI_ARTIFACTS_DIR', os.environ.get('CI_ARTIFACTS_DIR', str(settings.BASE_DIR / 'artifacts')))
     full_path = os.path.join(artifacts_dir, artifact.file_path)
     full_path = os.path.abspath(full_path)
-    if not full_path.startswith(os.path.abspath(artifacts_dir)):
-        raise Http404
+    if not os.path.exists(full_path):
+        alt_path = os.path.join(artifacts_dir, str(run.run_id), artifact.name)
+        if os.path.exists(alt_path):
+            full_path = alt_path
     if not os.path.exists(full_path):
         messages.error(request, 'Artifact file not found on disk.')
         return redirect('pipeline_run_detail', run_id=run_id)
+    
+    content_type = artifact.content_type
+    if artifact.name.endswith('.ipa'):
+        content_type = 'application/octet-stream'
+
     response = HttpResponse(open(full_path, 'rb').read(),
-                            content_type=artifact.content_type)
+                            content_type=content_type)
     response['Content-Disposition'] = f'attachment; filename="{artifact.name}"'
     return response
 

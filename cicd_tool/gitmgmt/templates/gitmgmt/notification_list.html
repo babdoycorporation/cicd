@@ -1,0 +1,232 @@
+{% extends "pipeline/base.html" %}
+{% block content %}
+<style>
+    .notif-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .notif-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        margin: 0 0 0.25rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary);
+    }
+    .notif-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+    }
+    .notif-tab {
+        padding: 0.4rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--text-secondary);
+        background: var(--canvas-bg);
+        border: 1px solid var(--border-color);
+        transition: all 0.15s ease;
+    }
+    .notif-tab:hover {
+        color: var(--text-primary);
+        border-color: var(--text-muted);
+    }
+    .notif-tab.active {
+        color: #ffffff;
+        background: var(--brand);
+        border-color: var(--brand);
+    }
+
+    .notif-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    .notif-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.1rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.15s ease;
+    }
+    .notif-item:last-child {
+        border-bottom: none;
+    }
+    .notif-item.unread {
+        background: rgba(5, 150, 105, 0.03);
+    }
+    .notif-item:hover {
+        background: rgba(5, 150, 105, 0.05);
+    }
+
+    .notif-icon-box {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        margin-top: 0.1rem;
+    }
+    .icon-success { background: rgba(5, 150, 105, 0.12); color: var(--brand); }
+    .icon-danger  { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .icon-info    { background: rgba(2, 132, 199, 0.12); color: #0284c7; }
+    .icon-warn    { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+
+    .notif-body {
+        flex: 1;
+        min-width: 0;
+    }
+    .notif-title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+    .notif-item-title {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+    }
+    .notif-item-content {
+        font-size: 0.83rem;
+        color: var(--text-secondary);
+        line-height: 1.45;
+        margin: 0 0 0.5rem 0;
+        white-space: pre-wrap;
+    }
+    .notif-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    .dot-unread {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--brand);
+        display: inline-block;
+    }
+</style>
+
+<div class="notif-header">
+    <div>
+        <h1 class="notif-title"><i class="ph ph-bell" style="color:var(--brand);"></i> System Notifications</h1>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin:0;">Real-time alerts, CI/CD pipeline triggers, and team updates</p>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+        {% if unread_count > 0 %}
+        <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="mark_all_read">
+            <button type="submit" class="btn btn-outline" style="font-size:0.82rem;">
+                <i class="ph ph-check-circle"></i> Mark all as read
+            </button>
+        </form>
+        {% endif %}
+        {% if total_count > 0 %}
+        <form method="post" style="display:inline;" onsubmit="return confirm('Clear all notifications?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="clear_all">
+            <button type="submit" class="btn btn-outline" style="font-size:0.82rem; color:#ef4444; border-color:rgba(239,68,68,0.3);">
+                <i class="ph ph-trash"></i> Clear all
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+    <div style="background:{% if message.tags == 'error' %}rgba(239,68,68,0.1){% else %}rgba(5,150,105,0.1){% endif %}; border:1px solid {% if message.tags == 'error' %}rgba(239,68,68,0.3){% else %}rgba(5,150,105,0.3){% endif %}; color:{% if message.tags == 'error' %}#b91c1c{% else %}#047857{% endif %}; border-radius:8px; padding:0.75rem 1.2rem; margin-bottom:1.25rem; font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:0.5rem;">
+        <i class="ph {% if message.tags == 'error' %}ph-warning-circle{% else %}ph-check-circle{% endif %}" style="font-size:1.1rem;"></i>
+        <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<div class="notif-tabs">
+    <a href="?filter=all" class="notif-tab {% if filter_type != 'unread' %}active{% endif %}">
+        All Notifications ({{ total_count }})
+    </a>
+    <a href="?filter=unread" class="notif-tab {% if filter_type == 'unread' %}active{% endif %}">
+        Unread ({{ unread_count }})
+    </a>
+</div>
+
+<div class="notif-card">
+    {% for n in notifications %}
+    <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+        <div class="notif-icon-box {% if 'fail' in n.notification_type or 'error' in n.notification_type %}icon-danger{% elif 'success' in n.notification_type %}icon-success{% elif 'warn' in n.notification_type %}icon-warn{% else %}icon-info{% endif %}">
+            {% if 'fail' in n.notification_type or 'error' in n.notification_type %}
+            <i class="ph ph-x-circle"></i>
+            {% elif 'success' in n.notification_type %}
+            <i class="ph ph-check-circle"></i>
+            {% elif 'pr' in n.notification_type %}
+            <i class="ph ph-git-pull-request"></i>
+            {% elif 'member' in n.notification_type %}
+            <i class="ph ph-user-plus"></i>
+            {% else %}
+            <i class="ph ph-bell"></i>
+            {% endif %}
+        </div>
+        <div class="notif-body">
+            <div class="notif-title-row">
+                <span class="notif-item-title">{{ n.title }}</span>
+                {% if not n.is_read %}
+                <span class="dot-unread" title="Unread"></span>
+                {% endif %}
+            </div>
+            <div class="notif-item-content">{{ n.content }}</div>
+            <div class="notif-meta">
+                <span><i class="ph ph-clock"></i> {{ n.created_at|timesince }} ago</span>
+                {% if n.repository %}
+                <span><i class="ph ph-git-branch"></i> {{ n.repository.name }}</span>
+                {% endif %}
+                <div style="margin-left:auto; display:flex; gap:0.5rem; align-items:center;">
+                    {% if not n.is_read %}
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="mark_read">
+                        <input type="hidden" name="notification_id" value="{{ n.id }}">
+                        <button type="submit" class="btn btn-outline" style="padding:0.2rem 0.5rem; font-size:0.75rem;">
+                            Mark as read
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% if n.link %}
+                    <a href="{% url 'mark_notification_read' n.id %}" class="btn btn-primary" style="padding:0.2rem 0.65rem; font-size:0.75rem;">
+                        View <i class="ph ph-arrow-right"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="text-align:center; padding:3.5rem 1rem; color:var(--text-muted);">
+        <i class="ph ph-bell-slash" style="font-size:2.5rem; opacity:0.35; display:block; margin-bottom:0.75rem;"></i>
+        <h3 style="margin:0 0 0.25rem 0; font-size:1rem; color:var(--text-primary);">No notifications found</h3>
+        <p style="margin:0; font-size:0.82rem;">You're all caught up with your latest activities and build events.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

@@ -14,32 +14,16 @@ from .models import (
 
 class RepositoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if 'visibility' in self.fields and not self.instance.pk:
             self.fields['visibility'].initial = 'private'
 
-        from .models import Organization
-        if user:
-            from django.db.models import Q
-            orgs = Organization.objects.filter(
-                Q(owner=user) | Q(memberships__user=user) | Q(teams__members=user)
-            ).distinct()
-            self.fields['organization'].queryset = orgs
-        else:
-            self.fields['organization'].queryset = Organization.objects.all()
-
-        self.fields['organization'].required = False
-        self.fields['organization'].empty_label = "Personal Account (User Namespace)"
-        self.fields['organization'].label = "Owner / Organization"
-
     class Meta:
         model = Repository
-        fields = ['name', 'organization', 'description', 'visibility', 'default_branch']
+        fields = ['name', 'description', 'visibility', 'default_branch']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. backend-api'}),
-            'organization': forms.Select(attrs={'class': 'form-select'}),
-            'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'Optional description for this repository'}),
+            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'my-project'}),
+            'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3}),
             'visibility': forms.Select(attrs={'class': 'form-select'}),
             'default_branch': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'main'}),
         }
@@ -79,16 +63,20 @@ class PullRequestForm(forms.ModelForm):
             self.fields['target_branch'].queryset = Branch.objects.filter(repository=repository)
             self.fields['labels'].queryset = Label.objects.filter(repository=repository)
             self.fields['milestone'].queryset = Milestone.objects.filter(repository=repository, state='open')
-            self.fields['assignees'].queryset = User.objects.filter(
-                collaborations__repository=repository
-            ).distinct()
+            from django.db.models import Q
+            assignee_filter = Q(collaborations__repository=repository)
+            if repository.owner:
+                assignee_filter |= Q(id=repository.owner.id)
+            if repository.organization:
+                assignee_filter |= Q(org_memberships__organization=repository.organization)
+            self.fields['assignees'].queryset = User.objects.filter(assignee_filter).distinct()
 
     def clean(self):
         cleaned = super().clean()
         src = cleaned.get('source_branch')
         tgt = cleaned.get('target_branch')
         if src and tgt and src == tgt:
-            raise forms.ValidationError("Source and target branches must be different.")
+            raise forms.ValidationError("Source and target branches must be different. Please select a different branch to propose changes from.")
         return cleaned
 
 

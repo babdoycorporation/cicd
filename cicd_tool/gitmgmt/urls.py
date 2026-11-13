@@ -1,13 +1,23 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, re_path
+from django.shortcuts import redirect
 
 from . import views
 from .views import GitService
+from pipeline import views as pipeline_views
 
 urlpatterns = [
     # ── Auth ─────────────────────────────────────────────────────────────────
     path('', auth_views.LoginView.as_view(template_name='gitmgmt/login.html'), name='login'),
+    path('login/', auth_views.LoginView.as_view(template_name='gitmgmt/login.html'), name='login_alias'),
     path('logout/', views.user_logout, name='logout'),
+    path('accounts/logout/', views.user_logout, name='accounts_logout'),
+    path('auth/logout/', views.user_logout, name='auth_logout'),
+    path('ci/logout/', views.user_logout, name='ci_logout_alias'),
+    path('dashboard/', lambda r: redirect('dashboard'), name='dashboard_alias'),
+    path('notifications/preferences/', pipeline_views.notification_preferences, name='notification_preferences_alias'),
+    path('auth/keycloak/login/', pipeline_views.keycloak_login, name='keycloak_login_alias'),
+    path('auth/keycloak/callback/', pipeline_views.keycloak_callback, name='keycloak_callback_alias'),
     path('signup/', views.signup, name='signup'),
     path('profile/', views.profile, name='profile'),
     path('users/<str:username>/', views.user_profile_view, name='user_profile'),
@@ -50,10 +60,17 @@ urlpatterns = [
     path('repositories/<str:repository_name>/create-branch/', views.create_branch, name='create_branch'),
     path('repositories/<str:repository_name>/delete-branch/', views.delete_branch, name='delete_branch'),
     path('repositories/<str:repository_name>/merge/', views.merge_branch, name='merge_branch'),
-    path('repositories/<str:repository_name>/branches/<str:branch_name>/protection/', views.branch_protection, name='branch_protection'),
+    path('repositories/<str:repository_name>/branches/<path:branch_name>/protection/', views.branch_protection, name='branch_protection'),
+    path('repositories/<str:repository_name>/compare/', views.compare_branches, name='compare_branches'),
 
-    # Settings / collaborators
+    # Access Requests (Ownership & Permission Control)
+    path('repositories/<str:repository_name>/request-access/', views.request_repo_access, name='request_repo_access'),
+    path('repositories/<str:repository_name>/access-requests/', views.repository_access_requests, name='repository_access_requests'),
+    path('repositories/<str:repository_name>/access-requests/<int:request_id>/<str:action>/', views.review_access_request, name='review_access_request'),
+
+    # Settings / collaborators / delete
     path('repositories/<str:repository_name>/settings/', views.repository_settings, name='repository_settings'),
+    path('repositories/<str:repository_name>/delete/', views.delete_repository, name='delete_repository'),
     path('repositories/<str:repository_name>/settings/collaborators/add/', views.add_collaborator, name='add_collaborator'),
     path('repositories/<str:repository_name>/settings/collaborators/<int:user_id>/remove/', views.remove_collaborator, name='remove_collaborator'),
 
@@ -89,16 +106,23 @@ urlpatterns = [
     path('repositories/<str:repository_name>/releases/new/', views.create_release, name='create_release'),
     path('repositories/<str:repository_name>/releases/<str:tag_name>/', views.release_detail, name='release_detail'),
 
-    # ── CI tab ────────────────────────────────────────────────────────────────
-    path('repositories/<str:repository_name>/ci/', views.repository_rocket_ci, name='repository_rocket_ci'),
+    # ── Actions & macOS .IPA Builder (GitHub Actions Suite) ───────────────────
+    path('repositories/<str:repository_name>/actions/', views.repository_actions, name='repository_actions'),
+    path('repositories/<str:repository_name>/actions/run/', views.run_macos_action, name='run_macos_action'),
+    path('repositories/<str:repository_name>/actions/runs/<uuid:run_id>/', views.repository_action_run_detail, name='repository_action_run_detail'),
+    path('repositories/<str:repository_name>/actions/runs/<uuid:run_id>/download-ipa/', views.download_action_ipa, name='download_action_ipa'),
+    path('repositories/<str:repository_name>/actions/create-workflow-file/', views.create_workflow_file, name='create_workflow_file'),
+
+    # ── CI tab (Legacy Alias) ─────────────────────────────────────────────────
+    path('repositories/<str:repository_name>/ci/', views.repository_actions, name='repository_rocket_ci'),
     path('repositories/<str:repository_name>/ci/initialize/', views.initialize_rocket_ci, name='initialize_rocket_ci'),
 
     # ── Reactions ─────────────────────────────────────────────────────────────
     path('reactions/<str:target_type>/<int:target_id>/<str:emoji>/', views.toggle_reaction, name='toggle_reaction'),
 
-    # ── Git Smart HTTP Protocol ───────────────────────────────────────────────
-    re_path(r'^(?:git|repos)/(?:(?P<owner>[\w\-\.]+)/)?(?P<repo_name>[\w\-\.]+?)(?:\.git)?/info/refs$', GitService.as_view(), name='git_info_refs'),
-    re_path(r'^(?:git|repos)/(?:(?P<owner>[\w\-\.]+)/)?(?P<repo_name>[\w\-\.]+?)(?:\.git)?/(?P<path>git-upload-pack)$', GitService.as_view(), name='git_upload_pack'),
-    re_path(r'^(?:git|repos)/(?:(?P<owner>[\w\-\.]+)/)?(?P<repo_name>[\w\-\.]+?)(?:\.git)?/(?P<path>git-receive-pack)$', GitService.as_view(), name='git_receive_pack'),
-    re_path(r'^(?:git|repos)/(?:(?P<owner>[\w\-\.]+)/)?(?P<repo_name>[\w\-\.]+?)(?:\.git)?/(?P<path>.+)$', GitService.as_view(), name='git_static_files'),
+    # ── Git Smart HTTP Protocol (supports /git/<owner>/<repo>.git, /git/<repo>.git, /repos/<repo>.git) ────
+    re_path(r'^(?:git/(?:[\w\-\.]+/)?|repos/)(?P<repo_name>[\w\-\.]+)/info/refs$', GitService.as_view(), name='git_info_refs'),
+    re_path(r'^(?:git/(?:[\w\-\.]+/)?|repos/)(?P<repo_name>[\w\-\.]+)/(?P<path>git-upload-pack)$', GitService.as_view(), name='git_upload_pack'),
+    re_path(r'^(?:git/(?:[\w\-\.]+/)?|repos/)(?P<repo_name>[\w\-\.]+)/(?P<path>git-receive-pack)$', GitService.as_view(), name='git_receive_pack'),
+    re_path(r'^(?:git/(?:[\w\-\.]+/)?|repos/)(?P<repo_name>[\w\-\.]+)/(?P<path>.+)$', GitService.as_view(), name='git_static_files'),
 ]

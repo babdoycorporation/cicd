@@ -7,11 +7,6 @@ class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ['name', 'repository_url', 'organization']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. ecommerce-backend', 'autofocus': True}),
-            'repository_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://github.com/org/repo.git'}),
-            'organization': forms.Select(attrs={'class': 'form-control'}),
-        }
 
 class ProjectConfigurationForm(forms.ModelForm):
     environment_variables = forms.CharField(widget=forms.Textarea(attrs={'rows': 5}), required=False)
@@ -62,15 +57,37 @@ class AgentForm(forms.ModelForm):
         model = Agent
         fields = ['hostname', 'ip_address', 'hash_key', 'last_heartbeat', 'operating_system', 'live', 'scope_level', 'project', 'application', 'environments']
 
-class GlobalCredentialForm(forms.ModelForm):
-    class Meta:
-        model = Credential
-        fields = ['service_name', 'credential_type', 'username', 'password', 'token']
+class _BaseCredentialForm(forms.ModelForm):
+    credential_type = forms.ChoiceField(
+        choices=Credential._meta.get_field('credential_type').choices,
+        required=False,
+        initial='generic',
+    )
+    token = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'API token, kubeconfig, or SSH private key (optional)',
+        }),
+    )
 
-class LocalCredentialForm(forms.ModelForm):
     class Meta:
         model = Credential
         fields = ['service_name', 'credential_type', 'username', 'password', 'token']
+        widgets = {
+            'password': forms.PasswordInput(render_value=True),
+        }
+
+    def clean_credential_type(self):
+        return self.cleaned_data.get('credential_type') or 'generic'
+
+
+class GlobalCredentialForm(_BaseCredentialForm):
+    pass
+
+
+class LocalCredentialForm(_BaseCredentialForm):
+    pass
 
 
 class DeploymentTargetForm(forms.ModelForm):
@@ -90,6 +107,13 @@ class DeploymentTargetForm(forms.ModelForm):
         self.fields['credential'].queryset = Credential.objects.all().order_by('service_name')
 
 class ApplicationForm(forms.ModelForm):
+    project = forms.ModelChoiceField(
+        queryset=Project.objects.all().order_by('name'),
+        required=True,
+        label='Target Project',
+        empty_label='— Select a target project —',
+        widget=forms.Select(attrs={'id': 'id_project'})
+    )
     REPO_MODE_CHOICES = (
         ('create', 'Initialize a new repository (recommended)'),
         ('link', 'Link an existing repository'),
@@ -103,12 +127,13 @@ class ApplicationForm(forms.ModelForm):
 
     class Meta:
         model = Application
-        fields = ['name', 'description', 'default_branch']
+        fields = ['project', 'name', 'description', 'default_branch']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from gitmgmt.models import Repository
         self.fields['existing_repository'].queryset = Repository.objects.all().order_by('name')
+        self.fields['project'].queryset = Project.objects.all().order_by('name')
 
     def clean(self):
         cleaned = super().clean()

@@ -4,85 +4,99 @@
 <style>
   .edit-header {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 1.5rem; padding-bottom: 1rem;
+    margin-bottom: 1.25rem; padding-bottom: 0.85rem;
     border-bottom: 1px solid var(--border-color);
   }
+  .edit-title-area {
+    display: flex; align-items: center; gap: 0.75rem;
+  }
   .edit-title {
-    font-size: 1.2rem; font-weight: 600; color: var(--text-primary);
+    font-size: 1.15rem; font-weight: 700; color: var(--text-primary);
     display: flex; align-items: center; gap: 0.5rem; margin: 0;
+    font-family: 'JetBrains Mono', monospace;
   }
   .branch-pill {
-    font-size: 0.78rem; background: rgba(163,113,247,0.15);
-    color: #a371f7; border: 1px solid rgba(163,113,247,0.3);
-    padding: 0.2rem 0.6rem; border-radius: 20px; font-family: ui-monospace, monospace;
+    font-size: 0.75rem; background: var(--accent-light);
+    color: var(--brand); border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 0.25rem 0.65rem; border-radius: 20px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 0.35rem;
   }
   .editor-wrapper {
-    background: var(--card-bg); border: 1px solid var(--border-color);
-    border-radius: 8px; overflow: hidden; margin-bottom: 1rem;
+    background: #1e1e1e; border: 1px solid var(--border-color);
+    border-radius: 8px; overflow: hidden; margin-bottom: 1.25rem;
+    box-shadow: var(--shadow-sm);
   }
   .editor-titlebar {
-    display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem;
-    background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border-color);
-    font-size: 0.82rem; color: var(--text-secondary);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.55rem 1rem;
+    background: #252526; border-bottom: 1px solid #333333;
+    font-size: 0.8rem; color: #cccccc;
+    font-family: 'JetBrains Mono', monospace;
   }
-  #editor { height: 520px; }
+  #editor { height: 560px; width: 100%; }
   .commit-section {
     background: var(--card-bg); border: 1px solid var(--border-color);
-    border-radius: 8px; padding: 1.25rem;
+    border-radius: 8px; padding: 1.25rem; box-shadow: var(--shadow-sm);
   }
   .commit-section h3 {
-    font-size: 0.95rem; font-weight: 600; margin: 0 0 1rem;
-    color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.95rem; font-weight: 700; margin: 0 0 1rem;
+    color: var(--text-primary); display: flex; align-items: center; gap: 0.45rem;
   }
   .form-row { margin-bottom: 1rem; }
   .form-row label {
-    display: block; font-size: 0.8rem; font-weight: 500;
+    display: block; font-size: 0.8rem; font-weight: 600;
     color: var(--text-secondary); margin-bottom: 0.35rem;
   }
   .form-row input[type="text"] {
-    width: 100%; background: var(--dark-bg);
+    width: 100%; background: #ffffff;
     border: 1px solid var(--border-color); border-radius: 6px;
-    color: var(--text-primary); padding: 0.5rem 0.75rem;
+    color: var(--text-primary); padding: 0.55rem 0.85rem;
     font-size: 0.88rem; font-family: inherit; box-sizing: border-box;
     outline: none; transition: border-color 0.2s;
   }
   .form-row input:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(47,129,247,0.15);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
   }
   .commit-actions { display: flex; gap: 0.75rem; align-items: center; }
   .btn-commit {
-    background: #238636; color: #fff; border: 1px solid #2ea043;
-    border-radius: 6px; padding: 0.5rem 1.25rem; font-size: 0.88rem;
-    font-weight: 500; cursor: pointer; font-family: inherit;
-    display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s;
+    background: var(--brand); color: #fff; border: 1px solid var(--brand);
+    border-radius: 6px; padding: 0.5rem 1.25rem; font-size: 0.85rem;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 0.45rem; transition: background 0.2s;
   }
-  .btn-commit:hover { background: #2ea043; }
+  .btn-commit:hover { background: var(--brand-hover); }
+  .btn-commit:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-cancel {
     background: transparent; color: var(--text-secondary);
     border: 1px solid var(--border-color); border-radius: 6px;
-    padding: 0.5rem 1rem; font-size: 0.88rem; font-weight: 500;
+    padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600;
     cursor: pointer; text-decoration: none;
     display: inline-flex; align-items: center; gap: 0.4rem; transition: background 0.2s;
   }
-  .btn-cancel:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+  .btn-cancel:hover { background: var(--canvas-bg); color: var(--text-primary); }
   .alert-msg {
     padding: 0.75rem 1rem; border-radius: 6px;
-    font-size: 0.85rem; margin-bottom: 1rem; display: none;
+    font-size: 0.85rem; margin-bottom: 1rem; display: none; font-weight: 600;
   }
-  .alert-success { background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.3); color: #3fb950; }
-  .alert-error   { background: rgba(248,81,73,0.1);  border: 1px solid rgba(248,81,73,0.3);  color: #f85149; }
+  .alert-success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #059669; }
+  .alert-error   { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: #dc2626; }
 </style>
 
 <div class="edit-header">
-  <h1 class="edit-title">
-    <i class="ph ph-pencil-simple" style="color:var(--accent-color);"></i>
-    {{ file_path }}
-  </h1>
-  <div style="display:flex; align-items:center; gap:0.75rem;">
+  <div class="edit-title-area">
+    <a href="{% url 'repository_detail' repository.name %}?branch={{ current_branch }}" style="color:var(--text-secondary); text-decoration:none; display:flex; align-items:center;">
+      <i class="ph ph-arrow-left" style="font-size:1.2rem;"></i>
+    </a>
+    <h1 class="edit-title">
+      <i class="ph ph-file-code" style="color:var(--brand);"></i>
+      {{ file_path }}
+    </h1>
     <span class="branch-pill"><i class="ph ph-git-branch"></i> {{ current_branch }}</span>
-    <a href="{% url 'repository_detail' repository_name=repository.name %}?branch={{ current_branch }}" class="btn-cancel">
-      <i class="ph ph-arrow-left"></i> Cancel
+  </div>
+  <div>
+    <a href="{% url 'repository_detail' repository.name %}?branch={{ current_branch }}" class="btn-cancel">
+      <i class="ph ph-x"></i> Cancel
     </a>
   </div>
 </div>
@@ -91,8 +105,11 @@
 
 <div class="editor-wrapper">
   <div class="editor-titlebar">
-    <i class="ph ph-file-code"></i>
-    <span>{{ file_path }}</span>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <i class="ph ph-file-text"></i>
+      <span>{{ file_path }}</span>
+    </div>
+    <span id="detectedLang" style="text-transform:uppercase; font-size:0.7rem; letter-spacing:0.5px; opacity:0.8;"></span>
   </div>
   <div id="editor"></div>
 </div>
@@ -110,21 +127,70 @@
   </div>
   <div class="commit-actions">
     <button type="button" id="save-btn" class="btn-commit">
-      <i class="ph ph-git-commit"></i> Commit changes
+      <i class="ph ph-check"></i> Commit changes
     </button>
-    <a href="{% url 'repository_detail' repository_name=repository.name %}?branch={{ current_branch }}" class="btn-cancel">
-      <i class="ph ph-x"></i> Cancel
+    <a href="{% url 'repository_detail' repository.name %}?branch={{ current_branch }}" class="btn-cancel">
+      Cancel
     </a>
+    <span style="font-size:0.75rem; color:var(--text-muted); margin-left:auto;">
+      Tip: Press <kbd style="background:#e2e8f0; padding:2px 5px; border-radius:3px; font-size:0.72rem;">Ctrl+S</kbd> to commit
+    </span>
   </div>
 </div>
 
+<!-- Safely inject raw file content without JavaScript escaping bugs -->
+{{ file_content|json_script:"raw-file-content" }}
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs/loader.min.js"></script>
 <script>
+  function detectLanguage(filePath) {
+    var lower = filePath.toLowerCase();
+    if (lower.endsWith('dockerfile') || lower.includes('dockerfile.')) return 'dockerfile';
+    var ext = lower.split('.').pop();
+    var map = {
+      'py': 'python',
+      'js': 'javascript',
+      'jsx': 'javascript',
+      'mjs': 'javascript',
+      'ts': 'typescript',
+      'tsx': 'typescript',
+      'json': 'json',
+      'html': 'html',
+      'htm': 'html',
+      'css': 'css',
+      'scss': 'scss',
+      'less': 'less',
+      'yml': 'yaml',
+      'yaml': 'yaml',
+      'md': 'markdown',
+      'markdown': 'markdown',
+      'sh': 'shell',
+      'bash': 'shell',
+      'zsh': 'shell',
+      'sql': 'sql',
+      'xml': 'xml',
+      'svg': 'xml',
+      'ini': 'ini',
+      'conf': 'ini',
+      'cfg': 'ini',
+      'env': 'plaintext',
+      'txt': 'plaintext'
+    };
+    return map[ext] || 'plaintext';
+  }
+
   require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs' }});
   require(['vs/editor/editor.main'], function() {
+    var rawEl = document.getElementById('raw-file-content');
+    var rawContent = rawEl ? JSON.parse(rawEl.textContent) : '';
+    var filePath = document.getElementById('file-path').value;
+    var lang = detectLanguage(filePath);
+    
+    document.getElementById('detectedLang').innerText = lang;
+
     var editor = monaco.editor.create(document.getElementById('editor'), {
-      value: `{{ file_content|safe }}`,
-      language: 'python',
+      value: rawContent,
+      language: lang,
       theme: 'vs-dark',
       automaticLayout: true,
       fontSize: 13,
@@ -132,14 +198,24 @@
       scrollBeyondLastLine: false,
     });
 
+    // Keyboard shortcut Ctrl+S or Cmd+S to commit
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, function() {
+      document.getElementById('save-btn').click();
+    });
+
     document.getElementById('save-btn').addEventListener('click', function() {
+      var saveBtn = this;
       var repositoryId = document.getElementById('repository-id').value;
-      var filePath = document.getElementById('file-path').value;
       var currentBranch = document.getElementById('current-branch').value;
       var fileContent = editor.getValue();
-      var commitMessage = document.getElementById('commit_message').value;
+      var commitMessage = document.getElementById('commit_message').value.trim() || ('Update ' + filePath);
 
-      fetch('/gitmgmt/repositories/' + repositoryId + '/edit/' + filePath + '/', {
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Committing...';
+
+      var saveUrl = "{% url 'edit_and_save_file' repository.name file_path %}";
+
+      fetch(saveUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,16 +227,22 @@
           branch: currentBranch
         })
       })
-      .then(r => r.json())
-      .then(data => {
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="ph ph-check"></i> Commit changes';
         if (data.status === 'success') {
-          showAlert('Changes committed successfully.', 'success');
+          showAlert('Changes committed successfully to branch ' + currentBranch + '.', 'success');
           editor.setValue(data.updated_content || fileContent);
         } else {
           showAlert('Failed to commit: ' + (data.error || 'Unknown error'), 'error');
         }
       })
-      .catch(() => showAlert('Network error — could not save file.', 'error'));
+      .catch(function(err) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="ph ph-check"></i> Commit changes';
+        showAlert('Network error — could not save file.', 'error');
+      });
     });
 
     function showAlert(message, type) {
@@ -168,7 +250,7 @@
       el.textContent = message;
       el.className = 'alert-msg alert-' + type;
       el.style.display = 'block';
-      setTimeout(() => { el.style.display = 'none'; }, 5000);
+      setTimeout(function() { el.style.display = 'none'; }, 6000);
     }
   });
 </script>

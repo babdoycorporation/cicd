@@ -153,7 +153,7 @@
     <!-- Profile Info Card -->
     <div class="pcard">
       <h2><i class="ph ph-user-circle"></i> Public Profile</h2>
-      <form method="post" action="">
+      <form method="post" action="{% url 'profile' %}">
         {% csrf_token %}
         <input type="hidden" name="action" value="update_profile">
         <div class="form-row">

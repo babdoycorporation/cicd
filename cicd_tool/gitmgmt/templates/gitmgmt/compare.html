@@ -1,0 +1,208 @@
+{% extends 'gitmgmt/repository_base.html' %}
+
+{% block repo_content %}
+<style>
+    .compare-bar {
+        background: var(--canvas-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 0.85rem 1.15rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .branch-compare-selectors {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .branch-select-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .diff-file-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 1.25rem;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .diff-file-header {
+        background: var(--canvas-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.65rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .diff-content {
+        margin: 0;
+        padding: 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.78rem;
+        line-height: 1.45;
+        overflow-x: auto;
+    }
+
+    .diff-line {
+        padding: 0.12rem 0.75rem;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    .diff-line-add {
+        background: #ecfdf5;
+        color: #065f46;
+    }
+
+    .diff-line-del {
+        background: #fef2f2;
+        color: #991b1b;
+    }
+
+    .diff-line-context {
+        color: var(--text-primary);
+    }
+</style>
+
+<div>
+    <!-- Compare Selector Bar -->
+    <div class="compare-bar">
+        <div class="branch-compare-selectors">
+            <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Comparing:</span>
+            
+            <div class="branch-select-box">
+                <span style="color: var(--text-muted); font-size: 0.75rem;">base:</span>
+                <select id="baseSelect" onchange="updateCompareUrl()" style="border: none; background: transparent; font-family: inherit; font-weight: 700; color: var(--text-primary); outline: none; cursor: pointer;">
+                    {% for b in branches %}
+                    <option value="{{ b }}" {% if b == base_branch %}selected{% endif %}>{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <i class="ph ph-arrow-left" style="font-size: 0.95rem; color: var(--text-muted);"></i>
+
+            <div class="branch-select-box">
+                <span style="color: var(--text-muted); font-size: 0.75rem;">compare:</span>
+                <select id="compareSelect" onchange="updateCompareUrl()" style="border: none; background: transparent; font-family: inherit; font-weight: 700; color: var(--text-primary); outline: none; cursor: pointer;">
+                    {% for b in branches %}
+                    <option value="{{ b }}" {% if b == compare_branch %}selected{% endif %}>{{ b }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% if base_branch != compare_branch and commits %}
+        <div>
+            <a href="{% url 'create_pull_request' repository.name %}?source_branch={{ compare_branch }}&target_branch={{ base_branch }}" class="btn btn-primary">
+                <i class="ph ph-git-pull-request"></i> Create Pull Request
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if base_branch == compare_branch %}
+    <div style="background: var(--canvas-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+        <i class="ph ph-git-diff" style="font-size: 2.5rem; color: var(--brand); opacity: 0.5; display: block; margin-bottom: 0.6rem;"></i>
+        <h4 style="margin: 0 0 0.35rem; color: var(--text-primary); font-family: 'Outfit', sans-serif;">Nothing to Compare</h4>
+        <p style="margin: 0; font-size: 0.82rem;">Select different branches above to view commits and file differences.</p>
+    </div>
+    {% else %}
+
+    <!-- Compare Metrics Summary -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span style="font-size: 0.85rem; font-weight: 800; color: var(--text-primary); font-family: 'Outfit', sans-serif;">
+                <i class="ph ph-git-commit" style="color: var(--brand);"></i> {{ commits|length }} Commits
+            </span>
+            <span style="color: var(--border-color);">•</span>
+            <span style="font-size: 0.85rem; font-weight: 800; color: var(--text-primary); font-family: 'Outfit', sans-serif;">
+                <i class="ph ph-files" style="color: var(--brand);"></i> {{ files_changed|length }} Files Changed
+            </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 800;">
+            <span style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); padding: 0.15rem 0.5rem; border-radius: 12px;">+{{ additions }} lines</span>
+            <span style="background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25); padding: 0.15rem 0.5rem; border-radius: 12px;">-{{ deletions }} lines</span>
+        </div>
+    </div>
+
+    <!-- Commits List -->
+    {% if commits %}
+    <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1.5rem; overflow: hidden; box-shadow: var(--shadow-sm);">
+        <div style="background: var(--canvas-bg); padding: 0.55rem 0.85rem; border-bottom: 1px solid var(--border-color); font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary);">
+            Commits ({{ commits|length }})
+        </div>
+        {% for c in commits %}
+        <div style="padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.82rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; min-width: 0;">
+                <i class="ph ph-git-commit" style="color: var(--brand); font-size: 0.95rem; flex-shrink: 0;"></i>
+                <span style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    {{ c.message }}
+                </span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); white-space: nowrap;">by {{ c.author_name }}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+                <span style="font-size: 0.72rem; color: var(--text-muted);">{{ c.committed_datetime|date:"M d, H:i" }}</span>
+                <code style="background: var(--canvas-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.12rem 0.4rem; font-size: 0.72rem; color: var(--text-primary);">{{ c.short_hash }}</code>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Unified Diff Viewer -->
+    {% if files_changed %}
+    <div>
+        <h3 style="font-size: 0.95rem; font-weight: 800; font-family: 'Outfit', sans-serif; margin: 0 0 0.85rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+            <i class="ph ph-file-code" style="color: var(--brand);"></i> Unified Diff ({{ files_changed|length }} files)
+        </h3>
+        {% for f in files_changed %}
+        <div class="diff-file-card">
+            <div class="diff-file-header">
+                <span style="color: var(--text-primary);"><i class="ph ph-file-text" style="color: var(--brand);"></i> {{ f.path }}</span>
+            </div>
+            <pre class="diff-content">{% for l in f.lines %}<div class="diff-line diff-line-{{ l.type }}">{{ l.text }}</div>{% endfor %}</pre>
+        </div>
+        {% endfor %}
+    </div>
+    {% elif not commits %}
+    <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 8px; padding: 2.5rem 1rem; text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+        <i class="ph ph-check-circle" style="font-size: 2.2rem; color: var(--brand); display: block; margin-bottom: 0.5rem;"></i>
+        <h4 style="margin: 0 0 0.25rem; color: var(--text-primary);">Branches Are In Sync</h4>
+        <p style="margin: 0; font-size: 0.8rem;">There are no code differences or new commits between <code>{{ base_branch }}</code> and <code>{{ compare_branch }}</code>.</p>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+
+<script>
+    function updateCompareUrl() {
+        const base = document.getElementById('baseSelect').value;
+        const compare = document.getElementById('compareSelect').value;
+        window.location.href = "{% url 'compare_branches' repository.name %}?base=" + encodeURIComponent(base) + "&compare=" + encodeURIComponent(compare);
+    }
+</script>
+{% endblock %}
+

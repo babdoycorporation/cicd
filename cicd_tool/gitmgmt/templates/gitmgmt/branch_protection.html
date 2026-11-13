@@ -1,0 +1,214 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% block repo_content %}
+<style>
+    .rule-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 2rem;
+        max-width: 780px;
+        margin: 0 auto 2rem;
+        box-shadow: var(--shadow-sm);
+    }
+    .rule-card h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    .rule-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin: 0 0 1.75rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .rule-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: var(--canvas-bg);
+        margin-bottom: 1rem;
+        transition: border-color 0.2s;
+    }
+    .rule-option:hover {
+        border-color: rgba(5, 150, 105, 0.4);
+    }
+    .rule-option input[type="checkbox"] {
+        margin-top: 0.25rem;
+        width: 17px;
+        height: 17px;
+        accent-color: var(--brand);
+        cursor: pointer;
+    }
+    .rule-label {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+        cursor: pointer;
+    }
+    .rule-desc {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.45;
+    }
+    .sub-option {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px dashed var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .form-select-sm {
+        background: var(--dark-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-primary);
+        padding: 0.35rem 0.65rem;
+        font-size: 0.85rem;
+        outline: none;
+    }
+    .form-actions-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.75rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border-color);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+</style>
+
+<div class="rule-card">
+    <h2>
+        <i class="ph ph-shield-check" style="color:var(--brand);"></i>
+        Branch Protection Rules: <code style="background:var(--canvas-bg); padding:0.15rem 0.5rem; border-radius:6px; font-size:1.1rem; color:var(--brand);">{{ branch.name }}</code>
+    </h2>
+    <p class="rule-subtitle">
+        Branch protection rules enforce code security by requiring pull requests, peer review approvals, and blocking direct pushes before code is merged into <strong>{{ branch.name }}</strong>.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- Master Switch: Enable Protection -->
+        <div class="rule-option" style="background:rgba(5, 150, 105, 0.05); border-color:rgba(5, 150, 105, 0.3);">
+            <input type="checkbox" name="is_protected" id="id_is_protected" {% if branch.is_protected %}checked{% endif %}>
+            <div style="flex:1;">
+                <label for="id_is_protected" class="rule-label" style="color:var(--brand);">
+                    <i class="ph ph-lock-key"></i> Protect this branch
+                </label>
+                <p class="rule-desc">
+                    When enabled, the rules specified below will be strictly enforced for all developers and CI/CD pipelines.
+                </p>
+            </div>
+        </div>
+
+        <!-- Rule 1: Require Pull Request & Approvals -->
+        <div class="rule-option">
+            <input type="checkbox" name="require_pull_request" id="id_require_pull_request" {% if rule.require_pull_request %}checked{% endif %}>
+            <div style="flex:1;">
+                <label for="id_require_pull_request" class="rule-label">
+                    <i class="ph ph-git-pull-request"></i> Require a pull request before merging
+                </label>
+                <p class="rule-desc">
+                    When enabled, all commits must be made to a non-protected feature branch and submitted via a Pull Request before they can be merged into <strong>{{ branch.name }}</strong>.
+                </p>
+                
+                <div class="sub-option">
+                    <label for="id_required_approvals" style="font-size:0.82rem; font-weight:600; color:var(--text-primary);">
+                        Required approving reviews:
+                    </label>
+                    <select name="required_approvals" id="id_required_approvals" class="form-select-sm">
+                        <option value="1" {% if rule.required_approvals == 1 %}selected{% endif %}>1 approval</option>
+                        <option value="2" {% if rule.required_approvals == 2 %}selected{% endif %}>2 approvals</option>
+                        <option value="3" {% if rule.required_approvals == 3 %}selected{% endif %}>3 approvals</option>
+                        <option value="4" {% if rule.required_approvals == 4 %}selected{% endif %}>4 approvals</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule 2: Restrict Direct Pushes -->
+        <div class="rule-option">
+            <input type="checkbox" name="restrict_pushes" id="id_restrict_pushes" {% if rule.restrict_pushes %}checked{% endif %}>
+            <div style="flex:1;">
+                <label for="id_restrict_pushes" class="rule-label">
+                    <i class="ph ph-prohibit"></i> Restrict direct pushes (Block <code>git push origin {{ branch.name }}</code>)
+                </label>
+                <p class="rule-desc">
+                    Direct pushes from local Git CLI or IDEs to this protected branch will be rejected with an informative code security rejection banner. All changes must arrive via approved Pull Requests.
+                </p>
+            </div>
+        </div>
+
+        <!-- Rule 3: Dismiss Stale Approvals -->
+        <div class="rule-option">
+            <input type="checkbox" name="dismiss_stale_reviews" id="id_dismiss_stale_reviews" {% if rule.dismiss_stale_reviews %}checked{% endif %}>
+            <div style="flex:1;">
+                <label for="id_dismiss_stale_reviews" class="rule-label">
+                    <i class="ph ph-clock-counter-clockwise"></i> Dismiss stale pull request approvals when new commits are pushed
+                </label>
+                <p class="rule-desc">
+                    New review approvals will be required whenever additional commits are pushed to the pull request's source branch.
+                </p>
+            </div>
+        </div>
+
+        <!-- Rule 4: Require Status Checks -->
+        <div class="rule-option">
+            <input type="checkbox" name="require_status_checks" id="id_require_status_checks" {% if rule.require_status_checks %}checked{% endif %}>
+            <div style="flex:1;">
+                <label for="id_require_status_checks" class="rule-label">
+                    <i class="ph ph-rocket"></i> Require status checks / Rocket CI builds to pass before merging
+                </label>
+                <p class="rule-desc">
+                    CI/CD build pipelines targeting this branch must succeed before pull requests can be merged.
+                </p>
+            </div>
+        </div>
+
+        <!-- Rule 5: Force Push Control -->
+        <div class="rule-option">
+            <input type="checkbox" name="allow_force_push" id="id_allow_force_push" {% if rule.allow_force_push %}checked{% endif %}>
+            <div style="flex:1;">
+                <label for="id_allow_force_push" class="rule-label">
+                    <i class="ph ph-warning-diamond"></i> Allow force pushes (<code>git push --force</code>)
+                </label>
+                <p class="rule-desc">
+                    Permits force pushes to overwrite history. <strong>Recommended: Disabled</strong> to prevent accidental commit history loss.
+                </p>
+            </div>
+        </div>
+
+        <div class="form-actions-bar">
+            <div>
+                <button type="submit" class="btn btn-primary" style="padding:0.5rem 1.4rem;">
+                    <i class="ph ph-floppy-disk"></i> Save Protection Rule
+                </button>
+                <a href="{% url 'repository_settings' repository.name %}" class="btn btn-outline" style="margin-left:0.5rem;">
+                    Cancel
+                </a>
+            </div>
+
+            {% if branch.is_protected %}
+            <button type="submit" name="action" value="disable" class="btn btn-outline" style="color:#ef4444; border-color:rgba(239,68,68,0.3);" onclick="return confirm('Disable all protection rules for {{ branch.name }}? Direct pushes will be allowed.');">
+                <i class="ph ph-lock-key-open"></i> Disable Protection
+            </button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
+

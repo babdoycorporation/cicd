@@ -97,7 +97,7 @@
 <div class="breadcrumb">
   <a href="{% url 'repository_list' %}">Repositories</a>
   <i class="ph ph-caret-right"></i>
-  <a href="{% url 'repository_detail' repository_id=pull_request.repository.name %}">{{ pull_request.repository.name }}</a>
+  <a href="{% url 'repository_detail' repository_name=pull_request.repository.name %}">{{ pull_request.repository.name }}</a>
   <i class="ph ph-caret-right"></i>
   <a href="{% url 'pull_request_list' pull_request.repository.name %}">Pull Requests</a>
   <i class="ph ph-caret-right"></i>
@@ -113,17 +113,22 @@
       {% if pull_request.status == 'open' %}<i class="ph ph-git-pull-request"></i>
       {% elif pull_request.status == 'merged' %}<i class="ph ph-git-merge"></i>
       {% else %}<i class="ph ph-git-pull-request-draft"></i>{% endif %}
-      {{ pull_request.status }}
+      {{ pull_request.status|upper }}
     </span>
   </h1>
   <div class="pr-meta">
-    <span><i class="ph ph-user"></i> {{ pull_request.author.username|default:pull_request.created_by.username }}</span>
-    <span><i class="ph ph-clock"></i> {{ pull_request.created_at|date:"M d, Y" }}</span>
+    <span><i class="ph ph-user"></i> {{ pull_request.author.username|default:"unknown" }}</span>
+    <span><i class="ph ph-clock"></i> {{ pull_request.created_at|date:"M d, Y H:i" }}</span>
     <span>
       <span class="branch-tag">{{ pull_request.source_branch.name }}</span>
       <i class="ph ph-arrow-right" style="margin:0 0.25rem;"></i>
       <span class="branch-tag">{{ pull_request.target_branch.name }}</span>
     </span>
+    {% if pull_request.target_branch.is_protected %}
+    <span style="background:rgba(59,130,246,0.15); color:#60a5fa; border:1px solid rgba(59,130,246,0.3); border-radius:12px; padding:0.15rem 0.5rem; font-size:0.75rem; font-weight:700;">
+      <i class="ph ph-shield-check"></i> Protected Branch
+    </span>
+    {% endif %}
   </div>
 </div>
 
@@ -149,15 +154,109 @@
     </div>
     {% endif %}
 
-    <!-- Actions -->
+    <!-- Reviews Section -->
+    <div class="pcard">
+      <h3><i class="ph ph-shield-check"></i> Code Reviews &amp; Approvals ({{ reviews|length }})</h3>
+      {% if reviews %}
+      <div style="margin-bottom: 1.25rem;">
+        {% for rev in reviews %}
+        <div style="padding: 0.75rem 1rem; margin-bottom: 0.6rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--dark-bg); display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <strong>@{{ rev.reviewer.username }}</strong>
+              <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 12px; {% if rev.state == 'approved' %}background: rgba(63,185,80,0.15); color: #3fb950; border: 1px solid rgba(63,185,80,0.3);{% elif rev.state == 'changes_requested' %}background: rgba(248,81,73,0.15); color: #f85149; border: 1px solid rgba(248,81,73,0.3);{% else %}background: rgba(139,148,158,0.15); color: #8b949e; border: 1px solid rgba(139,148,158,0.3);{% endif %}">
+                {% if rev.state == 'approved' %}<i class="ph ph-check-circle"></i> Approved
+                {% elif rev.state == 'changes_requested' %}<i class="ph ph-warning-circle"></i> Changes Requested
+                {% else %}<i class="ph ph-chat-circle"></i> Commented{% endif %}
+              </span>
+            </div>
+            {% if rev.body %}
+            <p style="margin: 0.35rem 0 0 0; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5;">{{ rev.body }}</p>
+            {% endif %}
+          </div>
+          <span style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">{{ rev.submitted_at|default:rev.created_at|timesince }} ago</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="color:var(--text-secondary); font-size:0.85rem; margin:0 0 1rem 0;">No reviews submitted yet.</p>
+      {% endif %}
+
+      <!-- Submit Review Form -->
+      {% if pull_request.status == 'open' %}
+      <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <h4 style="margin: 0 0 0.65rem 0; font-size: 0.85rem; color: var(--text-primary);">Submit your review</h4>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="review">
+          <div style="display: flex; gap: 1.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+              <input type="radio" name="state" value="approved" required style="accent-color: #2ea043;">
+              <strong style="color: #3fb950;"><i class="ph ph-check-circle"></i> Approve</strong>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+              <input type="radio" name="state" value="changes_requested" style="accent-color: #f85149;">
+              <strong style="color: #f85149;"><i class="ph ph-x-circle"></i> Request Changes</strong>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; color: var(--text-primary);">
+              <input type="radio" name="state" value="commented" checked style="accent-color: var(--accent-color);">
+              <strong style="color: var(--text-secondary);"><i class="ph ph-chat-circle"></i> Comment</strong>
+            </label>
+          </div>
+          <textarea name="body" rows="3" class="form-textarea" placeholder="Leave review feedback..." style="width: 100%; box-sizing: border-box; margin-bottom: 0.75rem; background: var(--dark-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.5rem; font-family: inherit; font-size: 0.85rem;"></textarea>
+          <button type="submit" class="btn-primary" style="padding: 0.4rem 1rem; font-size: 0.82rem;">
+            <i class="ph ph-shield-check"></i> Submit Review
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Merge & Branch Protection Status Card -->
     {% if pull_request.status == 'open' %}
     <div class="pcard">
-      <h3><i class="ph ph-git-merge"></i> Merge</h3>
+      <h3><i class="ph ph-git-merge"></i> Merge Status &amp; Branch Protection</h3>
+      
+      <!-- Protection Check Box -->
+      <div style="padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem; {% if can_merge %}background: rgba(46,160,67,0.1); border: 1px solid rgba(46,160,67,0.3);{% else %}background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.3);{% endif %}">
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+          <div style="font-size: 1.3rem; margin-top: 0.1rem;">
+            {% if can_merge %}
+            <i class="ph-fill ph-check-circle" style="color: #3fb950;"></i>
+            {% else %}
+            <i class="ph-fill ph-shield-warning" style="color: #f85149;"></i>
+            {% endif %}
+          </div>
+          <div style="flex: 1;">
+            <h4 style="margin: 0 0 0.25rem 0; font-size: 0.95rem; {% if can_merge %}color: #3fb950;{% else %}color: #f85149;{% endif %}">
+              {% if can_merge %}Ready to Merge{% else %}Merging is Blocked{% endif %}
+            </h4>
+            <p style="margin: 0; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.5;">
+              {% if can_merge %}
+              All branch protection requirements have been satisfied. Changes can be merged into <strong>{{ pull_request.target_branch.name }}</strong>.
+              {% else %}
+              <strong>{{ merge_reason }}</strong>
+              {% if pull_request.target_branch.is_protected %}
+              <br><span style="color: var(--text-muted); font-size: 0.8rem;">Target branch <code>{{ pull_request.target_branch.name }}</code> has branch protection rules enabled. Approvals must be granted before merge.</span>
+              {% endif %}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div class="action-bar" style="margin-bottom:0;">
+        {% if can_merge %}
         <form method="post" action="{% url 'merge_pull_request' pull_request.id %}" style="margin:0;">
           {% csrf_token %}
           <button type="submit" class="btn btn-merge"><i class="ph ph-git-merge"></i> Merge Pull Request</button>
         </form>
+        {% else %}
+        <button type="button" class="btn btn-merge" style="opacity: 0.5; cursor: not-allowed;" disabled title="{{ merge_reason }}">
+          <i class="ph ph-lock"></i> Merge Blocked (Review Required)
+        </button>
+        {% endif %}
+
         <form method="post" action="{% url 'close_pull_request' pull_request.id %}" style="margin:0;">
           {% csrf_token %}
           <button type="submit" class="btn btn-close"><i class="ph ph-x-circle"></i> Close without merging</button>

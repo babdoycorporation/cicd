@@ -1,0 +1,36 @@
+# Environments & local configuration
+.env
+*/.env
+cicd_tool/.env
+
+# Runtime build & runs directories
+runs/
+*/runs/
+cicd_tool/runs/
+artifacts/
+*/artifacts/
+cicd_tool/artifacts/
+D:/
+cicd_tool/D:/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pkl
+*.log
+agent.log
+cicd_tool/agent.log
+build_failure_predictor.pkl
+cicd_tool/build_failure_predictor.pkl
+
+# IDE & OS files
+.vscode/
+.DS_Store
+Thumbs.db
+
+db.sqlite3
+*.sqlite3
+staticfiles/
+cicd_tool/staticfiles/
+cicd_tool/db.sqlite3

@@ -1,0 +1,452 @@
+{% extends 'gitmgmt/repository_base.html' %}
+{% load static %}
+
+{% block repo_content %}
+<style>
+    .run-detail-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .run-header-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .run-header-info h2 {
+        margin: 0 0 0.5rem 0;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .status-badge-lg {
+        padding: 0.35rem 0.85rem;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .status-success-lg {
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .status-failed-lg {
+        background: rgba(239, 68, 68, 0.12);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    .status-running-lg {
+        background: rgba(59, 130, 246, 0.12);
+        color: #2563eb;
+        border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    .run-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .meta-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+    }
+
+    .meta-box-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        margin-bottom: 0.35rem;
+    }
+
+    .meta-box-val {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* Artifacts Card */
+    .artifacts-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 1.5rem 1.75rem;
+        color: #ffffff;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+    }
+
+    .artifacts-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .artifacts-card-header h3 {
+        margin: 0;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: #f8fafc;
+    }
+
+    .artifact-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+        padding: 1.15rem 1.35rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .artifact-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(52, 211, 153, 0.4);
+    }
+
+    .artifact-item-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .art-icon {
+        width: 48px;
+        height: 48px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        color: #34d399;
+    }
+
+    .art-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 0.25rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .art-sub {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        margin: 0;
+    }
+
+    .download-ipa-button {
+        background: #10b981;
+        color: #ffffff;
+        padding: 0.65rem 1.4rem;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+        border: 1px solid #059669;
+    }
+
+    .download-ipa-button:hover {
+        background: #059669;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.55);
+        color: #ffffff;
+    }
+
+    /* Terminal Console */
+    .terminal-window {
+        background: #0d1117;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+    }
+
+    .terminal-titlebar {
+        background: #161b22;
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .terminal-dots {
+        display: flex;
+        gap: 0.45rem;
+    }
+
+    .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+    }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+
+    .terminal-title {
+        color: #8b949e;
+        font-size: 0.82rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 600;
+    }
+
+    .terminal-content {
+        padding: 1.25rem 1.5rem;
+        max-height: 550px;
+        overflow-y: auto;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: #e6edf3;
+        white-space: pre-wrap;
+    }
+</style>
+
+<div class="run-detail-container">
+
+    <!-- Header Card -->
+    <div class="run-header-card">
+        <div class="run-header-info">
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.35rem;">
+                <a href="{% url 'repository_actions' repository.name %}" style="color: var(--brand); text-decoration: none; font-weight: 700;">
+                    &larr; Actions Workflows
+                </a>
+                <span> / </span>
+                <span>{{ run.pipeline.name }}</span>
+            </div>
+
+            <h2>
+                <span>Run #{{ run.run_id|stringformat:"s"|slice:":8" }}</span>
+                {% if run.status|lower == 'success' %}
+                    <span class="status-badge-lg status-success-lg"><i class="ph-bold ph-check"></i> Success</span>
+                {% elif run.status|lower == 'failed' %}
+                    <span class="status-badge-lg status-failed-lg"><i class="ph-bold ph-x"></i> Failed</span>
+                {% elif run.status|lower == 'running' %}
+                    <span class="status-badge-lg status-running-lg"><i class="ph-bold ph-spinner" style="animation: spin 1.5s linear infinite;"></i> Running</span>
+                {% else %}
+                    <span class="status-badge-lg status-running-lg"><i class="ph-bold ph-hourglass"></i> Pending</span>
+                {% endif %}
+            </h2>
+        </div>
+
+        <div style="display: flex; gap: 0.6rem;">
+            {% if primary_artifact or ipa_artifact %}
+            {% with main_art=primary_artifact|default:ipa_artifact %}
+            <a href="{% url 'download_action_ipa' repository.name run.run_id %}" class="download-ipa-button">
+                <i class="ph-bold ph-download-simple"></i> Download {{ main_art.name }}
+            </a>
+            {% endwith %}
+            {% endif %}
+            <form method="post" action="{% url 'run_macos_action' repository.name %}" style="margin: 0;">
+                {% csrf_token %}
+                <input type="hidden" name="workflow_name" value="{{ run.pipeline.name }}">
+                <input type="hidden" name="branch" value="{{ current_branch }}">
+                <button type="submit" class="btn btn-outline" title="Re-run this workflow">
+                    <i class="ph-bold ph-arrows-clockwise"></i> Re-run workflow
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pre-flight Code Validation Status Alert -->
+    {% if run.status|lower == 'failed' and 'VALIDATION FAILED' in run.log %}
+    <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 1.25rem 1.5rem; display: flex; align-items: flex-start; gap: 1rem;">
+        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #ef4444; flex-shrink: 0;">
+            <i class="ph-bold ph-warning-octagon"></i>
+        </div>
+        <div>
+            <h4 style="margin: 0 0 0.35rem 0; font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #dc2626;">
+                Pre-flight Code &amp; Syntax Validation Failed
+            </h4>
+            <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+                The GitHub Action halted execution because repository code contains syntax or parsing errors. Check the diagnostic logs below for exact line errors.
+            </p>
+        </div>
+    </div>
+    {% elif run.status|lower == 'success' %}
+    <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 0.85rem 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #059669; flex-shrink: 0;">
+            <i class="ph-bold ph-check-circle"></i>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-primary); font-weight: 600;">
+            Pre-flight code verification passed &bull; 0 syntax errors detected &bull; Build targets produced successfully.
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Meta Information Grid -->
+    <div class="run-meta-grid">
+        <div class="meta-box">
+            <div class="meta-box-label">Workflow</div>
+            <div class="meta-box-val">
+                <i class="ph-bold ph-git-commit" style="color: var(--brand);"></i>
+                {{ run.pipeline.name }}
+            </div>
+        </div>
+
+        <div class="meta-box">
+            <div class="meta-box-label">Runner Engine</div>
+            <div class="meta-box-val">
+                {% if 'mac' in run.agent.hostname|lower or 'apple' in run.agent.hostname|lower %}
+                <i class="ph-bold ph-apple-logo" style="color: #059669;"></i>
+                {% elif 'ubuntu' in run.agent.hostname|lower or 'linux' in run.agent.hostname|lower %}
+                <i class="ph-bold ph-linux-logo" style="color: #2563eb;"></i>
+                {% elif 'windows' in run.agent.hostname|lower %}
+                <i class="ph-bold ph-windows-logo" style="color: #7c3aed;"></i>
+                {% else %}
+                <i class="ph-bold ph-cpu" style="color: var(--brand);"></i>
+                {% endif %}
+                {{ run.agent.hostname|default:"Multi-Platform Runner" }}
+            </div>
+        </div>
+
+        <div class="meta-box">
+            <div class="meta-box-label">Branch &amp; Commit</div>
+            <div class="meta-box-val">
+                <i class="ph ph-git-branch" style="color: var(--brand);"></i>
+                {{ current_branch }}
+            </div>
+        </div>
+
+        <div class="meta-box">
+            <div class="meta-box-label">Started At</div>
+            <div class="meta-box-val">
+                <i class="ph ph-clock" style="color: var(--text-secondary);"></i>
+                {{ run.started_at|date:"M d, Y H:i:s" }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Artifacts Section -->
+    {% if artifacts %}
+    <div class="artifacts-card">
+        <div class="artifacts-card-header">
+            <h3>
+                <i class="ph-bold ph-package" style="color: #34d399;"></i> Generated Build Artifacts ({{ artifacts.count }})
+            </h3>
+            <span style="font-size: 0.8rem; color: #94a3b8;">Binaries &amp; Packages Ready for Download</span>
+        </div>
+
+        {% for art in artifacts %}
+        <div class="artifact-item">
+            <div class="artifact-item-left">
+                <div class="art-icon">
+                    {% if '.ipa' in art.name %}
+                    <i class="ph-bold ph-apple-logo"></i>
+                    {% elif '.apk' in art.name or '.aab' in art.name %}
+                    <i class="ph-bold ph-device-mobile"></i>
+                    {% elif '.whl' in art.name %}
+                    <i class="ph-bold ph-package"></i>
+                    {% else %}
+                    <i class="ph-bold ph-file-zip"></i>
+                    {% endif %}
+                </div>
+                <div>
+                    <h4 class="art-title">
+                        <span>{{ art.name }}</span>
+                        {% if '.ipa' in art.name %}
+                        <span style="font-size: 0.72rem; background: rgba(52, 211, 153, 0.2); color: #34d399; padding: 0.1rem 0.45rem; border-radius: 4px;">.IPA</span>
+                        {% elif '.apk' in art.name or '.aab' in art.name %}
+                        <span style="font-size: 0.72rem; background: rgba(52, 211, 153, 0.2); color: #34d399; padding: 0.1rem 0.45rem; border-radius: 4px;">.APK</span>
+                        {% elif '.whl' in art.name %}
+                        <span style="font-size: 0.72rem; background: rgba(96, 165, 250, 0.2); color: #60a5fa; padding: 0.1rem 0.45rem; border-radius: 4px;">.WHL</span>
+                        {% else %}
+                        <span style="font-size: 0.72rem; background: rgba(192, 132, 252, 0.2); color: #c084fc; padding: 0.1rem 0.45rem; border-radius: 4px;">ARCHIVE</span>
+                        {% endif %}
+                    </h4>
+                    <p class="art-sub">
+                        File Size: <strong>{{ art.size_display }}</strong> &bull; Content-Type: <code>{{ art.content_type }}</code> &bull; Verified &amp; Signed
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <a href="{% url 'download_action_ipa' repository.name run.run_id %}" class="download-ipa-button">
+                    <i class="ph-bold ph-download-simple"></i> Download {{ art.name }}
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Terminal Console Logs -->
+    <div class="terminal-window">
+        <div class="terminal-titlebar">
+            <div class="terminal-dots">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+            </div>
+            <div class="terminal-title">
+                {{ run.agent.hostname|default:"GitHub Actions Runner" }} &mdash; Toolchain Execution Console
+            </div>
+            <div>
+                <button type="button" onclick="copyConsoleLogs()" class="btn btn-outline" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); color: #ffffff;">
+                    <i class="ph ph-copy"></i> Copy logs
+                </button>
+            </div>
+        </div>
+
+        <div class="terminal-content" id="terminal-log-content">{% if run.log %}{{ run.log }}{% else %}Waiting for runner to begin execution...{% endif %}</div>
+    </div>
+
+</div>
+
+<script>
+function copyConsoleLogs() {
+    const text = document.getElementById('terminal-log-content').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Console logs copied to clipboard!");
+    });
+}
+</script>
+{% endblock %}
+

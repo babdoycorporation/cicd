@@ -375,16 +375,16 @@
       <ul class="hero-features">
         <li><span class="dot">✓</span> Self-hosted Git repositories &amp; Smart HTTP protocol</li>
         <li><span class="dot">✓</span> Real-time pipeline log streaming via SSE</li>
-        <li><span class="dot">✓</span> AI-powered build failure prediction</li>
+        <li><span class="dot">✓</span> GitHub Actions workflow matrix &amp; multi-platform runners</li>
         <li><span class="dot">✓</span> HMAC-SHA256 authenticated build runners</li>
       </ul>
 
       <div class="hero-footer">
         <span>&copy; {% now "Y" %} CogFocus Technologies</span>
         <div>
-          <a href="#">Privacy</a>
-          <a href="#">Docs</a>
-          <a href="#">Status</a>
+          <a href="{% url 'documentation' %}">Docs</a>
+          <a href="{% url 'dashboard' %}">Dashboard</a>
+          <a href="mailto:support@cogfocus.com">Support</a>
         </div>
       </div>
     </div>
@@ -416,7 +416,7 @@
         <div class="field-group">
           <label class="field-label" for="login-username">Username or Email</label>
           <input id="login-username" class="field-input" type="text" name="username"
-                 placeholder="Enter your username" autocomplete="username" required autofocus>
+                 placeholder="Enter username or email" autocomplete="username" required autofocus>
         </div>
         <div class="field-group">
           <label class="field-label" for="login-pass">Password</label>

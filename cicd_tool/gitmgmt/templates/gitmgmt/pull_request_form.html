@@ -62,7 +62,7 @@
 <div class="breadcrumb">
   <a href="{% url 'repository_list' %}">Repositories</a>
   <i class="ph ph-caret-right"></i>
-  <a href="{% url 'repository_detail' repository_id=repository.name %}">{{ repository.name }}</a>
+  <a href="{% url 'repository_detail' repository_name=repository.name %}">{{ repository.name }}</a>
   <i class="ph ph-caret-right"></i>
   <a href="{% url 'pull_request_list' repository.name %}">Pull Requests</a>
   <i class="ph ph-caret-right"></i>
@@ -72,6 +72,25 @@
 <div class="form-card">
   <h2><i class="ph ph-git-pull-request" style="color:#2f81f7;"></i> Open a Pull Request</h2>
   <p class="subtitle">Compare branches and propose changes to be merged into <strong style="color:#c9d1d9;">{{ repository.name }}</strong>.</p>
+
+  {% if branch_count < 2 %}
+  <div style="background:rgba(47,129,247,0.08); border:1px solid rgba(47,129,247,0.25); border-radius:8px; padding:1.2rem; margin-bottom:1.5rem;">
+    <h4 style="margin:0 0 0.5rem 0; font-size:0.92rem; color:var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+      <i class="ph ph-git-branch" style="color:var(--accent-color);"></i> Single Branch Detected
+    </h4>
+    <p style="margin:0 0 1rem 0; font-size:0.84rem; color:var(--text-secondary); line-height:1.5;">
+      This repository currently only has the <strong>{{ branches.0.name|default:'main' }}</strong> branch. A Pull Request compares and merges changes from a feature branch into a base branch. Create a feature branch below:
+    </p>
+    <form method="post" action="{% url 'create_branch' repository.name %}" style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+      {% csrf_token %}
+      <input type="text" name="branch_name" placeholder="feature/new-changes" required style="flex:1; min-width:200px; padding:0.45rem 0.75rem; border-radius:6px; border:1px solid var(--border-color); background:var(--dark-bg); color:var(--text-primary); font-size:0.85rem;">
+      <input type="hidden" name="source_branch" value="{{ branches.0.name|default:'main' }}">
+      <button type="submit" class="btn-primary" style="padding:0.45rem 1rem;">
+        <i class="ph ph-plus"></i> Create Branch &amp; Continue
+      </button>
+    </form>
+  </div>
+  {% endif %}
 
   <form method="post">
     {% csrf_token %}

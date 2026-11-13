@@ -4,11 +4,11 @@
 <style>
   .org-layout {
     display: grid;
-    grid-template-columns: 1fr 260px;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) 350px;
+    gap: 1.25rem;
     align-items: start;
   }
-  @media (max-width: 900px) {
+  @media (max-width: 1024px) {
     .org-layout { grid-template-columns: 1fr; }
   }
 
@@ -16,8 +16,8 @@
     background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 1.1rem;
-    margin-bottom: 1rem;
+    padding: 1.15rem;
+    margin-bottom: 1.15rem;
     box-shadow: var(--shadow-sm);
   }
   .pcard:last-child { margin-bottom: 0; }
@@ -31,9 +31,9 @@
 
   .btn-primary {
     background: var(--btn-dark); color: #fff; border: 1px solid var(--btn-dark);
-    border-radius: 6px; padding: 0.38rem 0.75rem; font-size: 0.78rem;
+    border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.78rem;
     font-weight: 700; cursor: pointer; font-family: inherit;
-    display: inline-flex; align-items: center; gap: 0.3rem;
+    display: inline-flex; align-items: center; gap: 0.35rem;
     transition: var(--transition); text-decoration: none;
     box-shadow: var(--shadow-sm);
   }
@@ -42,9 +42,9 @@
   .btn-outline {
     background: #ffffff; color: var(--text-primary);
     border: 1px solid var(--border-color); border-radius: 6px;
-    padding: 0.38rem 0.75rem; font-size: 0.78rem; font-weight: 600;
+    padding: 0.4rem 0.8rem; font-size: 0.78rem; font-weight: 600;
     cursor: pointer; font-family: inherit;
-    display: inline-flex; align-items: center; gap: 0.3rem;
+    display: inline-flex; align-items: center; gap: 0.35rem;
     transition: var(--transition); text-decoration: none;
     box-shadow: var(--shadow-sm);
   }
@@ -60,7 +60,7 @@
     background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 0.85rem 1rem;
+    padding: 0.9rem 1rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -91,34 +91,127 @@
     color: var(--brand);
     border: 1px solid rgba(5, 150, 105, 0.2);
     font-size: 0.62rem; font-weight: 700;
-    padding: 0.1rem 0.4rem; border-radius: 4px;
+    padding: 0.12rem 0.45rem; border-radius: 4px;
+    white-space: nowrap; flex-shrink: 0;
   }
   .badge-private {
     background: #f1f5f9; color: #475569;
     border: 1px solid #cbd5e1;
     font-size: 0.62rem; font-weight: 700;
-    padding: 0.1rem 0.4rem; border-radius: 4px;
-  }
-  .badge-admin {
-    background: rgba(234, 88, 12, 0.1); color: #ea580c;
-    border: 1px solid rgba(234, 88, 12, 0.25);
-    font-size: 0.62rem; font-weight: 700;
-    padding: 0.1rem 0.4rem; border-radius: 4px;
+    padding: 0.12rem 0.45rem; border-radius: 4px;
+    white-space: nowrap; flex-shrink: 0;
   }
 
-  .list-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0.55rem 0;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 0.78rem;
+  /* Member List & Card Fixes */
+  .member-list-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
-  .list-item:last-child { border-bottom: none; }
+  .member-list-scroll::-webkit-scrollbar { width: 5px; }
+  .member-list-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-  .form-row { margin-bottom: 0.6rem; }
+  .org-member-card {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.7rem;
+    background: var(--canvas-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    transition: all 0.15s ease;
+  }
+  .org-member-card:hover {
+    border-color: var(--brand);
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .org-member-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(5, 150, 105, 0.12);
+    color: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(5, 150, 105, 0.25);
+    text-transform: uppercase;
+  }
+
+  .org-member-info {
+    flex: 1 1 auto;
+    min-width: 0; /* CRITICAL: Allows text-overflow ellipsis to work without pushing or overlaying */
+  }
+
+  .org-member-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+  }
+
+  .org-member-email {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+    margin-top: 0.12rem;
+  }
+
+  .role-chip {
+    flex-shrink: 0; /* CRITICAL: Never shrink or overlay with member text */
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 0.18rem 0.5rem;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .role-owner {
+    background: rgba(234, 88, 12, 0.12);
+    color: #ea580c;
+    border: 1px solid rgba(234, 88, 12, 0.28);
+  }
+  .role-admin {
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+    border: 1px solid rgba(37, 99, 235, 0.28);
+  }
+  .role-member {
+    background: rgba(5, 150, 105, 0.1);
+    color: var(--brand);
+    border: 1px solid rgba(5, 150, 105, 0.25);
+  }
+
+  .member-count-pill {
+    background: rgba(5, 150, 105, 0.12);
+    color: var(--brand);
+    border: 1px solid rgba(5, 150, 105, 0.25);
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.12rem 0.5rem;
+    border-radius: 12px;
+  }
+
+  .form-row { margin-bottom: 0.65rem; }
   .form-row input, .form-row select {
     width: 100%; background: var(--input-bg);
     border: 1px solid var(--border-color); border-radius: 6px;
-    color: var(--text-primary); padding: 0.4rem 0.6rem;
+    color: var(--text-primary); padding: 0.45rem 0.65rem;
     font-size: 0.78rem; font-family: inherit; box-sizing: border-box;
     outline: none; transition: border-color 0.15s;
   }
@@ -132,6 +225,25 @@
     font-size: 0.78rem;
     padding: 1.25rem 0;
     text-align: center;
+  }
+
+  .org-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    background: var(--canvas-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: var(--transition);
+  }
+  .org-stat-pill:hover {
+    border-color: var(--brand);
+    color: var(--brand);
   }
 </style>
 
@@ -150,12 +262,18 @@
     <div class="pcard">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.75rem;">
         <div>
-          <h1 style="font-size:1.2rem; font-family:'Outfit', sans-serif; font-weight:800; margin:0 0 0.35rem; color:var(--text-primary); display:flex; align-items:center; gap:0.45rem;">
+          <h1 style="font-size:1.25rem; font-family:'Outfit', sans-serif; font-weight:800; margin:0 0 0.35rem; color:var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
             <i class="ph ph-buildings" style="color:var(--brand);"></i> {{ org.name }}
           </h1>
-          <p style="color:var(--text-secondary); margin:0; font-size:0.8rem; line-height:1.45;">
+          <p style="color:var(--text-secondary); margin:0 0 0.75rem; font-size:0.8rem; line-height:1.45;">
             {{ org.description|default:"Organization workspace for collaborative projects and code repositories." }}
           </p>
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <a href="#projects" class="org-stat-pill"><i class="ph ph-tree-structure"></i> {{ projects|length }} Projects</a>
+            <a href="#repositories" class="org-stat-pill"><i class="ph ph-git-branch"></i> {{ repositories|length }} Repositories</a>
+            <a href="#teams" class="org-stat-pill"><i class="ph ph-users-three"></i> {{ teams|length }} Teams</a>
+            <a href="#members-sidebar" class="org-stat-pill"><i class="ph ph-user-list"></i> {{ members|length }} Members</a>
+          </div>
         </div>
         <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
           <a href="{% url 'project_create' %}?org={{ org.id }}" class="btn-primary">
@@ -164,7 +282,7 @@
           <a href="{% url 'create_repository' %}?org={{ org.id }}" class="btn-outline">
             <i class="ph ph-plus"></i> New Repo
           </a>
-          {% if my_role == 'owner' or my_role == 'admin' %}
+          {% if is_platform_admin or my_role == 'owner' %}
           <a href="{% url 'organization_settings' org.name %}" class="btn-outline">
             <i class="ph ph-gear"></i> Settings
           </a>
@@ -173,7 +291,7 @@
       </div>
     </div>
 
-    <!-- Projects Section (Azure DevOps Style) -->
+    <!-- Projects Section -->
     <div class="pcard" id="projects">
       <div class="pcard-head">
         <span><i class="ph ph-tree-structure" style="color:var(--brand);"></i> Projects ({{ projects|length }})</span>
@@ -209,46 +327,6 @@
         <div class="empty-box">
           <i class="ph ph-tree-structure" style="font-size:1.8rem; color:var(--brand); display:block; margin-bottom:0.35rem;"></i>
           No projects configured under {{ org.name }}.
-        </div>
-      {% endif %}
-    </div>
-
-    <!-- Applications Section -->
-    <div class="pcard" id="applications">
-      <div class="pcard-head">
-        <span><i class="ph ph-cube" style="color:var(--brand);"></i> Applications ({{ applications|length }})</span>
-        <a href="{% url 'create_application' %}" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
-          <i class="ph ph-plus"></i> New Application
-        </a>
-      </div>
-      {% if applications %}
-        <div class="tile-grid">
-          {% for app in applications %}
-          <a href="{% url 'application_detail' app.name %}" class="tile-card">
-            <div>
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-                <span class="tile-name">
-                  <i class="ph ph-cube" style="color:var(--brand);"></i> {{ app.name }}
-                </span>
-                <span class="badge-public" style="font-size:0.65rem; background:rgba(37,99,235,0.1); color:#2563eb; border:1px solid rgba(37,99,235,0.25);">
-                  {{ app.project.name }}
-                </span>
-              </div>
-              <p style="color:var(--text-secondary); font-size:0.75rem; margin:0 0 0.65rem; line-height:1.4;">
-                {{ app.description|default:"No application description."|truncatewords:12 }}
-              </p>
-            </div>
-            <div style="font-size:0.7rem; color:var(--text-muted); border-top:1px solid #f1f5f9; padding-top:0.45rem; display:flex; justify-content:space-between; align-items:center;">
-              <span><i class="ph ph-git-branch"></i> {{ app.default_branch|default:"main" }}</span>
-              <span><i class="ph ph-tree-structure"></i> {{ app.project.name }}</span>
-            </div>
-          </a>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty-box">
-          <i class="ph ph-cube" style="font-size:1.8rem; color:var(--brand); display:block; margin-bottom:0.35rem;"></i>
-          No applications created under {{ org.name }} yet.
         </div>
       {% endif %}
     </div>
@@ -297,8 +375,8 @@
     <div class="pcard" id="teams">
       <div class="pcard-head">
         <span><i class="ph ph-users-three" style="color:var(--brand);"></i> Teams ({{ teams|length }})</span>
-        {% if my_role == 'owner' or my_role == 'admin' %}
-        <button onclick="document.getElementById('createTeamModal').style.display='block'" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
+        {% if is_platform_admin %}
+        <button onclick="document.getElementById('createTeamModal').style.display='flex'" class="btn-outline" style="font-size:0.72rem; padding:0.25rem 0.55rem;">
           <i class="ph ph-plus"></i> Create Team
         </button>
         {% endif %}
@@ -330,46 +408,58 @@
     </div>
   </div>
 
-  <!-- Right Sidebar Column: Members & Quick Tools -->
-  <div>
-    <!-- Members Card -->
+  <!-- Right Sidebar Column: Members & Management -->
+  <div id="members-sidebar">
     <div class="pcard">
-      <div class="pcard-head" style="margin-bottom:0.5rem;">
-        <span><i class="ph ph-user-list" style="color:var(--brand);"></i> Members ({{ members|length }})</span>
+      <div class="pcard-head" style="margin-bottom:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.4rem;">
+          <i class="ph ph-user-list" style="color:var(--brand); font-size:1.05rem;"></i>
+          <span>Members</span>
+        </div>
+        <span class="member-count-pill">{{ members|length }}</span>
       </div>
-      {% for m in members %}
-        <div class="list-item">
-          <div style="display:flex; align-items:center; gap:0.4rem;">
-            <i class="ph ph-user-circle" style="color:var(--text-muted); font-size:1rem;"></i>
-            <strong style="font-size:0.78rem;">{{ m.username }}</strong>
+
+      <!-- Scrollable, non-overlapping members list -->
+      <div class="member-list-scroll">
+        {% for m in members %}
+        <div class="org-member-card">
+          <div class="org-member-avatar" title="{{ m.username }}">
+            {{ m.username|make_list|first|default:"U"|upper }}
           </div>
-          <span class="{% if m.org_role == 'owner' or m.org_role == 'admin' %}badge-admin{% else %}badge-public{% endif %}">
-            {{ m.org_role|default:"member"|upper }}
+          <div class="org-member-info">
+            <div class="org-member-name" title="{{ m.username }}">
+              {{ m.get_full_name|default:m.username }}
+            </div>
+            {% if m.email %}
+            <div class="org-member-email" title="{{ m.email }}">
+              {{ m.email }}
+            </div>
+            {% endif %}
+          </div>
+          <span class="role-chip role-{{ m.org_role|default:'member'|lower }}">
+            {{ m.org_role|default:"member" }}
           </span>
         </div>
-      {% endfor %}
+        {% empty %}
+        <div class="empty-box" style="padding:1rem 0;">No members found.</div>
+        {% endfor %}
+      </div>
 
-      {% if my_role == 'owner' or my_role == 'admin' %}
-      <div style="margin-top:1rem; border-top:1px solid var(--border-color); padding-top:0.75rem;">
-        <h4 style="margin:0 0 0.4rem; font-size:0.75rem; color:var(--text-secondary); font-weight:700;">
-          <i class="ph ph-user-plus" style="color:var(--brand);"></i> Add Onboarded Member
+      {% if is_platform_admin %}
+      <div style="margin-top:1.1rem; border-top:1px solid var(--border-color); padding-top:0.85rem;">
+        <h4 style="margin:0 0 0.5rem; font-size:0.75rem; color:var(--text-secondary); font-weight:800; text-transform:uppercase; letter-spacing:0.04em; display:flex; align-items:center; gap:0.35rem;">
+          <i class="ph ph-user-plus" style="color:var(--brand);"></i> Add Member
         </h4>
         <form method="post" action="{% url 'add_org_member' org.name %}">
           {% csrf_token %}
           <div class="form-row">
-            <label style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Select Keycloak / System User</label>
-            {% if available_users %}
-            <select name="username" required style="font-weight:600;">
-              <option value="">— Select Onboarded User —</option>
+            <label style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Username or Email</label>
+            <input type="text" name="username" list="orgUserSuggestions" placeholder="Enter username or email" required autocomplete="off">
+            <datalist id="orgUserSuggestions">
               {% for u in available_users %}
-              <option value="{{ u.username }}">
-                {{ u.username }} {% if u.email %}({{ u.email }}){% endif %}
-              </option>
+              <option value="{{ u.username }}">{{ u.email|default:u.username }}</option>
               {% endfor %}
-            </select>
-            {% else %}
-            <input type="text" name="username" placeholder="Username" required>
-            {% endif %}
+            </datalist>
           </div>
           <div class="form-row">
             <label style="font-size:0.7rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Organization Role</label>
@@ -379,7 +469,7 @@
               <option value="owner">Owner</option>
             </select>
           </div>
-          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:0.45rem;">
             <i class="ph ph-user-check"></i> Add Member
           </button>
         </form>
@@ -389,9 +479,10 @@
   </div>
 </div>
 
+{% if is_platform_admin %}
 <!-- Inline Create Team Modal -->
-<div id="createTeamModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.5); backdrop-filter:blur(4px); z-index:1200; align-items:center; justify-content:center;">
-  <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:10px; padding:1.5rem; max-width:420px; width:90%; margin:10vh auto; box-shadow:var(--shadow-lg);">
+<div id="createTeamModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:2500; align-items:center; justify-content:center;">
+  <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:10px; padding:1.5rem; max-width:420px; width:90%; margin:auto; box-shadow:var(--shadow-lg);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:1px solid var(--border-color);">
       <h3 style="margin:0; font-size:1rem; font-family:'Outfit', sans-serif; font-weight:800;">Create New Team</h3>
       <button onclick="document.getElementById('createTeamModal').style.display='none'" style="background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--text-muted);">&times;</button>
@@ -409,4 +500,5 @@
     </form>
   </div>
 </div>
+{% endif %}
 {% endblock %}

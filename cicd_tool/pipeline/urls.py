@@ -2,16 +2,20 @@ from django.contrib.auth.decorators import login_required
 from django.urls import path
 
 from . import views
+from gitmgmt import views as gitmgmt_views
 
 urlpatterns = [
-    # ── Dashboard ─────────────────────────────────────────────────────────────
+    # ── Auth / Dashboard ──────────────────────────────────────────────────────
+    path('logout/', gitmgmt_views.user_logout, name='pipeline_logout'),
     path('', login_required(views.DashboardView.as_view()), name='dashboard'),
     path('settings/', login_required(views.global_settings), name='global_settings'),
+    path('users/', login_required(views.user_management), name='user_management'),
     path('documentation/', login_required(views.documentation), name='documentation'),
     path('metrics/', login_required(views.pipeline_metrics_api), name='pipeline_metrics_api'),
 
     # ── Projects ──────────────────────────────────────────────────────────────
     path('projectslist/', login_required(views.project_list), name='project_list'),
+    path('projects/', login_required(views.project_list), name='project_list_alias'),
     path('projects/new/', login_required(views.project_create), name='project_create'),
     path('projects/<str:project_name>/', login_required(views.project_detail), name='project_detail'),
     path('projects/<str:project_name>/edit/', login_required(views.project_edit), name='project_edit'),
@@ -33,7 +37,6 @@ urlpatterns = [
     path('pipeline/run/<uuid:run_id>/', login_required(views.pipeline_run_detail), name='pipeline_run_detail'),
     path('pipeline/run/<uuid:run_id>/api/', login_required(views.pipeline_run_api), name='pipeline_run_api'),
     path('pipeline/run/<uuid:run_id>/cancel/', login_required(views.cancel_pipeline_run), name='cancel_pipeline_run'),
-    path('pipeline/run/<uuid:run_id>/rerun/', login_required(views.rerun_pipeline_run), name='rerun_pipeline_run'),
 
     # ── Pipeline Steps ────────────────────────────────────────────────────────
     path('pipelines/<str:pipeline_name>/steps/', login_required(views.pipeline_step_list), name='pipeline_step_list'),
@@ -57,15 +60,9 @@ urlpatterns = [
     path('agents/instructions/', login_required(views.agent_instructions), name='agent_instructions'),
 
     # Agent API endpoints — MUST be before <str:agent_hostname>/ to avoid wildcard capture
-    path('agents/download/<str:filename>', views.download_agent_script, name='download_agent_script'),
-    path('static/agents/<str:filename>', views.download_agent_script, name='download_agent_script_static'),
     path('agents/register/', views.register_agent, name='register_agent'),
     path('agents/receive-heartbeat/', views.receive_heartbeat, name='receive_heartbeat'),
     path('agents/receive-command/', views.receive_command, name='receive_command'),
-    path('agents/poll/', views.poll_agent_task, name='poll_agent_task'),
-    path('agents/report-task/', views.report_agent_task, name='report_agent_task'),
-    path('agents/stream/', views.agent_stream, name='agent_stream'),
-    path('agents/report-stream-result/', views.report_stream_result, name='report_stream_result'),
 
     # Wildcard — must come LAST in agent group
     path('agents/<str:agent_hostname>/', login_required(views.agent_detail), name='agent_detail'),
@@ -120,4 +117,11 @@ urlpatterns = [
     path('deployment-targets/<int:pk>/', login_required(views.deployment_target_detail), name='deployment_target_detail'),
     path('deployment-targets/<int:pk>/edit/', login_required(views.deployment_target_update), name='deployment_target_update'),
     path('deployment-targets/<int:pk>/delete/', login_required(views.deployment_target_delete), name='deployment_target_delete'),
+    # ── Convenient URL Aliases ───────────────────────────────────────────────
+    path('credentials/global/', login_required(views.global_credential_list), name='global_credential_alias'),
+    path('credentials/local/', login_required(views.global_credential_list), name='local_credential_alias'),
+    path('credentials/', login_required(views.global_credential_list), name='credentials_alias'),
+    path('targets/', login_required(views.deployment_target_list), name='deployment_targets_alias'),
+    path('settings/global/', login_required(views.global_settings), name='global_settings_alias'),
+    path('settings/users/', login_required(views.user_management), name='user_management_alias'),
 ]

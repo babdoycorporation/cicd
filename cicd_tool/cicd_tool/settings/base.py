@@ -7,6 +7,16 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# ── Load environment variables from .env if present ─────────────────────────
+env_file = BASE_DIR / '.env'
+if env_file.exists():
+    with open(env_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
 # ── Security & Environment ───────────────────────────────────────────────────
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
@@ -64,6 +74,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'pipeline.backends.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+
 # ── Internationalisation ──────────────────────────────────────────────────────
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
@@ -73,7 +89,7 @@ USE_TZ = True
 # ── Static & Media Files ──────────────────────────────────────────────────────
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    d for d in [BASE_DIR / 'static'] if d.exists()
+    BASE_DIR / 'static',
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -87,16 +103,24 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
 
+# ── Session & Security Configuration ─────────────────────────────────────────
+# Session timeout: 2 days (48 hours = 172,800 seconds)
+SESSION_COOKIE_AGE = int(os.environ.get('DJANGO_SESSION_COOKIE_AGE', 172800))
+# Rolling session: Refresh expiration countdown upon every user request
+SESSION_SAVE_EVERY_REQUEST = True
+# Retain session across browser closure until the 2-day duration expires
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
 # ── Git / CI Storage Paths ───────────────────────────────────────────────────
 REPO_BASE_PATH = os.environ.get('REPO_BASE_PATH', str(BASE_DIR / 'repos'))
 CI_RUNS_DIR = os.environ.get('CI_RUNS_DIR', str(BASE_DIR / 'runs'))
+CI_ARTIFACTS_DIR = os.environ.get('CI_ARTIFACTS_DIR', str(BASE_DIR / 'artifacts'))
 
 os.makedirs(REPO_BASE_PATH, exist_ok=True)
 os.makedirs(CI_RUNS_DIR, exist_ok=True)
-
-# ── Upload Limits for Large Git Push & Assets ─────────────────────────────────
-DATA_UPLOAD_MAX_MEMORY_SIZE = 2147483648  # 2 GB limit for git push payloads
-FILE_UPLOAD_MAX_MEMORY_SIZE = 2147483648  # 2 GB limit for file uploads
+os.makedirs(CI_ARTIFACTS_DIR, exist_ok=True)
 
 # ── Logging Setup ─────────────────────────────────────────────────────────────
 LOGGING = {

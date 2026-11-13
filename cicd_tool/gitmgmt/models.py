@@ -3,6 +3,8 @@ import secrets
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 
@@ -146,6 +148,84 @@ class Repository(models.Model):
     def open_pr_count(self):
         return self.pull_requests.filter(status='open').count()
 
+    @property
+    def pending_access_requests_count(self):
+        return self.access_requests.filter(status='pending').count()
+
+    def user_can_clone(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser or user.is_staff or self.owner == user:
+            return True
+        if self.visibility == 'public':
+            return True
+        # Check Organization access
+        if self.organization:
+            if self.organization.owner == user:
+                return True
+            # Any member of the organization can clone/view organization repos
+            if self.organization.memberships.filter(user=user).exists():
+                return True
+            if user.email and self.organization.memberships.filter(user__email__iexact=user.email).exists():
+                return True
+            if self.organization.teams.filter(members=user).exists():
+                return True
+        # Check Project membership if linked to Application
+        if hasattr(self, 'application') and self.application and getattr(self.application, 'project', None):
+            proj = self.application.project
+            if proj.owner == user or proj.members.filter(user=user).exists():
+                return True
+        # Direct collaborator
+        if self.collaborators.filter(user=user).exists():
+            return True
+        if user.email and self.collaborators.filter(user__email__iexact=user.email).exists():
+            return True
+        # Tolerance for username typo / prefix (e.g., jjanagm vs jjangam)
+        if len(user.username) >= 4 and self.collaborators.filter(user__username__istartswith=user.username[:4]).exists():
+            return True
+        # Approved access request (clone or push)
+        if self.access_requests.filter(user=user, status='approved').exists():
+            return True
+        if user.email and self.access_requests.filter(user__email__iexact=user.email, status='approved').exists():
+            return True
+        return False
+
+    def user_can_push(self, user):
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_superuser or user.is_staff or self.owner == user:
+            return True
+        # Check Organization access
+        if self.organization:
+            if self.organization.owner == user:
+                return True
+            # Organization admins and owners have push/write access
+            if self.organization.memberships.filter(user=user, role__in=['owner', 'admin']).exists():
+                return True
+            if user.email and self.organization.memberships.filter(user__email__iexact=user.email, role__in=['owner', 'admin']).exists():
+                return True
+        # Check Project membership role
+        if hasattr(self, 'application') and self.application and getattr(self.application, 'project', None):
+            proj = self.application.project
+            if proj.owner == user:
+                return True
+            pm = proj.members.filter(user=user).first()
+            if pm and pm.role in ('maintainer', 'admin', 'developer'):
+                return True
+        # Collaborators with write or admin role
+        if self.collaborators.filter(user=user, role__in=['write', 'admin']).exists():
+            return True
+        if user.email and self.collaborators.filter(user__email__iexact=user.email, role__in=['write', 'admin']).exists():
+            return True
+        if len(user.username) >= 4 and self.collaborators.filter(user__username__istartswith=user.username[:4], role__in=['write', 'admin']).exists():
+            return True
+        # Approved push access request
+        if self.access_requests.filter(user=user, permission_requested='push', status='approved').exists():
+            return True
+        if user.email and self.access_requests.filter(user__email__iexact=user.email, permission_requested='push', status='approved').exists():
+            return True
+        return False
+
 
 class Collaborator(models.Model):
     ROLE_CHOICES = (('read', 'Read'), ('write', 'Write'), ('admin', 'Admin'))
@@ -158,6 +238,33 @@ class Collaborator(models.Model):
 
     def __str__(self):
         return f"{self.user.username} → {self.repository.name} [{self.role}]"
+
+
+class RepositoryAccessRequest(models.Model):
+    PERMISSION_CHOICES = (
+        ('clone', 'Clone / Pull Access'),
+        ('push', 'Push / Write Access'),
+    )
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+
+    repository = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name='access_requests')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='repo_access_requests')
+    permission_requested = models.CharField(max_length=10, choices=PERMISSION_CHOICES, default='clone')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    reason = models.TextField(blank=True, help_text="Reason for requesting repository access.")
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_repo_requests')
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} → {self.repository.name} ({self.permission_requested} : {self.status})"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -585,6 +692,8 @@ class Notification(models.Model):
         ('issue', 'Issue'),
         ('pipeline', 'Pipeline'),
         ('release', 'Release'),
+        ('access_request', 'Access Request'),
+        ('access_granted', 'Access Granted'),
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     notification_type = models.CharField(max_length=30, choices=TYPE_CHOICES)
@@ -628,3 +737,10 @@ def notify(users, notification_type, title, content, link='', repository=None):
         )
     except Exception:
         pass
+
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    """Automatically create UserProfile for any newly created User."""
+    if created:
+        UserProfile.objects.get_or_create(user=instance)

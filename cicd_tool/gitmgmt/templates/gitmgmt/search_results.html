@@ -1,0 +1,257 @@
+{% extends 'pipeline/base.html' %}
+{% load static %}
+
+{% block title %}Search Results: {{ query }} – CogFocus One™{% endblock %}
+
+{% block content %}
+<div class="search-page-container" style="max-width: 1200px; margin: 0 auto; padding: 1.5rem 0 3rem 0;">
+
+    <!-- Search Header -->
+    <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+        <form method="GET" action="{% url 'global_search' %}" style="display: flex; gap: 0.75rem; align-items: center; max-width: 720px;">
+            <div style="position: relative; flex-grow: 1;">
+                <i class="ph ph-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"></i>
+                <input type="text" name="q" value="{{ query }}" placeholder="Search repositories, projects, pipelines, issues, PRs..."
+                       style="width: 100%; padding: 0.65rem 1rem 0.65rem 2.6rem; border: 1.5px solid var(--border-color); border-radius: 8px; font-size: 0.92rem; outline: none; transition: var(--transition); background: var(--input-bg); color: var(--text-primary);"
+                       onfocus="this.style.borderColor='var(--brand)'; this.style.boxShadow='0 0 0 3px rgba(5,150,105,0.15)';"
+                       onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none';">
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.4rem; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; background: var(--brand); color: #fff; border: none; border-radius: 8px; cursor: pointer;">
+                <i class="ph ph-magnifying-glass"></i> Search
+            </button>
+        </form>
+
+        <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+            {% if query %}
+                Found <strong style="color: var(--text-primary);">{{ total_count|default:0 }}</strong> results for <span style="color: var(--brand); font-weight: 600;">"{{ query }}"</span>
+            {% else %}
+                Enter a query above to search across the entire CogFocus One™ suite.
+            {% endif %}
+        </div>
+    </div>
+
+    {% if query %}
+        {% if total_count == 0 %}
+            <div style="text-align: center; padding: 4rem 2rem; background: var(--card-bg); border: 1px dashed var(--border-color); border-radius: 12px;">
+                <div style="width: 64px; height: 64px; margin: 0 auto 1.25rem; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: var(--text-muted);">
+                    <i class="ph ph-magnifying-glass"></i>
+                </div>
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.5rem 0;">No matching results found</h3>
+                <p style="font-size: 0.88rem; color: var(--text-muted); max-width: 480px; margin: 0 auto;">We couldn't find anything matching "<strong>{{ query }}</strong>". Try checking for spelling errors, using more general keywords, or browsing repositories directly.</p>
+                <div style="margin-top: 1.5rem;">
+                    <a href="{% url 'repository_list' %}" class="btn btn-outline" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 6px; text-decoration: none; color: var(--text-primary); display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <i class="ph ph-git-branch"></i> Browse All Repositories
+                    </a>
+                </div>
+            </div>
+        {% else %}
+
+            <!-- Grid Layout for Search Results -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+
+                <!-- 1. Repositories -->
+                {% if repos %}
+                <div class="result-section">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="ph ph-git-branch" style="color: var(--brand);"></i> Repositories
+                            <span style="font-size: 0.75rem; font-weight: 600; background: #e2e8f0; color: #475569; padding: 0.15rem 0.5rem; border-radius: 10px;">{{ repos|length }}</span>
+                        </h2>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem;">
+                        {% for r in repos %}
+                        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; transition: var(--transition); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;"
+                             onmouseover="this.style.borderColor='var(--brand)'; this.style.boxShadow='var(--shadow-md)';"
+                             onmouseout="this.style.borderColor='var(--border-color)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <div>
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <a href="{% url 'repository_detail' r.name %}" style="font-size: 0.98rem; font-weight: 700; color: var(--brand); text-decoration: none; word-break: break-all;">
+                                        {{ r.name }}
+                                    </a>
+                                    <span style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 4px; {% if r.visibility == 'public' %}background:#ecfdf5; color:#059669;{% else %}background:#f1f5f9; color:#475569;{% endif %}">
+                                        {{ r.visibility }}
+                                    </span>
+                                </div>
+                                <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 1rem 0; line-height: 1.4;">
+                                    {{ r.description|default:"No description provided."|truncatechars:120 }}
+                                </p>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.74rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
+                                <span><i class="ph ph-user"></i> {{ r.owner.username }}</span>
+                                <span>Updated {{ r.updated_at|timesince }} ago</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 2. Projects -->
+                {% if projects %}
+                <div class="result-section">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="ph ph-folder" style="color: #3b82f6;"></i> Projects
+                            <span style="font-size: 0.75rem; font-weight: 600; background: #e2e8f0; color: #475569; padding: 0.15rem 0.5rem; border-radius: 10px;">{{ projects|length }}</span>
+                        </h2>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem;">
+                        {% for p in projects %}
+                        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; transition: var(--transition); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;"
+                             onmouseover="this.style.borderColor='#3b82f6'; this.style.boxShadow='var(--shadow-md)';"
+                             onmouseout="this.style.borderColor='var(--border-color)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <div>
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <a href="{% url 'project_detail' p.name %}" style="font-size: 0.98rem; font-weight: 700; color: #2563eb; text-decoration: none;">
+                                        {{ p.name }}
+                                    </a>
+                                    {% if p.organization %}
+                                    <span style="font-size: 0.68rem; font-weight: 600; background: #eff6ff; color: #2563eb; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                        {{ p.organization.name }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 1rem 0; line-height: 1.4;">
+                                    {{ p.description|default:"No description provided."|truncatechars:120 }}
+                                </p>
+                            </div>
+                            <div style="font-size: 0.74rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 0.65rem;">
+                                Created {{ p.created_at|date:"M d, Y" }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 3. Pipelines -->
+                {% if pipelines %}
+                <div class="result-section">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="ph ph-git-commit" style="color: #8b5cf6;"></i> Pipelines
+                            <span style="font-size: 0.75rem; font-weight: 600; background: #e2e8f0; color: #475569; padding: 0.15rem 0.5rem; border-radius: 10px;">{{ pipelines|length }}</span>
+                        </h2>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem;">
+                        {% for pl in pipelines %}
+                        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; transition: var(--transition); box-shadow: var(--shadow-sm);"
+                             onmouseover="this.style.borderColor='#8b5cf6'; this.style.boxShadow='var(--shadow-md)';"
+                             onmouseout="this.style.borderColor='var(--border-color)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <a href="{% url 'pipeline_detail' pl.name %}" style="font-size: 0.98rem; font-weight: 700; color: #7c3aed; text-decoration: none;">
+                                    {{ pl.name }}
+                                </a>
+                                <span style="font-size: 0.68rem; font-weight: 600; background: #f5f3ff; color: #7c3aed; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                                    Project: {{ pl.project.name }}
+                                </span>
+                            </div>
+                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+                                {{ pl.description|default:"Automated CI/CD Pipeline"|truncatechars:120 }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 4. Issues & Pull Requests -->
+                {% if issues or prs %}
+                <div style="display: grid; grid-template-columns: {% if issues and prs %}1fr 1fr{% else %}1fr{% endif %}; gap: 1.5rem;">
+                    {% if issues %}
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+                            <h2 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="ph ph-warning-circle" style="color: #f59e0b;"></i> Issues
+                                <span style="font-size: 0.75rem; font-weight: 600; background: #e2e8f0; color: #475569; padding: 0.15rem 0.5rem; border-radius: 10px;">{{ issues|length }}</span>
+                            </h2>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            {% for iss in issues %}
+                            <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem 1rem;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                                    <a href="{% url 'issue_detail' iss.repository.name iss.issue_number %}" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary); text-decoration: none;">
+                                        #{{ iss.issue_number }}: {{ iss.title }}
+                                    </a>
+                                    <span style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 0.15rem 0.45rem; border-radius: 4px; {% if iss.state == 'open' %}background:#ecfdf5; color:#059669;{% else %}background:#f1f5f9; color:#475569;{% endif %}">
+                                        {{ iss.state }}
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted);">
+                                    in <a href="{% url 'repository_detail' iss.repository.name %}" style="color: var(--brand); text-decoration: none;">{{ iss.repository.name }}</a> • by {{ iss.author.username }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if prs %}
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+                            <h2 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="ph ph-git-pull-request" style="color: #6366f1;"></i> Pull Requests
+                                <span style="font-size: 0.75rem; font-weight: 600; background: #e2e8f0; color: #475569; padding: 0.15rem 0.5rem; border-radius: 10px;">{{ prs|length }}</span>
+                            </h2>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            {% for pr in prs %}
+                            <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem 1rem;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+                                    <a href="{% url 'pull_request_detail' pr.id %}" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary); text-decoration: none;">
+                                        #{{ pr.id }}: {{ pr.title }}
+                                    </a>
+                                    <span style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 0.15rem 0.45rem; border-radius: 4px; {% if pr.status == 'open' %}background:#ecfdf5; color:#059669;{% elif pr.status == 'merged' %}background:#f5f3ff; color:#7c3aed;{% else %}background:#fef2f2; color:#dc2626;{% endif %}">
+                                        {{ pr.status }}
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.74rem; color: var(--text-muted);">
+                                    in <a href="{% url 'repository_detail' pr.repository.name %}" style="color: var(--brand); text-decoration: none;">{{ pr.repository.name }}</a> • by {{ pr.author.username }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- 5. Organizations -->
+                {% if organizations %}
+                <div class="result-section">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+                        <h2 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="ph ph-buildings" style="color: #ea580c;"></i> Organizations
+                            <span style="font-size: 0.75rem; font-weight: 600; background: #e2e8f0; color: #475569; padding: 0.15rem 0.5rem; border-radius: 10px;">{{ organizations|length }}</span>
+                        </h2>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem;">
+                        {% for org in organizations %}
+                        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.25rem; transition: var(--transition); box-shadow: var(--shadow-sm);"
+                             onmouseover="this.style.borderColor='#ea580c'; this.style.boxShadow='var(--shadow-md)';"
+                             onmouseout="this.style.borderColor='var(--border-color)'; this.style.boxShadow='var(--shadow-sm)';">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <a href="{% url 'organization_detail' org.name %}" style="font-size: 0.98rem; font-weight: 700; color: #ea580c; text-decoration: none;">
+                                    {{ org.name }}
+                                </a>
+                                <span style="font-size: 0.72rem; color: var(--text-muted);">
+                                    Owner: {{ org.owner.username }}
+                                </span>
+                            </div>
+                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">
+                                {{ org.description|default:"Enterprise Organization Workspace"|truncatechars:120 }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+
+        {% endif %}
+    {% endif %}
+
+</div>
+{% endblock %}
+

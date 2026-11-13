@@ -1,4 +1,5 @@
 {% extends 'pipeline/base.html' %}
+{% load git_extras %}
 
 {% block content %}
 <style>
@@ -45,6 +46,7 @@
     .btn-group {
         display: flex;
         gap: 0.5rem;
+        align-items: center;
     }
 
     .btn {
@@ -165,9 +167,28 @@
         </div>
 
         <div class="btn-group">
-            <a href="#" class="btn btn-outline" onclick="toggleClone()">
-                <i class="ph ph-download-simple"></i> Code
+            <a href="{% url 'compare_branches' repository.name %}" class="btn btn-outline" title="Compare branches & generate pull diff">
+                <i class="ph ph-git-diff"></i> Compare
             </a>
+
+            {% if repository|can_clone:request.user %}
+                <button type="button" class="btn btn-outline" onclick="toggleClone()">
+                    <i class="ph ph-download-simple"></i> Code
+                </button>
+            {% else %}
+                {% with req=repository|pending_request:request.user %}
+                    {% if req %}
+                        <button type="button" class="btn btn-outline" disabled style="color:var(--warning-color); border-color:var(--warning-color); cursor:not-allowed; opacity:0.9;" title="Your access request is currently pending approval by the owner">
+                            <i class="ph ph-hourglass-medium"></i> Clone Pending
+                        </button>
+                    {% else %}
+                        <button type="button" class="btn btn-primary" onclick="openAccessRequestModal('clone')">
+                            <i class="ph ph-lock-key"></i> Request Clone Access
+                        </button>
+                    {% endif %}
+                {% endwith %}
+            {% endif %}
+
             <a href="{% url 'create_pull_request' repository.name %}" class="btn btn-primary">
                 <i class="ph ph-git-pull-request"></i> New PR
             </a>
@@ -181,39 +202,79 @@
             </h4>
 
             <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Clone URL (HTTPS)</label>
+                <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.35rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Clone URL (HTTP)</label>
                 <div class="clone-box">
-                    <span id="cloneUrl">http://{{ request.get_host }}/git/{{ repository.owner.username }}/{{ repository.name }}.git</span>
-                    <button class="btn btn-outline" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="copyClone()">Copy</button>
+                    <span id="cloneUrl">http://{{ request.get_host }}/git/{{ repository.name }}.git</span>
+                    <button id="copyBtn" class="btn btn-outline" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="copyClone()">Copy</button>
                 </div>
             </div>
 
             <div style="background: var(--accent-light); border-left: 4px solid var(--brand); padding: 0.85rem 1.1rem; border-radius: 8px; font-size: 0.88rem;">
                 <p style="margin: 0 0 0.4rem 0; color: var(--text-primary);"><strong><i class="ph ph-key" style="color: var(--brand);"></i> Authentication required</strong></p>
                 <p style="margin: 0 0 0.4rem 0; color: var(--text-secondary);">
-                    When prompted by git CLI, use:
+                    When prompted by git CLI or IDE, use:
                 </p>
                 <ul style="margin: 0.25rem 0; padding-left: 1.25rem; color: var(--text-secondary);">
-                    <li><strong>Username:</strong> <code>{{ request.user.username }}</code></li>
-                    <li><strong>Password:</strong> your <strong>Personal Access Token (PAT)</strong></li>
+                    <li><strong>Username:</strong> <code>{{ request.user.username }}</code> (or your registered email)</li>
+                    <li><strong>Password:</strong> your <strong>Personal Access Token (PAT)</strong> or account password</li>
                 </ul>
                 <p style="margin: 0.5rem 0 0 0;">
                     <a href="{% url 'profile' %}" style="color: var(--brand); text-decoration: none; font-weight: 700;">
-                        <i class="ph ph-arrow-square-out"></i> Generate a PAT → Profile Settings
+                        <i class="ph ph-arrow-square-out"></i> Generate a Personal Access Token (PAT) →
                     </a>
                 </p>
             </div>
 
             <div style="margin-top: 1rem; background: #0f172a; border-radius: 8px; padding: 0.85rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #34d399;">
-                git clone http://{{ request.user.username }}:&lt;YOUR_PAT&gt;@{{ request.get_host }}/git/{{ repository.owner.username }}/{{ repository.name }}.git
+                git clone http://{{ request.user.username }}:&lt;YOUR_PAT&gt;@{{ request.get_host }}/git/{{ repository.name }}.git
             </div>
+        </div>
+    </div>
+
+    <!-- Request Access Modal -->
+    <div id="requestAccessModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:2500; align-items:center; justify-content:center;">
+        <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:12px; padding:1.5rem; max-width:460px; width:92%; margin:auto; box-shadow:var(--shadow-lg);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.6rem; border-bottom:1px solid var(--border-color);">
+                <h3 style="margin:0; font-size:1.05rem; font-family:'Outfit', sans-serif; font-weight:800; display:flex; align-items:center; gap:0.45rem;">
+                    <i class="ph ph-lock-key" style="color:var(--brand);"></i> Request Repository Access
+                </h3>
+                <button type="button" onclick="closeAccessRequestModal()" style="background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+            </div>
+            
+            <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0; margin-bottom:1rem; line-height:1.45;">
+                Cloning and pushing to <strong>{{ repository.name }}</strong> is restricted. Your request will be routed directly to the repository owner (<strong>{{ repository.owner.username|default:'Owner' }}</strong>) for review and approval.
+            </p>
+
+            <form method="post" action="{% url 'request_repo_access' repository.name %}">
+                {% csrf_token %}
+                <div style="margin-bottom:0.85rem;">
+                    <label style="display:block; font-size:0.75rem; font-weight:700; margin-bottom:0.35rem; color:var(--text-primary);">Permission Type</label>
+                    <select name="permission" id="accessRequestPermission" style="width:100%; padding:0.45rem 0.65rem; border:1px solid var(--border-color); border-radius:6px; font-family:inherit; font-size:0.8rem; background:var(--input-bg); color:var(--text-primary);">
+                        <option value="clone">Clone / Pull Access (Read code)</option>
+                        <option value="push">Push / Write Access (Push commits)</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom:1.15rem;">
+                    <label style="display:block; font-size:0.75rem; font-weight:700; margin-bottom:0.35rem; color:var(--text-primary);">Reason / Purpose (Optional)</label>
+                    <textarea name="reason" rows="3" placeholder="Explain why you need access to this repository..." style="width:100%; box-sizing:border-box; padding:0.5rem 0.65rem; border:1px solid var(--border-color); border-radius:6px; font-family:inherit; font-size:0.8rem; background:var(--input-bg); color:var(--text-primary); resize:vertical;"></textarea>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                    <button type="button" onclick="closeAccessRequestModal()" class="btn btn-outline">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-paper-plane-tilt"></i> Send Request</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Executive Tabs -->
     <div class="tabs">
-        <a href="{% url 'repository_detail' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_detail' %}active{% endif %}">
+        <a href="{% url 'repository_detail' repository.name %}{% if current_branch %}?branch={{ current_branch }}{% endif %}" class="tab {% if request.resolver_match.url_name == 'repository_detail' %}active{% endif %}">
             <i class="ph ph-code"></i> Code
+        </a>
+        <a href="{% url 'compare_branches' repository.name %}" class="tab {% if request.resolver_match.url_name == 'compare_branches' %}active{% endif %}">
+            <i class="ph ph-git-diff"></i> Compare
         </a>
         <a href="{% url 'repository_issues' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_issues' %}active{% endif %}">
             <i class="ph ph-warning-circle"></i> Issues
@@ -222,12 +283,20 @@
             <i class="ph ph-git-pull-request"></i> Pull Requests 
             <span class="badge" style="background: var(--canvas-bg); color: var(--text-primary); border: 1px solid var(--border-color);">{{ repository.pull_requests.count }}</span>
         </a>
-        <a href="{% url 'repository_rocket_ci' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_rocket_ci' %}active{% endif %}">
-            <i class="ph ph-rocket"></i> Rocket CI
+        <a href="{% url 'repository_actions' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_actions' or request.resolver_match.url_name == 'repository_action_run_detail' or request.resolver_match.url_name == 'repository_rocket_ci' %}active{% endif %}" title="Actions: Run macOS workflows, Xcode build & export .ipa packages">
+            <i class="ph ph-play-circle"></i> Actions
         </a>
-        <a href="{% url 'view_logs' repository.name %}?branch={{ current_branch|default:'main' }}" class="tab {% if request.resolver_match.url_name == 'view_logs' %}active{% endif %}">
+        <a href="{% url 'view_logs' repository.name %}?branch={{ current_branch|default:repository.default_branch|default:'main' }}" class="tab {% if request.resolver_match.url_name == 'view_logs' %}active{% endif %}">
             <i class="ph ph-clock-counter-clockwise"></i> History
         </a>
+        {% if repository|is_admin_or_owner:request.user %}
+        <a href="{% url 'repository_access_requests' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_access_requests' %}active{% endif %}">
+            <i class="ph ph-shield-check"></i> Access Requests
+            {% if repository.pending_access_requests_count > 0 %}
+            <span class="badge" style="background: #ef4444; color: white;">{{ repository.pending_access_requests_count }}</span>
+            {% endif %}
+        </a>
+        {% endif %}
         {% if can_manage_repo or repository.owner == request.user or request.user.is_superuser %}
         <a href="{% url 'repository_settings' repository.name %}" class="tab {% if request.resolver_match.url_name == 'repository_settings' %}active{% endif %}">
             <i class="ph ph-gear"></i> Settings
@@ -244,10 +313,36 @@
         popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
     }
 
+    function openAccessRequestModal(perm) {
+        const modal = document.getElementById('requestAccessModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            const sel = document.getElementById('accessRequestPermission');
+            if (sel && perm) sel.value = perm;
+        }
+    }
+
+    function closeAccessRequestModal() {
+        const modal = document.getElementById('requestAccessModal');
+        if (modal) modal.style.display = 'none';
+    }
+
     function copyClone() {
-        const url = document.getElementById('cloneUrl').innerText;
-        navigator.clipboard.writeText(url);
-        alert('Clone URL copied to clipboard!');
+        const url = document.getElementById('cloneUrl').innerText.trim();
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = document.getElementById('copyBtn');
+                if (btn) {
+                    btn.innerText = 'Copied!';
+                    btn.style.color = '#10b981';
+                    setTimeout(() => {
+                        btn.innerText = 'Copy';
+                        btn.style.color = '';
+                    }, 2000);
+                }
+            });
+        }
     }
 </script>
 {% endblock %}
+

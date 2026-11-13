@@ -280,6 +280,119 @@
             background-color: var(--accent-light);
         }
 
+        /* Topbar Notifications */
+        .topbar-notifications {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-right: 0.5rem;
+        }
+
+        .topbar-bell-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 1.05rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .topbar-bell-btn:hover {
+            border-color: var(--brand);
+            color: var(--brand);
+            background: var(--accent-light);
+        }
+
+        .notif-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 0.62rem;
+            font-weight: 800;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ffffff;
+            line-height: 1;
+        }
+
+        .notifications-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            width: 330px;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            z-index: 1200;
+        }
+
+        .notifications-dropdown.open { display: block; }
+
+        .notif-dd-header {
+            padding: 0.65rem 0.9rem;
+            background: var(--canvas-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .notif-dd-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .notif-dd-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            padding: 0.7rem 0.85rem;
+            border-bottom: 1px solid var(--border-color);
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.15s ease;
+        }
+
+        .notif-dd-item:last-child { border-bottom: none; }
+        .notif-dd-item:hover { background: rgba(5, 150, 105, 0.04); }
+        .notif-dd-item.unread { background: rgba(5, 150, 105, 0.02); }
+
+        .notif-dd-footer {
+            padding: 0.55rem 0.85rem;
+            background: var(--canvas-bg);
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .notif-dd-footer a {
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--brand);
+            text-decoration: none;
+        }
+        .notif-dd-footer a:hover { text-decoration: underline; }
+
         /* Topbar User Menu */
         .topbar-user {
             position: relative;
@@ -495,6 +608,7 @@
                         <i class="ph ph-clock-counter-clockwise icon"></i>
                         <span class="text">Run History</span>
                     </a>
+
                     <a href="{% url 'local_credential_list' project_name=project.name %}" class="{% if 'credential' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-key icon"></i>
                         <span class="text">Local Credentials</span>
@@ -517,10 +631,6 @@
                     <a href="{% url 'organization_detail' current_org.name %}#projects" class="{% if 'project' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-tree-structure icon"></i>
                         <span class="text">Projects</span>
-                    </a>
-                    <a href="{% url 'organization_detail' current_org.name %}#applications" class="{% if 'application' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="ph ph-cube icon"></i>
-                        <span class="text">Applications</span>
                     </a>
                     <a href="{% url 'organization_detail' current_org.name %}#repositories" class="{% if 'repository' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-git-branch icon"></i>
@@ -550,10 +660,6 @@
                         <i class="ph ph-tree-structure icon"></i>
                         <span class="text">Projects</span>
                     </a>
-                    <a href="{% url 'organization_detail' current_org.name %}#applications" class="{% if 'application' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="ph ph-cube icon"></i>
-                        <span class="text">Applications</span>
-                    </a>
                     <a href="{% url 'organization_detail' current_org.name %}#repositories" class="{% if 'repository' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-git-branch icon"></i>
                         <span class="text">Repositories</span>
@@ -573,6 +679,7 @@
                         <i class="ph ph-squares-four icon"></i>
                         <span class="text">Dashboard</span>
                     </a>
+
                     <a href="{% url 'organization_list' %}" class="{% if 'organization' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="ph ph-buildings icon"></i>
                         <span class="text">Organizations</span>
@@ -635,7 +742,8 @@
                                style="width:100%; padding:0.35rem 2.2rem 0.35rem 2.2rem; background:var(--input-bg); border:1px solid var(--border-color); border-radius:6px; font-size:0.78rem; font-family:inherit; color:var(--text-primary); outline:none; transition:var(--transition); box-shadow:var(--shadow-sm);"
                                onfocus="onGlobalSearchFocus(); this.style.background='var(--card-bg)'; this.style.borderColor='var(--brand)'; this.style.boxShadow='0 0 0 3px rgba(16,185,129,0.15)';"
                                onblur="this.style.background='var(--input-bg)'; this.style.borderColor='var(--border-color)'; this.style.boxShadow='var(--shadow-sm)';"
-                               oninput="onGlobalSearchInput(this.value)">
+                               oninput="onGlobalSearchInput(this.value)"
+                               onkeydown="if(event.key === 'Enter'){ event.preventDefault(); window.location.href = '{% url 'global_search' %}?q=' + encodeURIComponent(this.value); }">
                         <span style="position:absolute; right:8px; font-size:0.62rem; font-weight:700; color:var(--text-muted); background:var(--card-bg); border:1px solid var(--border-color); padding:0.08rem 0.35rem; border-radius:4px; pointer-events:none;">Ctrl+K</span>
                     </div>
 
@@ -645,39 +753,93 @@
                 </div>
             </div>
 
-            <!-- User Dropdown Menu -->
-            <div class="topbar-user" id="topbarUser">
-                <button class="topbar-user-btn" onclick="toggleUserDropdown()" aria-expanded="false" id="userDropdownBtn">
-                    <div class="topbar-avatar">{{ request.user.username|make_list|first|default:"U" }}</div>
-                    <span>{{ request.user.username|default:"Guest" }}</span>
-                    <i class="ph ph-caret-down topbar-chevron"></i>
-                </button>
+            <!-- Topbar Actions Cluster: Bell Docked Side-by-Side with Profile -->
+            <div class="topbar-profile-cluster" style="display:flex; align-items:center; gap:0.65rem; margin-left:auto;">
+                <!-- Notifications Bell Icon -->
+                <div class="topbar-notifications" id="topbarNotifications">
+                    <button class="topbar-bell-btn" onclick="toggleNotificationsDropdown()" id="notifBellBtn" aria-label="Notifications" title="Notifications">
+                        <i class="ph ph-bell"></i>
+                        <span class="notif-badge" id="notifBadge">0</span>
+                    </button>
 
-                <div class="user-dropdown" id="userDropdown">
-                    <div class="dropdown-header">
-                        <strong>{{ request.user.username|default:"User" }}</strong>
-                        {% if request.user.is_superuser %}Enterprise Admin{% else %}Developer{% endif %}
+                    <div class="notifications-dropdown" id="notificationsDropdown">
+                        <div class="notif-dd-header">
+                            <div style="display:flex; align-items:center; gap:0.4rem;">
+                                <i class="ph ph-bell" style="color:var(--brand);"></i>
+                                <span>Notifications</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <button type="button" id="webPushTestBtn" onclick="testWebPushNotification()" style="display:none; background:transparent; border:none; color:var(--brand); font-size:0.68rem; font-weight:700; cursor:pointer; padding:0.15rem 0.35rem; border-radius:3px;" title="Test desktop web push alert">
+                                    <i class="ph ph-bell-ringing"></i> Test Push
+                                </button>
+                                <a href="{% url 'notification_list' %}" style="font-size:0.7rem; color:var(--text-muted); text-decoration:none; font-weight:normal;">View all</a>
+                            </div>
+                        </div>
+
+                        <!-- Web Push Permission Banner -->
+                        <div id="webPushBanner" style="display:none; padding:0.45rem 0.75rem; background:#ecfdf5; border-bottom:1px solid #a7f3d0; font-size:0.72rem; color:#065f46; align-items:center; justify-content:space-between;">
+                            <span><i class="ph ph-broadcast"></i> Enable Web Push Alerts</span>
+                            <button type="button" onclick="requestWebPushPermission()" style="padding:0.2rem 0.55rem; background:#059669; color:#fff; border:none; border-radius:4px; font-size:0.68rem; font-weight:700; cursor:pointer;">
+                                Enable
+                            </button>
+                        </div>
+                        <div class="notif-dd-list" id="notifDdList">
+                            <div style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.78rem;">
+                                Loading notifications...
+                            </div>
+                        </div>
+                        <div class="notif-dd-footer">
+                            <a href="{% url 'notification_list' %}">Go to Notification Center &rarr;</a>
+                        </div>
                     </div>
-                    <a href="{% url 'profile' %}" class="dropdown-item">
-                        <i class="ph ph-user-circle"></i> My Profile
-                    </a>
-                    <a href="{% url 'repository_list' %}" class="dropdown-item">
-                        <i class="ph ph-git-branch"></i> My Repositories
-                    </a>
-                    <a href="{% url 'activity_feed' %}" class="dropdown-item">
-                        <i class="ph ph-activity"></i> Activity
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="{% url 'notification_preferences' %}" class="dropdown-item">
-                        <i class="ph ph-bell"></i> Notifications
-                    </a>
-                    <a href="{% url 'global_settings' %}" class="dropdown-item">
-                        <i class="ph ph-gear"></i> Settings
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="{% url 'logout' %}" class="dropdown-item danger">
-                        <i class="ph ph-sign-out"></i> Sign Out
-                    </a>
+                </div>
+
+                <!-- User Dropdown Menu -->
+                <div class="topbar-user" id="topbarUser">
+                    <button class="topbar-user-btn" onclick="toggleUserDropdown()" aria-expanded="false" id="userDropdownBtn">
+                        <div class="topbar-avatar" style="position:relative;">
+                            {{ request.user.username|make_list|first|default:"U" }}
+                            <span class="profile-notif-dot" id="profileNotifDot" style="display:none; width:8px; height:8px; background:#ef4444; border-radius:50%; position:absolute; top:-1px; right:-1px; border:2px solid #fff;"></span>
+                        </div>
+                        <span>{{ request.user.username|default:"Guest" }}</span>
+                        <i class="ph ph-caret-down topbar-chevron"></i>
+                    </button>
+
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-header">
+                            <strong>{{ request.user.username|default:"User" }}</strong>
+                            {% if request.user.is_superuser %}Enterprise Admin{% else %}Developer{% endif %}
+                        </div>
+                        <a href="{% url 'profile' %}" class="dropdown-item">
+                            <i class="ph ph-user-circle"></i> My Profile
+                        </a>
+                        {% if request.user.is_superuser or request.user.is_staff %}
+                        <a href="{% url 'user_management' %}" class="dropdown-item">
+                            <i class="ph ph-users-three"></i> User Management
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'repository_list' %}" class="dropdown-item">
+                            <i class="ph ph-git-branch"></i> My Repositories
+                        </a>
+                        <a href="{% url 'activity_feed' %}" class="dropdown-item">
+                            <i class="ph ph-activity"></i> Activity
+                        </a>
+
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'notification_list' %}" class="dropdown-item">
+                            <i class="ph ph-bell"></i> Notifications
+                        </a>
+                        <a href="{% url 'notification_preferences' %}" class="dropdown-item">
+                            <i class="ph ph-sliders"></i> Notification Settings
+                        </a>
+                        <a href="{% url 'global_settings' %}" class="dropdown-item">
+                            <i class="ph ph-gear"></i> Settings
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'logout' %}" class="dropdown-item danger">
+                            <i class="ph ph-sign-out"></i> Sign Out
+                        </a>
+                    </div>
                 </div>
             </div>
         </header>
@@ -763,12 +925,262 @@
                 });
             }
 
+            if (query && query.trim()) {
+                html += `
+                    <div style="border-top:1px solid var(--border-color); padding:0.45rem 0.5rem 0.25rem; margin-top:0.35rem; text-align:right;">
+                        <a href="{% url 'global_search' %}?q=${encodeURIComponent(query)}" style="font-size:0.72rem; color:var(--brand); text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:0.25rem;">
+                            View full search results <i class="ph ph-arrow-right"></i>
+                        </a>
+                    </div>
+                `;
+            }
             container.innerHTML = html;
             container.style.display = 'block';
         }
 
+        function toggleNotificationsDropdown() {
+            const dd = document.getElementById('notificationsDropdown');
+            const userDd = document.getElementById('userDropdown');
+            if (userDd) userDd.classList.remove('open');
+            const isOpen = dd.classList.toggle('open');
+            if (isOpen) {
+                fetchNotifications();
+            }
+        }
+
+        // ── Web Push Notifications Engine ──────────────────────────────────────
+        let pushedNotifIds = [];
+        try {
+            pushedNotifIds = JSON.parse(localStorage.getItem('cogfocus_pushed_notifs') || '[]');
+        } catch(e) {
+            pushedNotifIds = [];
+        }
+
+        function initWebPush() {
+            if (!("Notification" in window)) return;
+
+            // Register Service Worker for full push support
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    window.swRegistration = reg;
+                }).catch(err => {
+                    console.debug('ServiceWorker registration error:', err);
+                });
+            }
+
+            updatePushUi();
+
+            // Polite auto-prompt on first user interaction if permission is default
+            if (Notification.permission === 'default') {
+                const autoPrompt = function() {
+                    Notification.requestPermission().then(permission => {
+                        updatePushUi();
+                        if (permission === 'granted') {
+                            showWebPushNotification({
+                                title: '🔔 Web Push Enabled',
+                                content: 'You will receive real-time desktop alerts when Pull Requests are raised.',
+                                link: '{% url "notification_list" %}'
+                            });
+                        }
+                    });
+                    document.removeEventListener('click', autoPrompt);
+                };
+                document.addEventListener('click', autoPrompt, { once: true });
+            }
+        }
+
+        function requestWebPushPermission() {
+            if (!("Notification" in window)) {
+                alert("This browser does not support desktop notifications.");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                updatePushUi();
+                if (permission === 'granted') {
+                    showWebPushNotification({
+                        title: '🚀 Web Push Notifications Active',
+                        content: 'Real-time alerts enabled for Pull Requests and repository events.',
+                        link: '{% url "notification_list" %}'
+                    });
+                } else if (permission === 'denied') {
+                    alert("Notification permission is currently blocked in your browser settings. Please permit notifications for this domain in your browser bar.");
+                }
+            });
+        }
+
+        function testWebPushNotification() {
+            if (!("Notification" in window)) {
+                alert("Desktop notifications are not supported in this browser.");
+                return;
+            }
+            if (Notification.permission !== 'granted') {
+                requestWebPushPermission();
+                return;
+            }
+            showWebPushNotification({
+                title: '🔔 Test: New Pull Request #99',
+                content: 'Demo User raised PR #99 from feature/auth into main in repository.',
+                link: '{% url "notification_list" %}',
+                type: 'pull_request'
+            });
+        }
+
+        function updatePushUi() {
+            const banner = document.getElementById('webPushBanner');
+            const testBtn = document.getElementById('webPushTestBtn');
+            if (!("Notification" in window)) {
+                if (banner) banner.style.display = 'none';
+                if (testBtn) testBtn.style.display = 'none';
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                if (banner) banner.style.display = 'none';
+                if (testBtn) testBtn.style.display = 'inline-flex';
+            } else if (Notification.permission === 'default') {
+                if (banner) banner.style.display = 'flex';
+                if (testBtn) testBtn.style.display = 'none';
+            } else {
+                if (banner) banner.style.display = 'none';
+                if (testBtn) testBtn.style.display = 'none';
+            }
+        }
+
+        // Web Audio Synthesized Chime (no external audio files required)
+        function playNotificationChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);       // D5
+                osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12); // A5
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.36);
+            } catch(e) {}
+        }
+
+        function showWebPushNotification(n) {
+            if (!("Notification" in window) || Notification.permission !== "granted") {
+                return;
+            }
+            playNotificationChime();
+            const iconUrl = "{% static 'gitmgmt/images/logo/cogfocus_favicon_180x180.png' %}";
+            const targetUrl = n.link || "{% url 'notification_list' %}";
+
+            if (window.swRegistration && 'showNotification' in window.swRegistration) {
+                window.swRegistration.showNotification(n.title, {
+                    body: n.full_content || n.content,
+                    icon: iconUrl,
+                    badge: iconUrl,
+                    tag: 'pr-notif-' + (n.id || Date.now()),
+                    data: { url: targetUrl },
+                    requireInteraction: (n.type === 'pull_request')
+                });
+            } else {
+                try {
+                    const popup = new Notification(n.title, {
+                        body: n.full_content || n.content,
+                        icon: iconUrl,
+                        badge: iconUrl,
+                        tag: 'pr-notif-' + (n.id || Date.now()),
+                        requireInteraction: (n.type === 'pull_request')
+                    });
+                    popup.onclick = function(e) {
+                        e.preventDefault();
+                        window.focus();
+                        window.location.href = targetUrl;
+                    };
+                } catch(e) {
+                    console.debug('Direct Notification fallback error:', e);
+                }
+            }
+        }
+
+        function fetchNotifications() {
+            fetch("{% url 'notification_count' %}")
+                .then(r => r.json())
+                .then(data => {
+                    const badge = document.getElementById('notifBadge');
+                    const profileDot = document.getElementById('profileNotifDot');
+                    const list = document.getElementById('notifDdList');
+                    if (badge) {
+                        if (data.count > 0) {
+                            badge.textContent = data.count > 99 ? '99+' : data.count;
+                            badge.style.display = 'flex';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                    if (profileDot) {
+                        profileDot.style.display = data.count > 0 ? 'block' : 'none';
+                    }
+
+                    // Check for unread notifications to trigger real-time Web Push
+                    if (data.notifications && data.notifications.length > 0) {
+                        data.notifications.forEach(n => {
+                            if (!n.is_read && !pushedNotifIds.includes(n.id)) {
+                                pushedNotifIds.push(n.id);
+                                try {
+                                    localStorage.setItem('cogfocus_pushed_notifs', JSON.stringify(pushedNotifIds.slice(-60)));
+                                } catch(e) {}
+                                showWebPushNotification(n);
+                            }
+                        });
+                    }
+
+                    if (!list) return;
+
+                    if (!data.notifications || data.notifications.length === 0) {
+                        list.innerHTML = '<div style="padding:2rem 1rem; text-align:center; color:var(--text-muted); font-size:0.8rem;"><i class="ph ph-bell-slash" style="font-size:1.5rem; display:block; margin-bottom:0.4rem; opacity:0.4;"></i>No notifications</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.notifications.forEach(n => {
+                        const icon = n.type && (n.type.includes('fail') || n.type.includes('error')) 
+                            ? '<i class="ph ph-x-circle" style="color:#ef4444;"></i>' 
+                            : (n.type && n.type.includes('success') 
+                                ? '<i class="ph ph-check-circle" style="color:var(--brand);"></i>' 
+                                : '<i class="ph ph-bell" style="color:var(--brand);"></i>');
+                        const targetUrl = n.link || "{% url 'notification_list' %}";
+                        html += `
+                            <a href="${targetUrl}" class="notif-dd-item ${!n.is_read ? 'unread' : ''}">
+                                <div style="font-size:1.1rem; flex-shrink:0; margin-top:0.1rem;">${icon}</div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-weight:700; font-size:0.8rem; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${n.title}</div>
+                                    <div style="font-size:0.74rem; color:var(--text-secondary); margin-top:0.15rem; line-height:1.35;">${n.content}</div>
+                                    <div style="font-size:0.68rem; color:var(--text-muted); margin-top:0.25rem;">${n.time}</div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    list.innerHTML = html;
+                })
+                .catch(err => {
+                    console.debug('Failed to load notifications:', err);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initWebPush();
+            fetchNotifications();
+            setInterval(fetchNotifications, 10000); // 10s responsive real-time polling
+        });
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', function (e) {
+            const notifContainer = document.getElementById('topbarNotifications');
+            if (notifContainer && !notifContainer.contains(e.target)) {
+                const dd = document.getElementById('notificationsDropdown');
+                if (dd) dd.classList.remove('open');
+            }
+
             const userContainer = document.getElementById('topbarUser');
             if (userContainer && !userContainer.contains(e.target)) {
                 document.getElementById('userDropdown').classList.remove('open');

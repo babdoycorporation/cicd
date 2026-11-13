@@ -106,22 +106,22 @@
                 <label>Endpoint / Host</label>
                 <input type="text" name="{{ form.endpoint.html_name }}" class="form-control"
                        value="{{ form.endpoint.value|default:'' }}"
-                       placeholder="e.g. https://cluster.example.com, registry.hub.docker.com">
-                <div class="help">Cluster URL, registry host, SSH hostname/IP, etc.</div>
+                       placeholder="e.g. https://cluster.example.com, 100.74.126.231:1966">
+                <div class="help">Cluster URL, registry host, or SSH host[:port] (e.g. <code>100.74.126.231:1966</code>).</div>
             </div>
 
             <div class="grid-2">
                 <div class="form-row">
-                    <label>Region</label>
+                    <label>Region / SSH Port</label>
                     <input type="text" name="{{ form.region.html_name }}" class="form-control"
                            value="{{ form.region.value|default:'' }}"
-                           placeholder="e.g. us-east-1, eastus">
+                           placeholder="e.g. us-east-1, eastus, or 1966">
                 </div>
                 <div class="form-row">
-                    <label>Namespace / Cluster / Resource Group</label>
+                    <label>Namespace / Cluster / Remote Deploy Path</label>
                     <input type="text" name="{{ form.namespace.html_name }}" class="form-control"
                            value="{{ form.namespace.value|default:'' }}"
-                           placeholder="e.g. default, production">
+                           placeholder="e.g. default, production, or /opt/myapp">
                 </div>
             </div>
         </div>

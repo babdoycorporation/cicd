@@ -1,0 +1,453 @@
+{% extends "pipeline/base.html" %}
+{% block content %}
+<style>
+    .um-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .um-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        margin: 0 0 0.25rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-primary);
+    }
+    .um-subtitle {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .um-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .um-stat-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.15rem 1.25rem;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .um-stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+    .um-stat-val {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1.1;
+    }
+    .um-stat-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        margin-top: 0.2rem;
+    }
+
+    .um-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    .um-card-header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--canvas-bg);
+    }
+    .um-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+    .um-table th {
+        text-align: left;
+        padding: 0.75rem 1.25rem;
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        background: var(--canvas-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+    .um-table td {
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+        vertical-align: middle;
+    }
+    .um-table tr:last-child td {
+        border-bottom: none;
+    }
+    .um-table tr:hover td {
+        background: rgba(5, 150, 105, 0.02);
+    }
+
+    .user-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--brand), #0284c7);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .badge-role-admin {
+        background: rgba(234, 88, 12, 0.12);
+        color: #ea580c;
+        border: 1px solid rgba(234, 88, 12, 0.25);
+        padding: 0.18rem 0.55rem;
+        border-radius: 20px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    .badge-role-dev {
+        background: rgba(5, 150, 105, 0.12);
+        color: var(--brand);
+        border: 1px solid rgba(5, 150, 105, 0.25);
+        padding: 0.18rem 0.55rem;
+        border-radius: 20px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    .badge-active {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+    .badge-inactive {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 2500;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 520px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        overflow: hidden;
+    }
+    .modal-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        color: var(--text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .modal-body { padding: 1.5rem; }
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        background: var(--canvas-bg);
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+        display: block;
+        margin-bottom: 0.35rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    .form-control {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 0.6rem 0.85rem;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: var(--text-primary);
+        background: #ffffff;
+    }
+    .form-control:focus {
+        border-color: var(--brand);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+    }
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+</style>
+
+<div class="um-header">
+    <div>
+        <h1 class="um-title"><i class="ph ph-users" style="color:var(--brand);"></i> User Management</h1>
+        <p class="um-subtitle">Enterprise user provisioning, directory access, and security roles</p>
+    </div>
+    <button class="btn btn-primary" onclick="openAddUserModal()">
+        <i class="ph ph-user-plus"></i> Add New User
+    </button>
+</div>
+
+<div class="um-stats">
+    <div class="um-stat-card">
+        <div class="um-stat-icon" style="background:rgba(5,150,105,0.1); color:var(--brand);">
+            <i class="ph ph-users"></i>
+        </div>
+        <div>
+            <div class="um-stat-val">{{ total_count }}</div>
+            <div class="um-stat-label">Total Users</div>
+        </div>
+    </div>
+    <div class="um-stat-card">
+        <div class="um-stat-icon" style="background:rgba(234,88,12,0.1); color:#ea580c;">
+            <i class="ph ph-shield-check"></i>
+        </div>
+        <div>
+            <div class="um-stat-val">{{ admin_count }}</div>
+            <div class="um-stat-label">System Admins</div>
+        </div>
+    </div>
+    <div class="um-stat-card">
+        <div class="um-stat-icon" style="background:rgba(2,132,199,0.1); color:#0284c7;">
+            <i class="ph ph-user-check"></i>
+        </div>
+        <div>
+            <div class="um-stat-val">{{ users|length }}</div>
+            <div class="um-stat-label">Active Directory Accounts</div>
+        </div>
+    </div>
+</div>
+
+<div class="um-card">
+    <div class="um-card-header">
+        <div style="font-weight:700; color:var(--text-primary); font-size:0.9rem;">
+            Registered Accounts
+        </div>
+        <div style="font-size:0.78rem; color:var(--text-muted);">
+            Showing {{ users|length }} accounts
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="um-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th style="text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:0.65rem;">
+                            <div class="user-avatar">{{ u.username|first }}</div>
+                            <div>
+                                <div style="font-weight:700; color:var(--text-primary);">{{ u.username }}</div>
+                                {% if u == request.user %}
+                                <span style="font-size:0.68rem; font-weight:700; color:var(--brand);">(You)</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span style="color:var(--text-secondary); font-family:monospace; font-size:0.82rem;">
+                            {{ u.email|default:"—" }}
+                        </span>
+                    </td>
+                    <td>
+                        {{ u.get_full_name|default:"—" }}
+                    </td>
+                    <td>
+                        {% if u.is_superuser %}
+                        <span class="badge-role-admin"><i class="ph ph-shield"></i> Admin</span>
+                        {% else %}
+                        <span class="badge-role-dev"><i class="ph ph-code"></i> Developer</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.is_active %}
+                        <span class="badge-active">Active</span>
+                        {% else %}
+                        <span class="badge-inactive">Suspended</span>
+                        {% endif %}
+                    </td>
+                    <td style="color:var(--text-muted); font-size:0.78rem;">
+                        {{ u.date_joined|date:"M d, Y" }}
+                    </td>
+                    <td style="text-align:right;">
+                        <div style="display:inline-flex; align-items:center; gap:0.4rem;">
+                            {% if u != request.user %}
+                            <form method="post" style="display:inline;" onsubmit="return confirm('Toggle active status for {{ u.username }}?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_active">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                <button type="submit" class="btn btn-outline" style="padding:0.25rem 0.6rem; font-size:0.75rem;" title="Toggle Active">
+                                    <i class="ph ph-power"></i>
+                                </button>
+                            </form>
+                            <form method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to permanently delete user {{ u.username }}? This action cannot be undone.');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_user">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                <button type="submit" class="btn btn-outline" style="padding:0.25rem 0.6rem; font-size:0.75rem; color:#ef4444; border-color:rgba(239,68,68,0.3);" title="Delete User">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <span style="font-size:0.75rem; color:var(--text-muted);">Protected</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">
+                        No users found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="addUserModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title"><i class="ph ph-user-plus" style="color:var(--brand);"></i> Create New Platform User</h2>
+            <button class="modal-close" onclick="closeAddUserModal()"><i class="ph ph-x"></i></button>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_user">
+            <div class="modal-body">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" name="username" class="form-control" placeholder="e.g. jdoe" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address *</label>
+                        <input type="email" name="email" class="form-control" placeholder="user@company.com" required>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>First Name</label>
+                        <input type="text" name="first_name" class="form-control" placeholder="John">
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" name="last_name" class="form-control" placeholder="Doe">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Role *</label>
+                        <select name="role" class="form-control">
+                            <option value="developer">Developer</option>
+                            <option value="admin">Administrator (Superuser)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeAddUserModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="ph ph-check"></i> Create User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddUserModal() {
+    document.getElementById('addUserModal').classList.add('open');
+}
+function closeAddUserModal() {
+    document.getElementById('addUserModal').classList.remove('open');
+}
+document.getElementById('addUserModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddUserModal();
+});
+</script>
+{% endblock %}
+
