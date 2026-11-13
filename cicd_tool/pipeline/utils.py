@@ -252,6 +252,9 @@ def sync_pipeline_from_repo_workdir(pipeline, workdir):
         return 0
 
     yp = (pipeline.yaml_path or '').strip()
+    if yp.lower() in ('none', 'manual', 'disabled'):
+        return 0
+
     candidates = [yp] if yp else []
     for alt in ('rockerci.yaml', '.rocketci.yml', 'rocketci.yml', '.rockerci.yaml', '.rockerci.yml'):
         if alt not in candidates:

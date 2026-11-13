@@ -939,23 +939,27 @@ def _trigger_repo_pipelines_on_push(repo_name, branch, trigger_source='push'):
                     continue
 
                 yp = (pipeline.yaml_path or '').strip()
-                candidates = [yp] if yp else []
-                for alt in ('rockerci.yaml', '.rocketci.yml', 'rocketci.yml', '.rockerci.yaml', '.rockerci.yml'):
-                    if alt not in candidates:
-                        candidates.append(alt)
-
-                matched_yaml = next((c for c in candidates if c in tree), None)
-                n_steps = 0
-                if matched_yaml:
-                    yaml_content = tree[matched_yaml].data_stream.read().decode('utf-8', errors='replace')
-                    n_steps = sync_steps_from_yaml(pipeline, yaml_content)
-                    if n_steps > 0:
-                        version = YamlFileVersion.objects.filter(pipeline=pipeline).count() + 1
-                        YamlFileVersion.objects.create(
-                            pipeline=pipeline, version_number=version, yaml_content=yaml_content
-                        )
-                else:
+                if yp.lower() in ('none', 'manual', 'disabled'):
                     n_steps = pipeline.pipelinestep_set.count()
+                    matched_yaml = None
+                else:
+                    candidates = [yp] if yp else []
+                    for alt in ('rockerci.yaml', '.rocketci.yml', 'rocketci.yml', '.rockerci.yaml', '.rockerci.yml'):
+                        if alt not in candidates:
+                            candidates.append(alt)
+
+                    matched_yaml = next((c for c in candidates if c in tree), None)
+                    n_steps = 0
+                    if matched_yaml:
+                        yaml_content = tree[matched_yaml].data_stream.read().decode('utf-8', errors='replace')
+                        n_steps = sync_steps_from_yaml(pipeline, yaml_content)
+                        if n_steps > 0:
+                            version = YamlFileVersion.objects.filter(pipeline=pipeline).count() + 1
+                            YamlFileVersion.objects.create(
+                                pipeline=pipeline, version_number=version, yaml_content=yaml_content
+                            )
+                    else:
+                        n_steps = pipeline.pipelinestep_set.count()
 
                 if n_steps <= 0:
                     # Provide an automatic baseline verification step for repos without YAML yet
